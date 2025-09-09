@@ -1,0 +1,57 @@
+import { type Tab } from "../types/Tab";
+
+interface ToneButtonProps {
+  label: string;
+  icon?: React.ReactNode;
+  tone?: string;
+  onClick: () => void;
+  title?: string; // Tooltip text
+  isActive: boolean | null;
+  fontSize: string;
+}
+
+const toneFocusClasses: Record<string, string> = {
+  warm: 'focus:ring-yellow-500',
+  reflective: 'focus:ring-blue-500',
+  minimal: 'focus:ring-gray-400',
+  neutral: 'focus:ring-gray-600',
+};
+
+const toneClasses: Record<string, string> = {
+  warm: 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200 shadow-yellow-300',
+  reflective: 'text-blue-600 bg-blue-100 hover:bg-blue-200 shadow-blue-300',
+  minimal: 'text-gray-500 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
+  neutral: 'text-gray-700 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
+};
+
+const toneActiveClasses: Record<string, string> = {
+  warm: 'bg-yellow-500 text-white shadow-md',
+  reflective: 'bg-blue-500 text-white shadow-md',
+  minimal: 'bg-gray-500 text-white shadow-md',
+  neutral: 'bg-gray-600 text-white shadow-md',
+};
+
+export const ToneButton: React.FC<ToneButtonProps> = ({
+  label,
+  icon,
+  tone = 'neutral',
+  onClick,
+  title,
+  isActive,
+  fontSize = "text-sm"
+}) => {
+  const toneClass = isActive ? toneActiveClasses[tone] : toneClasses[tone];
+  const focusClass = toneFocusClasses[tone];
+  const fontSizeClass = fontSize;
+
+  return (
+    <button
+      onClick={onClick}
+      title={title ?? label}
+      className={`flex items-center gap-2 px-3 py-1.5 ${fontSizeClass} font-medium rounded-md transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 animate-fadeIn pulseSave ${toneClass} ${focusClass}`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+};

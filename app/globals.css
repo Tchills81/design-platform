@@ -1,0 +1,142 @@
+/* 🧵 Tailwind Core Styles */
+@import "tailwindcss";
+
+
+/* Typography Roles */
+.font-primary {
+  font-family: 'Inter', sans-serif;
+  color: #1F2937; /* ink */
+}
+
+.font-muted {
+  font-family: 'Inter', sans-serif;
+  color: #6B7280; /* gray-500 */
+}
+
+.font-ceremonial {
+  font-family: 'Fraunces', serif;
+  color: #8B5CF6; /* ceremonial */
+}
+
+.font-accent {
+  font-family: 'Inter', sans-serif;
+  color: #F59E0B; /* accent */
+}
+
+.font-neutral {
+  font-family: 'Inter', sans-serif;
+  color: #F3F4F6; /* neutral */
+}
+
+/* Layout Frames */
+.section-frame {
+  background-color: #FAFAFA; /* whisper */
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 2.5rem 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.card-frame {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+/* Glassmorphic Panels */
+.modal-glass {
+  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 1rem;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3); /* ceremonial glow */
+  padding: 1.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #3B82F6;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+}
+
+.btn-accent {
+  background-color: #F59E0B;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.btn-accent:hover {
+  transform: scale(1.02);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulseSave {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.pulse-save {
+  animation: pulseSave 0.6s ease-in-out;
+}
+
+/* Tone-Aware Text */
+.text-tone-warm {
+  color: #CA8A04; /* yellow-700 */
+}
+
+.text-tone-reflective {
+  color: #2563EB; /* blue-600 */
+}
+
+.text-tone-minimal {
+  color: #6B7280; /* gray-500 */
+}
+
+.text-tone-neutral {
+  color: #374151; /* gray-700 */
+}
+
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}

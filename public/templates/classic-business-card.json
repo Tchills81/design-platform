@@ -1,0 +1,44 @@
+{
+  "tone": "reflective",
+  "card": {
+    "width": 600,
+    "height": 300,
+    "background": "#ff0000",
+    "gridColors": [
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+      "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3", "#fdf6e3",
+
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83",
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83",
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83",
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83",
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83",
+      "#657b83", "#657b83", "#657b83", "#657b83", "#657b83"
+    ]
+  },
+  "elements": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Tobias Chilonga",
+      "position": { "x": 40, "y": 40 },
+      "font": "Arial",
+      "size": 24,
+      "color": "#333333",
+      "isBold":"false",
+      "isItalic":"true"
+
+    },
+    {
+      "type": "image",
+      "id": "logo",
+      "src": "/assets/logo.png",
+      "position": { "x": 400, "y": 180 },
+      "size": { "width": 120, "height": 60 }
+    }
+  ]
+}
