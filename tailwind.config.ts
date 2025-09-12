@@ -6,6 +6,7 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  
   theme: {
     extend: {
       fontFamily: {
@@ -25,6 +26,10 @@ const config: Config = {
           reflective: '#DBEAFE',
           warm: '#FEF3C7',
           minimal: '#F3F4F6',
+          green: '#10B981',
+          danger: '#EF4444',
+          calm: '#14B8A6',
+          bold: '#8B5CF6',
         },
       },
       boxShadow: {

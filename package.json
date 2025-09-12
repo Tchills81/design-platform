@@ -17,6 +17,7 @@
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-feather": "^2.0.10",
     "react-konva": "^19.0.7",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

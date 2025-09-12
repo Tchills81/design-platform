@@ -3,6 +3,9 @@
 import React, { useRef } from 'react';
 import { Text } from 'react-konva';
 import Konva from 'konva';
+import { Group, Rect} from 'react-konva';
+import SelectionFrame from './SelectionFrame';
+
 
 interface TextElementProps {
   id: string;
@@ -14,6 +17,9 @@ interface TextElementProps {
   fontWeight?: 'normal' | 'bold';
   size: number;
   color: string;
+  selected?: boolean;
+  transformModeActive?:boolean;
+
   cardBounds: { x: number; y: number; width: number; height: number };
   onUpdate: (updated: { id: string; text: string; position: { x: number; y: number } }) => void;
   onEdit: (text: string, position: { x: number; y: number }) => void;
@@ -31,7 +37,6 @@ interface TextElementProps {
   };
   index: number;
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  
 }
 
 const TextElement: React.FC<TextElementProps> = ({
@@ -44,6 +49,8 @@ const TextElement: React.FC<TextElementProps> = ({
   fontWeight,
   size,
   color,
+  selected,
+  transformModeActive,
   cardBounds,
   onUpdate,
   onEdit,
@@ -52,10 +59,6 @@ const TextElement: React.FC<TextElementProps> = ({
 }) => {
   const textRef = useRef<Konva.Text>(null);
   const padding = 2;
-  const gridSpacing = 50;
-
-  const snapToGrid = (value: number, spacing = gridSpacing) =>
-    Math.round(value / spacing) * spacing;
 
   const dragBoundFunc = (pos: { x: number; y: number }) => {
     const node = textRef.current;
@@ -63,30 +66,29 @@ const TextElement: React.FC<TextElementProps> = ({
 
     const textWidth = node.width();
     const textHeight = node.height();
+    const safeMargin = 24;
 
-    const minX = cardBounds.x + padding;
-    const maxX = cardBounds.x + cardBounds.width - textWidth - padding;
-    const minY = cardBounds.y + padding;
-    const maxY = cardBounds.y + cardBounds.height - textHeight - padding;
+    const minX = cardBounds.x + safeMargin;
+    const maxX = cardBounds.x + cardBounds.width - safeMargin - textWidth;
+    const minY = cardBounds.y + safeMargin;
+    const maxY = cardBounds.y + cardBounds.height - safeMargin - textHeight;
 
-    const snappedX = snapToGrid(node.x());
-    const snappedY = snapToGrid(node.y());
+    const clampedX = Math.max(minX, Math.min(pos.x, maxX));
+    const clampedY = Math.max(minY, Math.min(pos.y, maxY));
 
-    if(setGhostLines)
-      setGhostLines({ x: snappedX, y: snappedY });
+    if (setGhostLines) {
+      setGhostLines({ x: clampedX, y: clampedY });
+    }
 
-
-    return {
-      x: Math.max(minX, Math.min(pos.x, maxX)),
-      y: Math.max(minY, Math.min(pos.y, maxY)),
-    };
+    return { x: clampedX, y: clampedY };
   };
 
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
-      onEdit(text, absPos);
       console.log('Editing:', text, absPos);
+      onEdit(text, position)
     }
 
     if (onClick) {
@@ -105,30 +107,29 @@ const TextElement: React.FC<TextElementProps> = ({
     const minY = cardBounds.y + padding;
     const maxY = cardBounds.y + cardBounds.height - textHeight - padding;
 
-    const snappedX = snapToGrid(node.x());
-    const snappedY = snapToGrid(node.y());
-
-    
-
-    const clampedX = Math.max(minX, Math.min(snappedX, maxX));
-    const clampedY = Math.max(minY, Math.min(snappedY, maxY));
+    const clampedX = Math.max(minX, Math.min(node.x(), maxX));
+    const clampedY = Math.max(minY, Math.min(node.y(), maxY));
 
     node.position({ x: clampedX, y: clampedY });
     node.getLayer()?.batchDraw();
 
     onUpdate({ id, text, position: { x: clampedX, y: clampedY } });
 
-    if(setGhostLines)
+    if (setGhostLines) {
       setGhostLines({});
-
-
-  
-
-
-
+    }
   };
 
   return (
+    <Group>
+   <SelectionFrame
+    x={position.x}
+    y={position.y}
+    width={textRef.current?.width() ?? 0}
+    height={textRef.current?.height() ?? 0}
+    selected={!!selected} // ← this guarantees a boolean
+   />
+
     <Text
       ref={textRef}
       text={text}
@@ -142,7 +143,12 @@ const TextElement: React.FC<TextElementProps> = ({
       onClick={handleClick}
       dragBoundFunc={dragBoundFunc}
       onDragEnd={handleDragEnd}
+      cursor={selected ? 'move' : 'default'}
+      
     />
+  </Group>
+  
+  
   );
 };
 

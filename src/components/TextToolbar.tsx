@@ -4,6 +4,12 @@ import React from 'react';
 import { FontDropdown } from './FontPicker';
 import ColorPicker from './ColorPicker';
 import { FontSizeDropdown } from './FontSizeDropdown';
+import { ToneButton } from './ToneButton';
+import { ToggleCheckbox } from './ToggleCheckbox';
+import { Type, X as XIcon } from 'react-feather';
+
+
+import { allFonts } from '../ui/fonts';
 
 interface TextToolbarProps {
   editingText: string;
@@ -16,15 +22,18 @@ interface TextToolbarProps {
   selectedColor: string;
   onColorChange: (color: string) => void;
   onFontSizeChange: (newSize: number) => void;
+
   exitEditingMode?: (e?: React.MouseEvent) => void;
 
   isBold: boolean;
   isItalic: boolean;
   onToggleBold: () => void;
   onToggleItalic: () => void;
-  position?: { x: number; y: number };
-  canvasWidth?: number;
-  canvasHeight?: number;
+
+  tone: string;
+  onAddText?: () => void;
+  onRemoveText?: () => void;
+  selectedTextId?: string | null;
 }
 
 const TextToolbar: React.FC<TextToolbarProps> = ({
@@ -42,81 +51,84 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   editingText,
   onTextBlur,
   onTextChange,
-  position,
-  canvasWidth = 1000,
-  canvasHeight = 800
+  tone,
+  onAddText,
+  onRemoveText,
+  selectedTextId
 }) => {
-  const toolbarWidth = 320;
-  const toolbarHeight = 100;
+  const isTextSelected = !!selectedTextId;
 
-  const safeX = typeof position?.x === 'number' ? position.x : 0;
-  const safeY = typeof position?.y === 'number' ? position.y : 0;
-
-  const clampedX = Math.max(0, Math.min(safeX, canvasWidth - toolbarWidth));
-  const clampedY = Math.max(0, Math.min(safeY, canvasHeight - toolbarHeight));
+  const resolvedFont = allFonts.find(f => f.key === selectedFont)?.family || 'Inter';
 
   return (
     <div
       id="text-toolbar"
-      style={{
-        position: 'absolute',
-        top: 16, // Fixed distance from top of viewport or canvas container
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 1000,
-        background: '#fff',
-        padding: '0.75rem 1rem',
-        borderRadius: 8,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.75rem',
-        minWidth: 320
-      }}
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50 rounded-xl shadow-lg px-4 py-5 min-w-[340px] font-sans flex flex-col gap-4"
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      {/* Styling Controls */}
+      <div className="flex flex-wrap items-center gap-3">
         <FontDropdown selectedFont={selectedFont} onChange={onFontChange} />
         <ColorPicker selectedColor={selectedColor} onChange={onColorChange} />
         <FontSizeDropdown selectedSize={selectedFontSize} onChange={onFontSizeChange} />
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          <input type="checkbox" checked={isBold} onChange={onToggleBold} />
-          <span style={{ fontWeight: 'bold' }}>B</span>
-        </label>
+        <ToggleCheckbox
+  label="Bold"
+  checked={isBold}
+  onToggle={onToggleBold}
+  tone={tone}
+/>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          <input type="checkbox" checked={isItalic} onChange={onToggleItalic} />
-          <span style={{ fontStyle: 'italic' }}>I</span>
-        </label>
+<ToggleCheckbox
+  label="Italic"
+  checked={isItalic}
+  onToggle={onToggleItalic}
+  tone={tone}
+/>
 
-        <button className="toolbar-close-button" onClick={exitEditingMode}>
+
+        <button
+          onClick={exitEditingMode}
+          className="ml-auto text-sm text-gray-800 hover:scale-95 transition-transform"
+        >
           ✕ Close
         </button>
       </div>
 
+      {/* Text Input */}
       <input
         type="text"
         value={editingText}
         onChange={(e) => onTextChange(e.target.value)}
         onBlur={onTextBlur}
-        style={{
-          fontSize: selectedFontSize,
-          fontFamily: selectedFont,
-          color: selectedColor,
-          fontWeight: isBold ? 'bold' : 'normal',
-          fontStyle: isItalic ? 'italic' : 'normal',
-          background: '#fff',
-          border: '1px solid #ccc',
-          outline: 'none',
-          padding: '0.25rem 0.5rem',
-          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)',
-          width: '100%',
-          borderRadius: 4
-        }}
+        className={`w-full px-3 py-2 rounded-md border border-gray-300 shadow-inner text-[${selectedFontSize}px] font-[${isBold ? 'bold' : 'normal'}] ${
+          isItalic ? 'italic' : ''
+        }`}
+        style={{ fontFamily: selectedFont, color: selectedColor }}
         autoFocus
         aria-label="Text input"
         title="Edit text"
       />
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+        <ToneButton
+          fontSize="text-sm"
+          icon={<Type size={18} />}
+          label="Add Text"
+          tone={tone}
+          isActive={true}
+          onClick={onAddText ?? (() => {})}
+        />
+        <ToneButton
+          fontSize="text-sm"
+          icon={<XIcon size={18} />}
+          label="Remove Text"
+          tone={tone}
+          isActive={isTextSelected}
+          onClick={onRemoveText ?? (() => {})}
+          title={!isTextSelected ? 'Select a text element to remove' : undefined}
+        />
+      </div>
     </div>
   );
 };

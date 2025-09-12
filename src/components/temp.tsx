@@ -20,6 +20,8 @@ import { type DualTemplate } from '../types/template';
 
 import { normalizeDualTemplate } from '../utils/normalizeDualTemplate';
 
+import { ExportRitualModal } from './ExportRitualModal';
+
 
 import { type CardState } from '../types/CardState';
 import { type HistoryEntry } from '../types/HistoryEntry';
@@ -35,6 +37,12 @@ import { Line, Text } from 'react-konva';
 
 import { IconButton } from './IconButton';
 import { ToneButton } from './ToneButton';
+
+import ImageToolbar from './ImageToolbar';
+import { ImageTools } from '../utils/imageTools';
+
+
+import { printSnapshots } from './printSnapshots';
 
 import {
     RotateCcw,
@@ -67,8 +75,16 @@ import {
   
   import { isTextElement } from '../types/template';
 
-  import { v4 as uuid } from 'uuid';
   import { ToneButtonSection } from './ToneButtonSection';
+  import { useTransformMode } from '../utils/useTransformMode';
+import { ImageUpload } from './ImageUpload';
+import { AddImageButton } from './AddImageButton';
+import { CropBoxOverlay } from './CropBoxOverlay';
+import { useMemo } from 'react';
+
+
+
+  
   
 
   
@@ -94,6 +110,7 @@ const [mode, setMode] = useState<'painting' | 'card' | 'preview'>('card');
 
 const [animatedCells, setAnimatedCells] = useState<Set<string>>(new Set());
 const [showToolbar, setShowToolbar] = useState(false);
+const [isImageToolbar, setIsImageToolbar] = useState(false);
 const [brushColor, setBrushColor] = useState('#ff0000');
 const [brushSize, setBrushSize] = useState(5);
 const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -116,6 +133,13 @@ const [snapshotArchive, setSnapshotArchive] = useState<SnapshotEntry[]>([]);
 const [lastSavedTemplate, setLastSavedTemplate] = useState<DualTemplate | null>(null);
 const [showBleeds, setShowBleeds] = useState(true);
 const [bleedToggleDisabled, setBleedToggleDisabled] = useState(false);
+const [showExportModal, setShowExportModal]=useState(false)
+const [cropModeActive, setCropModeActive]=useState(false)
+
+const toolbarRef = useRef<HTMLDivElement>(null);
+const imagebarRef = useRef<HTMLDivElement>(null);
+
+
 
 const [snapshots, setSnapshots] = useState<{ front: string | null; back: string | null }>({
   front: null,
@@ -153,12 +177,81 @@ const cardY = (stageSize.height - (card?.height ?? 0)) / 2;
 const canvasWidth = stageSize.width;
 const canvasHeight = stageSize.height;
 
-const canvasBounds = {
-  x: cardX,
-  y: cardY,
-  width: card?.width ?? 0,
-  height: card?.height ?? 0,
-};
+const canvasBounds = useMemo(() => ({
+    x: cardX ?? 0,
+    y: cardY ?? 0,
+    width: card?.width ?? 0,
+    height: card?.height ?? 0,
+  }), [cardX, cardY, card?.width]);
+
+
+
+const [cropRegion, setCropRegion] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+
+
+
+const {
+    transformModeActive,
+    activateTransformMode,
+    resetTransformMode,
+  } = useTransformMode();
+
+const setTransformModeActive =(bool:boolean)=>
+    {
+        activateTransformMode(selectedImageId ?? '', 'image')
+    }
+  
+
+
+const onTextChange = (text: string) => {
+    setEditingText(text); // ← this is the missing piece
+  
+    if (!selectedTextId || !template || !template[side]) return;
+  
+    const updatedElements = template[side].elements.map(el =>
+      el.id === selectedTextId ? { ...el, label: text } : el
+    );
+  
+    setTemplate(prev => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: updatedElements
+      }
+    }));
+  };
+  
+  
+
+
+
+const handleRemoveText = () => {
+
+    console.log("handleRemoveText", "selectedTextId",  selectedTextId, "template",  template, "template[side]", template?[side]:'')
+    if (!selectedTextId || !template || !template[side]) return;
+  
+    const updatedElements = template[side].elements.filter(el => el.id !== selectedTextId);
+  
+    setTemplate(prev => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: updatedElements
+      }
+    }));
+  
+    setSelectedTextId(null);
+    setShowToolbar(false);
+    setInputPosition(null);
+  };
+  
+
+
 
 const createTextId = (side: 'front' | 'back', elements: TemplateElement[]) => {
   const count = elements.filter(el => el.type === 'text').length;
@@ -167,6 +260,8 @@ const createTextId = (side: 'front' | 'back', elements: TemplateElement[]) => {
 
 const handleAddText = () => {
   if (!template || !template[side]) return;
+
+  recordSnapshot();
 
   const newId = createTextId(side, template[side].elements);
   console.log("newId", newId);
@@ -269,6 +364,83 @@ const handleTextEdit = (
   // setShowToolbar(true);
 };
 
+
+const handleOnUploadImage = (src: string, role: 'background' | 'element') => {
+    if (!template || !template[side]) return;
+  
+    recordSnapshot();
+  
+    // Snapshot current state before mutation
+    setHistory(prev => [
+      ...prev,
+      {
+        mode,
+        cardState: {
+          width: card?.width ?? 0,
+          height: card?.height ?? 0,
+          background: card?.background ?? '',
+          backgroundImage: card?.backgroundImage ?? '',
+          gridColors: card?.gridColors ?? [],
+          elements: [...(template[side]?.elements ?? [])],
+        },
+      },
+    ]);
+  
+    if (role === 'background') {
+      // Apply background image mutation
+      setTemplate(prev => {
+        if (!prev || !prev[side]) return prev;
+        return {
+          ...prev,
+          [side]: {
+            ...prev[side],
+            card: {
+              ...prev[side].card,
+              backgroundImage: src,
+            },
+            elements: [...(prev[side].elements ?? [])],
+          },
+        };
+      });
+      return;
+    }
+  
+    // For 'element' role, load image to preserve aspect ratio
+    const img = new window.Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const baseWidth = 200;
+      const newElement: TemplateElement = {
+        type: 'image',
+        id: `img-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+        src,
+        position: { x: 100, y: 100 },
+        size: {
+          width: baseWidth,
+          height: baseWidth / aspectRatio,
+        },
+        tone,
+      };
+  
+      setTemplate(prev => {
+        if (!prev || !prev[side]) return prev;
+        return {
+          ...prev,
+          [side]: {
+            ...prev[side],
+            card: {
+              ...prev[side].card,
+            },
+            elements: [...(prev[side].elements ?? []), newElement],
+          },
+        };
+      });
+    };
+    img.src = src;
+  };
+  
+  
+
 const handleOnUploadBackground = (src: string) => {
   setTemplate(prev => {
     if (!prev || !prev[side]) return prev;
@@ -287,6 +459,30 @@ const handleOnUploadBackground = (src: string) => {
   });
 };
 
+
+
+
+
+const handlePrint = () => {
+    setPrepareForPrint(true);
+    printSnapshots(snapshots); // { front, back }
+  };
+
+
+
+
+  const _recordSnapshot = () => {
+    const snapshot = captureCardFaceSnapshot({
+      stageRef,
+      bounds: canvasBounds,
+      pixelRatio: 2,
+    });
+  
+    // Optionally store or push to history
+    //snapshotHistory.push(snapshot); // or setSnapshots({ front: snapshot, back: snapshot })
+  };
+  
+  
 
 
 const captureBothSides = async () => {
@@ -413,14 +609,52 @@ const captureBothSides = async () => {
     setHistory(prev => [...prev, { mode, cardState }]);
     setFuture([]);
   };
+
+
+
+  const recordSnapshot = () => {
+    if (!template || !template[side]) return;
+  
+    setHistory(prev => [
+      ...prev,
+      {
+        mode,
+        cardState: {
+          width: card?.width ?? 0,
+          height: card?.height ?? 0,
+          background: card?.background ?? '',
+          backgroundImage: card?.backgroundImage ?? '',
+          gridColors: card?.gridColors ?? [],
+          elements: [...(template[side]?.elements ?? [])], // capture current elements
+        },
+      },
+    ]);
+  };
+  
+
+
+
+
   
   const handleUndo = () => {
+
+    console.log("history.length", history.length, "template", template)
     if (history.length === 0 || !template) return;
   
     const previous = history[history.length - 1];
   
+    // Prevent recording a redundant state if nothing changed
+    const isSameState =
+      JSON.stringify(elements) === JSON.stringify(previous.cardState.elements) &&
+      card?.backgroundImage === previous.cardState.backgroundImage &&
+      card?.background === previous.cardState.background;
+  
+    if (isSameState) return;
+  
+    // Remove last entry from history
     setHistory(prev => prev.slice(0, -1));
   
+    // Push current state into future for redo
     setFuture(prev => [
       {
         mode,
@@ -430,18 +664,25 @@ const captureBothSides = async () => {
           background: card?.background ?? previous.cardState.background,
           backgroundImage: card?.backgroundImage ?? previous.cardState.backgroundImage,
           gridColors: card?.gridColors ?? previous.cardState.gridColors,
-          elements: elements
-        }
+          elements: elements, // current elements BEFORE undo
+        },
       },
-      ...prev
+      ...prev,
     ]);
   
+    // Apply previous state
     setTemplate(prev => ({
       ...prev!,
       [side]: {
-        card: { ...previous.cardState },
-        elements: previous.cardState.elements
-      }
+        card: {
+          width: previous.cardState.width,
+          height: previous.cardState.height,
+          background: previous.cardState.background,
+          backgroundImage: previous.cardState.backgroundImage,
+          gridColors: previous.cardState.gridColors,
+        },
+        elements: previous.cardState.elements,
+      },
     }));
   
     setMode(previous.mode);
@@ -452,33 +693,51 @@ const captureBothSides = async () => {
   
     const nextEntry = future[0];
   
+    // Prevent recording a redundant state if nothing changed
+    const isSameState =
+      JSON.stringify(elements) === JSON.stringify(nextEntry.cardState.elements) &&
+      card?.backgroundImage === nextEntry.cardState.backgroundImage &&
+      card?.background === nextEntry.cardState.background;
+  
+    if (isSameState) return;
+  
+    // Remove first entry from future
     setFuture(prev => prev.slice(1));
   
+    // Push current state into history for undo
     setHistory(prev => [
       ...prev,
       {
         mode,
         cardState: {
-          width: card?.width ?? nextEntry.cardState.width,
-          height: card?.height ?? nextEntry.cardState.height,
-          background: card?.background ?? nextEntry.cardState.background,
-          backgroundImage: card?.backgroundImage ?? nextEntry.cardState.backgroundImage,
-          gridColors: card?.gridColors ?? nextEntry.cardState.gridColors,
-          elements: elements
-        }
-      }
+          width: card?.width ?? 0,
+          height: card?.height ?? 0,
+          background: card?.background ?? '',
+          backgroundImage: card?.backgroundImage ?? '',
+          gridColors: card?.gridColors ?? [],
+          elements, // current elements BEFORE redo
+        },
+      },
     ]);
   
+    // Apply next state
     setTemplate(prev => ({
       ...prev!,
       [side]: {
-        card: { ...nextEntry.cardState },
-        elements: nextEntry.cardState.elements
-      }
+        card: {
+          width: nextEntry.cardState.width,
+          height: nextEntry.cardState.height,
+          background: nextEntry.cardState.background,
+          backgroundImage: nextEntry.cardState.backgroundImage,
+          gridColors: nextEntry.cardState.gridColors,
+        },
+        elements: nextEntry.cardState.elements,
+      },
     }));
   
     setMode(nextEntry.mode);
   };
+  
   
   const handleSaveCard = async () => {
     if (!template || !template.front || !template.front.card) {
@@ -646,6 +905,9 @@ const captureBothSides = async () => {
     setInputPosition(pos);
     setSelectedTextId(id); // migrated
     setShowToolbar(true);
+
+    activateTransformMode(selectedTextId ?? '','text');
+    
     console.log("🖋️ Text selected with ID:", id, "label:", text);
   };
   
@@ -815,6 +1077,29 @@ const captureBothSides = async () => {
     setPrepareForPrint(false);
   };
 
+
+
+  const setModeActive=(bool:boolean)=>
+    {
+        setCropModeActive(bool)
+    }
+
+
+
+
+
+
+  useEffect(() => {
+    if (!selectedTextId || !template || !template[side]) return;
+  
+    const selectedElement = template[side].elements.find(el => el.id === selectedTextId);
+  
+    if (selectedElement && selectedElement.type === 'text') {
+      setEditingText(selectedElement.label);
+    }
+  }, [selectedTextId, template, side]);
+  
+
   
     useEffect(() => {
       if (prepareForPrint) {
@@ -857,21 +1142,23 @@ const captureBothSides = async () => {
   
     useEffect(() => {
       const handleGlobalClick = (e: MouseEvent) => {
-        const toolbarEl = document.getElementById('text-toolbar');
-        const clickedInsideToolbar = toolbarEl?.contains(e.target as Node);
+        
+        const clickedInsideToolbar = toolbarRef.current?.contains(e.target as Node);
+        
+      
   
-        console.log("handleGlobalClick called", clickedInsideToolbar)
+        console.log("handleGlobalClick called", e.target, clickedInsideToolbar)
     
         if (clickedInsideToolbar) {
-          setShowToolbar(true)
-          return; // ✅ Forgive toolbar interactions
-        }
+            return; // clicked inside toolbar, do nothing
+          }
     
         // Otherwise, deselect
-        //setSelectedTextIndex(null);
-        //setShowToolbar(false);
-        //setEditingText('');
-        //setInputPosition(null);
+        setSelectedTextId(null);
+        setShowToolbar(false);
+        setEditingText('');
+        setInputPosition(null);
+        //setTransformModeActive(false)
       };
     
       document.addEventListener('mousedown', handleGlobalClick);
@@ -1001,6 +1288,40 @@ const captureBothSides = async () => {
     }, [template, side]);
   
   
+
+
+    useEffect(() => {
+        if (!cropModeActive || !selectedImageId || !template || !template[side]) return;
+      
+        const element = template[side].elements.find(
+          el => el.id === selectedImageId && el.type === 'image'
+        );
+      
+        if (element && !isTextElement(element)) {
+          const localX = element.position.x;
+          const localY = element.position.y;
+          const width = element.size.width;
+          const height = element.size.height;
+      
+          const translatedX = canvasBounds.x + localX;
+          const translatedY = canvasBounds.y + localY;
+      
+          console.log('[Crop Init]', {
+            id: selectedImageId,
+            local: { x: localX, y: localY },
+            translated: { x: translatedX, y: translatedY },
+            size: { width, height },
+          });
+      
+          setCropRegion({
+            x: translatedX,
+            y: translatedY,
+            width,
+            height,
+          });
+        }
+      }, [cropModeActive, selectedImageId, template, canvasBounds]);
+      
   
   
     if (!template) {
@@ -1029,12 +1350,15 @@ const captureBothSides = async () => {
       };
       
       const handleTextBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+
+    
         const toolbarEl = document.getElementById('text-toolbar');
         const relatedTarget = e.relatedTarget as HTMLElement;
       
-        if (toolbarEl && relatedTarget && toolbarEl.contains(relatedTarget)) {
-          return; // Don't commit if blur was caused by toolbar interaction
+        if (!relatedTarget || (toolbarEl && toolbarEl.contains(relatedTarget))) {
+            return;
         }
+          
       
         if (selectedTextId && template?.[side]?.elements) {
           const updatedElements = template[side].elements.map(el =>
@@ -1054,7 +1378,7 @@ const captureBothSides = async () => {
           console.log('📝 Text committed:', editingText);
         }
       
-        exitEditingMode?.(); // Gracefully exit after commit
+       //exitEditingMode?.(); // Gracefully exit after commit
       };
 
       if (!template || !card || !elements) {
@@ -1079,7 +1403,7 @@ const captureBothSides = async () => {
         >
     
     <ToneButtonGroup tone={template.tone as "primary" | "accent" | "ceremonial" | "neutral" }>
-      <ToneButtonSection label="Navigation & Mode" initiallyOpen={true}>
+      <ToneButtonSection label="Navigation & Mode" initiallyOpen={false}>
         {/* Back, Mode Toggle, Flip */}
         <ToneButton fontSize="text-sm" icon={<ArrowLeft size={18} />} label="Back" tone={template.tone} 
         isActive={false} onClick={() => setTemplate(null)} 
@@ -1096,7 +1420,7 @@ const captureBothSides = async () => {
     
       </ToneButtonSection>
     
-      <ToneButtonSection label="Actions">
+      <ToneButtonSection label="Actions" initiallyOpen={false}>
         {/* Undo, Redo, Save, Snapshot, Print */}
     
        <ToneButton fontSize="text-sm" icon={<Undo size={18} />} label="Undo" tone={template.tone} isActive={false} onClick={handleUndo} />
@@ -1104,8 +1428,7 @@ const captureBothSides = async () => {
        <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Save" tone={template.tone} isActive={false} onClick={handleSaveCard} />
         <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Snapshot" tone={template.tone} isActive={false} onClick={captureBothSides} />
     
-       <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Print" tone={template.tone} isActive={false} onClick={() => setPrepareForPrint(true)} />
-     
+       
       </ToneButtonSection>
     
       <ToneButtonSection label="Canvas Tools" initiallyOpen={true}>
@@ -1119,10 +1442,33 @@ const captureBothSides = async () => {
           isActive={false}
           onClick={handleAddText}
         />
-         <AddBackgroundButton
-      tone={template.tone}
-      onUpload={handleOnUploadBackground}
-    />
+
+
+         <AddImageButton
+          tone={template.tone}
+          onUpload={handleOnUploadImage}
+         />
+
+
+<ToneButton
+  fontSize="text-sm"
+  icon={<XIcon size={18} />}
+  label="Remove Text"
+  tone={template.tone}
+  isActive={!!selectedTextId} // ✅ active only if something is selected
+  onClick={selectedTextId ? handleRemoveText : () => {}} // ✅ disables click if nothing is selected
+/>
+
+
+       <ToneButton
+          fontSize="text-sm"
+          icon={<Type size={18} />}
+          label="Resize Image"
+          tone={template.tone}
+          isActive={false}
+          onClick={() => activateTransformMode(selectedImageId ?? '', 'image')}
+
+        />
     
         <IconButton icon={<ZoomIn size={20} />} tone={template.tone} onClick={() => handleZoom(1.1)} />
         <IconButton icon={<ZoomOut size={20} />} tone={template.tone} onClick={() => handleZoom(0.9)} />
@@ -1196,48 +1542,55 @@ const captureBothSides = async () => {
               transition: 'opacity 0.3s ease-in-out'
             }}
             onClick={(e) => {
-    
-                console.log("clickedInsideToolbar,,,,,")
+                const toolbarEl = document.getElementById('text-toolbar');
+                const { clientX, clientY } = e.evt;
+                const domTarget = document.elementFromPoint(clientX, clientY);
+                const clickedInsideToolbar = toolbarEl?.contains(domTarget);
+              
+                console.log("clickedInsideToolbar: stage Event", clickedInsideToolbar);
+              
+                if (clickedInsideToolbar) return; // ✅ Exit early
+              
                 const clickedNode = e.target;
                 const isImage = clickedNode.getClassName?.() === 'Image';
                 const isTransformer = clickedNode.getClassName?.() === 'Transformer';
                 const isStage = clickedNode === e.target.getStage();
-            
-                const toolbarEl = document.getElementById('text-toolbar');
-                const { clientX, clientY } = e.evt;
-    
-               const domTarget = document.elementFromPoint(clientX, clientY);
-               const clickedInsideToolbar = toolbarEl?.contains(domTarget);
-               if (clickedInsideToolbar) return; // ✅ Forgive toolbar clicks
 
-               if (!isImage && !isTransformer) setSelectedImageId(null);
-               
-               // ✅ Commit pending styles before deselecting
-               if ((isStage || isImage) && selectedTextId) {
-                 if (!template || !template[side] || !template[side].elements) return;
-               
-                 const updatedElements = template[side].elements.map(el =>
-                   el.id === selectedTextId && el.type === 'text'
-                     ? { ...el, ...pendingStyle }
-                     : el
-                 );
-               
-                 setTemplate(prev => ({
-                   ...prev!,
-                   [side]: {
-                     ...prev![side],
-                     elements: updatedElements
-                   }
-                 }));
-               
-                 setPendingStyle({});
-               }
-               
-               if (isStage || isImage) {
-                 setSelectedTextId(null); // migrated
-                 setShowToolbar(false);
-                 setInputPosition(null);
-               }}}
+                console.log("isImage", isImage)
+              
+                if (!isImage && !isTransformer) {
+                    setSelectedImageId(null);
+                    resetTransformMode(); // ← graceful exit from resize mode
+                  }
+                  
+              
+                if ((isStage || isImage) && selectedTextId) {
+                  if (!template || !template[side] || !template[side].elements) return;
+              
+                  const updatedElements = template[side].elements.map(el =>
+                    el.id === selectedTextId && el.type === 'text'
+                      ? { ...el, ...pendingStyle }
+                      : el
+                  );
+              
+                  setTemplate(prev => ({
+                    ...prev!,
+                    [side]: {
+                      ...prev![side],
+                      elements: updatedElements
+                    }
+                  }));
+              
+                  setPendingStyle({});
+                }
+              
+                if (isStage || isImage) {
+                  setSelectedTextId(null);
+                  setShowToolbar(true);
+                  setInputPosition(null);
+                }
+              }}
+              
             >
 
 
@@ -1258,10 +1611,12 @@ const captureBothSides = async () => {
     card={template[side].card}
     elements={template[side].elements}
     side={side}
+    editingText={editingText}
     templateId={template.id}
     tone={template.tone}
     selectedImageId={selectedImageId}
     selectedTextId={selectedTextId} // ✅ migrated
+    transformModeActive={transformModeActive}
     cardX={cardX}
     cardY={cardY}
     position={position}
@@ -1289,6 +1644,24 @@ const captureBothSides = async () => {
     }}
   />
 )}
+
+
+
+<Layer>
+
+<PrintGuidesOverlay
+  cardX={cardX}
+  cardY={cardY}
+  cardWidth={card.width}
+  cardHeight={card.height}
+  bleed={36}
+  safeZone={24}
+  visible={showBleeds}
+/>
+
+</Layer>
+
+
 <Layer>
   {ghostLines.x !== undefined && (
     <Line
@@ -1338,8 +1711,19 @@ const captureBothSides = async () => {
   
   
 </Layer>
+<Layer>
 
+{cropModeActive && selectedImageId && (
+  <CropBoxOverlay
+    cropRegion={cropRegion}
+    onUpdate={setCropRegion}
+    isLocked={true} // optional toggle
+   
 
+  />
+)}
+
+</Layer>
 
 
  
@@ -1348,80 +1732,104 @@ const captureBothSides = async () => {
 
 
 {snapshots.front && snapshots.back && showGallery && (
-    
   <div className="fixed inset-0 bg-white z-50 overflow-auto p-8">
-    <SnapshotGallery snapshots={snapshots} tone={template.tone} card={card}/>
-
+    <SnapshotGallery snapshots={snapshots} tone={template.tone} card={card} />
 
     <div
-        style={{
-          position: 'relative',
-          top: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          display: 'flex',
-          gap: '0.5rem',
-          padding:"10px",
-          
-          
-        }}
-      >
-     <ToneButton
-  icon={<XIcon size={18} />}
-  fontSize='text-sm'
-  label="Close"
-  tone={template.tone as "primary" | "accent" | "ceremonial" | "neutral"}
-  isActive={false}
-  onClick={showDesignView}
+      style={{
+        position: 'relative',
+        top: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+        display: 'flex',
+        gap: '0.5rem',
+        padding: '10px',
+      }}
+    >
+      <ToneButton
+        icon={<XIcon size={18} />}
+        fontSize="text-sm"
+        label="Close"
+        tone={template.tone as 'primary' | 'accent' | 'ceremonial' | 'neutral'}
+        isActive={false}
+        onClick={showDesignView}
+      />
 
-/>
+      <ToneButton
+        icon={<CreditCard size={18} />}
+        fontSize="text-sm"
+        label="Save to Archive"
+        tone={template.tone as 'primary' | 'accent' | 'ceremonial' | 'neutral'}
+        isActive={false}
+        onClick={handleSaveToArchive}
+      />
 
-<ToneButton
-fontSize='text-sm'
-  icon={<CreditCard size={18} />}
-  label="Save to Archive"
-  tone={template.tone as "primary" | "accent" | "ceremonial" | "neutral"}
-  isActive={false}
-  onClick={handleSaveToArchive}
-/>
-      </div>
+        <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Print" 
+         tone={template.tone} isActive={false} onClick={handlePrint} />
 
-  
-
-
-   
-
-
-
+         <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Export" 
+         tone={template.tone} isActive={false} onClick={() => setShowExportModal(true)}/>
+    
+    </div>
   </div>
 )}
 
 
-{showToolbar && inputPosition && mode === 'card' && (
-
-       
-
-<TextToolbar
-  selectedFont={selectedFont}
-  onFontChange={onFontChange}
-  selectedColor={selectedColor}
-  onColorChange={onColorChange}
-  onFontSizeChange={onFontSizeChange}
-  selectedFontSize={selectedFontSize}
-  isBold={isBold}
-  isItalic={isItalic}
-  onToggleBold={handleToggleBold}
-  onToggleItalic={handleToggleItalic}
-  editingText={editingText}
-  onTextChange={setEditingText}
-  onTextBlur={handleTextBlur}
-  position={inputPosition}
-  canvasWidth={canvasWidth}
-  canvasHeight={canvasHeight}
-  exitEditingMode={exitEditingMode}
-/>
+{showExportModal && (
+  <ExportRitualModal
+    snapshots={snapshots}
+    tone={template.tone as "minimal" | "reflective" | "warm" | "playful"}
+    onClose={() => setShowExportModal(false)}
+  />
 )}
+
+{showToolbar && inputPosition && mode === 'card' && (
+  <div ref={toolbarRef} id="text-toolbar">
+    <TextToolbar
+      selectedFont={selectedFont}
+      onFontChange={onFontChange}
+      selectedColor={selectedColor}
+      onColorChange={onColorChange}
+      onFontSizeChange={onFontSizeChange}
+      selectedFontSize={selectedFontSize}
+      isBold={isBold}
+      isItalic={isItalic}
+      onToggleBold={handleToggleBold}
+      onToggleItalic={handleToggleItalic}
+      editingText={editingText}
+      onTextChange={onTextChange}
+      onTextBlur={handleTextBlur}
+      onAddText={handleAddText}
+      onRemoveText={handleRemoveText}
+      tone={template.tone}
+      exitEditingMode={exitEditingMode}
+    />
+  </div>
+  
+)}
+{selectedImageId && mode === 'card' && (
+  <div ref={imagebarRef} id="image-toolbar">
+    <ImageToolbar
+      selectedElementId={selectedImageId}
+      handleOnUploadImage={handleOnUploadImage}
+      tone={template.tone}
+      setTemplate={setTemplate}
+      side={side}
+      recordSnapshot={_recordSnapshot}
+      setTransformModeActive={setTransformModeActive}
+      setCropMode={setModeActive}
+      onToggleCropMode={setModeActive}
+    />
+  </div>
+)}
+
+
+
+
+
+
+
 
 </div>
 

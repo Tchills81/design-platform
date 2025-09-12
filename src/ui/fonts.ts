@@ -1,5 +1,11 @@
 // ui/fonts.ts
-import { Inter, Roboto_Mono, Open_Sans, Playfair_Display } from 'next/font/google';
+import {
+  Inter,
+  Roboto_Mono,
+  Open_Sans,
+  Playfair_Display,
+  Montserrat,
+} from 'next/font/google';
 
 export const inter = Inter({
   subsets: ['latin'],
@@ -25,30 +31,43 @@ export const playfair = Playfair_Display({
   display: 'swap',
 });
 
+export const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
+
+
+
 export const allFonts = [
   {
     name: 'Inter',
-    className: '--font-inter', // Tailwind or CSS variable class
-    key: 'inter',              // Logical key for dropdown and canvas
-    family: 'Inter'            // Actual font name for Konva
+    className: '--font-inter',
+    key: 'inter',
+    family: 'Inter',
   },
   {
     name: 'Roboto Mono',
     className: '--font-roboto-mono',
     key: 'robotoMono',
-    family: 'Roboto Mono'
+    family: 'Roboto Mono',
   },
   {
     name: 'Open Sans',
     className: '--font-open-sans',
     key: 'openSans',
-    family: 'Open Sans'
+    family: 'Open Sans',
   },
   {
     name: 'Playfair Display',
     className: '--font-playfair',
     key: 'playfair',
-    family: 'Playfair Display'
+    family: 'Playfair Display',
+  },
+  {
+    name: 'Montserrat',
+    className: '--font-montserrat',
+    key: 'montserrat',
+    family: 'Montserrat',
   }
 ];
-

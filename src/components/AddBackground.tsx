@@ -33,7 +33,7 @@ export const AddBackgroundButton: React.FC<AddBackgroundButtonProps> = ({
       <ToneButton
         fontSize={fontSize}
         icon={<ImagePlus size={18} />}
-        label="Add Background"
+        label="Add  Image"
         tone={tone}
         isActive={false}
         onClick={() => inputRef.current?.click()}

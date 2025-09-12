@@ -8,6 +8,7 @@ interface ToneButtonProps {
   title?: string; // Tooltip text
   isActive: boolean | null;
   fontSize: string;
+  disabled?:boolean;
 }
 
 const toneFocusClasses: Record<string, string> = {
@@ -29,7 +30,12 @@ const toneActiveClasses: Record<string, string> = {
   reflective: 'bg-blue-500 text-white shadow-md',
   minimal: 'bg-gray-500 text-white shadow-md',
   neutral: 'bg-gray-600 text-white shadow-md',
+  green: 'bg-green-500 text-white shadow-md',
+  danger: 'bg-red-500 text-white shadow-md',
+  calm: 'bg-teal-500 text-white shadow-md',
+  bold: 'bg-purple-600 text-white shadow-md'
 };
+
 
 export const ToneButton: React.FC<ToneButtonProps> = ({
   label,
@@ -38,6 +44,7 @@ export const ToneButton: React.FC<ToneButtonProps> = ({
   onClick,
   title,
   isActive,
+  disabled,
   fontSize = "text-sm"
 }) => {
   const toneClass = isActive ? toneActiveClasses[tone] : toneClasses[tone];
@@ -48,7 +55,9 @@ export const ToneButton: React.FC<ToneButtonProps> = ({
     <button
       onClick={onClick}
       title={title ?? label}
-      className={`flex items-center gap-2 px-3 py-1.5 ${fontSizeClass} font-medium rounded-md transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 animate-fadeIn pulseSave ${toneClass} ${focusClass}`}
+      className={`flex items-center gap-2 px-3 py-1.5 ${fontSizeClass} 
+      font-medium rounded-md transition duration-200 ease-in-out focus:outline-none 
+      focus:ring-2 focus:ring-offset-2 animate-fadeIn pulseSave ${toneClass} ${focusClass}`}
     >
       {icon}
       <span>{label}</span>

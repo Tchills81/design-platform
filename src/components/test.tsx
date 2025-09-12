@@ -113,7 +113,8 @@ const KonvaCanvas = () => {
 
   const [lastSavedTemplate, setLastSavedTemplate] = useState<DualTemplate | null>(null);
 
-  const [showBleeds, setShowBleeds] = useState(true);
+  const [showBleeds, setShowBleeds] = useState(true)
+  const [transformModeActive, setTransformModeActive]=useState(false)
   const [bleedToggleDisabled, setBleedToggleDisabled] = useState(false);
   
 
@@ -318,7 +319,9 @@ const handleTextUpdate=(updated:TemplateElement)=>{
     //setShowToolbar(true);
   };
 
- 
+
+
+  
 
 
   const handleOnUploadBackground = (src: string) => {
@@ -1289,6 +1292,15 @@ const handleSaveToArchive = () => {
   onUpload={handleOnUploadBackground}
 />
 
+    <ToneButton
+      fontSize="text-sm"
+      icon={<Type size={18} />}
+      label="Resize Image"
+      tone={template.tone}
+      isActive={false}
+      onClick={() => setTransformModeActive(true)}
+    />
+
     <IconButton icon={<ZoomIn size={20} />} tone={template.tone} onClick={() => handleZoom(1.1)} />
     <IconButton icon={<ZoomOut size={20} />} tone={template.tone} onClick={() => handleZoom(0.9)} />
     <ToggleCheckbox label="Show Rulers" checked={showRulers} onToggle={() => setShowRulers((prev) => !prev)} tone={template.tone} />
@@ -1434,6 +1446,7 @@ const handleSaveToArchive = () => {
     templateId={template.id}
     tone={template.tone}
     selectedImageId={selectedImageId}
+    showTransformer={transformModeActive}
     selectedTextIndex={selectedTextIndex}
     cardX={cardX}
     cardY={cardY}

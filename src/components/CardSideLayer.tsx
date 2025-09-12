@@ -36,6 +36,10 @@ interface CardSideLayerProps {
   mode: CanvasMode;
   brushColor: string;
   bgImage?: HTMLImageElement;
+  selectedElement?:boolean;
+  editingText?:string
+  transformModeActive?:boolean
+
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   handlers: {
     onPaint?: (col: number, row: number) => void;
@@ -71,6 +75,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   tone,
   selectedImageId,
   selectedTextId, // ✅ migrated
+  editingText,
   cardX,
   cardY,
   position,
@@ -79,10 +84,12 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   stageRef,
   zoom,
   mode,
+  selectedElement,
   brushColor,
   bgImage,
   handlers,
-  setTemplate
+  setTemplate,
+  transformModeActive
 }) => {
   const cardBounds = {
     x: cardX,
@@ -132,8 +139,10 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
               y: cardY + el.position.y
             }}
             size={el.size}
+            zoom={zoom}
             tone={tone}
             isSelected={selectedImageId === el.id}
+            showTransformer={transformModeActive}
             containerRef={containerRef}
             stageRef={stageRef}
             canvasBounds={cardBounds}
@@ -174,6 +183,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   fontStyle={resolveFontStyle(el.isBold, el.isItalic)}
                   fontWeight={el.isBold ? 'bold' : 'normal'}
                   size={el.size}
+                  selected={el.id === selectedTextId}
                   color={el.color}
                   cardBounds={cardBounds}
                   setGhostLines={handlers.setGhostLines}

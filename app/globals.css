@@ -120,6 +120,23 @@
   color: #374151; /* gray-700 */
 }
 
+.text-tone-green {
+  color: #10B981;
+}
+
+.text-tone-danger {
+  color: #EF4444;
+}
+
+.text-tone-calm {
+  color: #14B8A6;
+}
+
+.text-tone-bold {
+  color: #8B5CF6;
+}
+
+
 
 
 :root {

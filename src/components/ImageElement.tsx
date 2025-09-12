@@ -2,15 +2,21 @@ import React, { useRef, useEffect } from 'react';
 import { Image, Transformer } from 'react-konva';
 import useImage from 'use-image';
 import { KonvaEventObject } from 'konva/lib/Node';
-
+import { Rect } from 'react-konva';
+import SelectionFrame from './SelectionFrame';
+import Konva from 'konva';
 interface ImageElementProps {
   id: string;
   templateId: string;
   src: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
+  zoom:number;
   tone?: string;
   isSelected: boolean;
+  showTransformer?: boolean;
+  transformModeActive?:boolean;
+  selectedImageId?:string;
   containerRef: React.RefObject<HTMLDivElement | null>;
   stageRef: React.RefObject<any>;
   canvasBounds: { x: number; y: number; width: number; height: number };
@@ -24,26 +30,31 @@ const ImageElement: React.FC<ImageElementProps> = ({
   src,
   position,
   size,
+  zoom,
   isSelected,
   containerRef,
   stageRef,
   canvasBounds,
   onSelect,
   handleImageUpdate,
-  setGhostLines
+  setGhostLines,
+  showTransformer = false,
+  transformModeActive,
+  selectedImageId,
 }) => {
-  const imageRef = useRef<any>(null);
+  const imageRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<any>(null);
   const [image] = useImage(src);
   const padding = 2;
   const gridSpacing = 50;
 
   useEffect(() => {
-    if (isSelected && transformerRef.current && imageRef.current) {
+    if (isSelected && showTransformer && transformerRef.current && imageRef.current) {
       transformerRef.current.nodes([imageRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, showTransformer]);
+  
 
   const snapToGrid = (value: number, spacing = gridSpacing) =>
     Math.round(value / spacing) * spacing;
@@ -98,19 +109,28 @@ const ImageElement: React.FC<ImageElementProps> = ({
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
     const node = e.target;
     const box = canvasBounds;
-
-    const snappedX = snapToGrid(node.x());
-    const snappedY = snapToGrid(node.y());
-
-    const clampedX = Math.max(box.x + padding, Math.min(snappedX, box.x + box.width - node.width() - padding));
-    const clampedY = Math.max(box.y + padding, Math.min(snappedY, box.y + box.height - node.height() - padding));
-
+  
+    const imageWidth = node.width();
+    const imageHeight = node.height();
+  
+    const safeMargin = 24;
+  
+    const minX = box.x + safeMargin;
+    const maxX = box.x + box.width - safeMargin - imageWidth;
+    const minY = box.y + safeMargin;
+    const maxY = box.y + box.height - safeMargin - imageHeight;
+  
+    const rawX = node.x();
+    const rawY = node.y();
+  
+    const clampedX = Math.max(minX, Math.min(rawX, maxX));
+    const clampedY = Math.max(minY, Math.min(rawY, maxY));
+  
     node.position({ x: clampedX, y: clampedY });
     node.getLayer()?.batchDraw();
-
-    if(setGhostLines)
-      setGhostLines({});
-
+  
+    if (setGhostLines) setGhostLines({});
+  
     handleImageUpdate({
       target: {
         x: () => clampedX,
@@ -120,24 +140,41 @@ const ImageElement: React.FC<ImageElementProps> = ({
       }
     } as KonvaEventObject<Event>, id);
   };
+  
 
   return (
     <>
-      <Image
-        ref={imageRef}
-        image={image}
-        x={position.x}
-        y={position.y}
-        width={size.width}
-        height={size.height}
-        onClick={onSelect}
-        draggable
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
-      />
-      {isSelected && <Transformer ref={transformerRef} />}
-    </>
+    <SelectionFrame
+      x={position.x}
+      y={position.y}
+      width={size.width}
+      height={size.height}
+      selected={isSelected}
+    />
+
+  
+    <Image
+      ref={imageRef}
+      image={image}
+      x={position.x}
+      y={position.y}
+      width={size.width}
+      height={size.height}
+      onClick={onSelect}
+      draggable={zoom === 1}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onTransformEnd={handleTransformEnd}
+      cursor={isSelected ? 'move' : 'default'}
+      stroke={showTransformer && isSelected? '#00f0ff' : undefined}
+      strokeWidth={showTransformer ? 2 : 0}
+      shadowColor={showTransformer ? '#00f0ff' : undefined}
+      shadowBlur={showTransformer ? 10 : 0}
+/>
+  
+  {isSelected && showTransformer && <Transformer ref={transformerRef} />}
+  </>
+  
   );
 };
 
