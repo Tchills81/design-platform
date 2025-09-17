@@ -6,6 +6,7 @@ export type TemplateElement =
       position: { x: number; y: number };
       size: { width: number; height: number };
       tone: string;
+      role?: 'decoration' | 'logo' | 'background' | 'motif' | 'inside-decoration';
     }
   | {
       type: 'text';
@@ -19,18 +20,21 @@ export type TemplateElement =
       isItalic?: boolean;
       tone: string;
       text: string;
+      role?: 'greeting' | 'title' | 'message' | 'inside-message' | 'caption';
     };
 
 
+
+
 export interface Template {
-  id:string
+  id: string;
   tone: string;
   card: {
     width: number;
     height: number;
     background: string;
-    backgroundImage?: string; // ✅ Optional background image
-    gridColors?: string[]; // ✅ Add this line
+    backgroundImage?: string;
+    gridColors?: string[];
   };
   elements: TemplateElement[];
 }
@@ -38,10 +42,44 @@ export interface Template {
 
 export interface DualTemplate {
   id: string;
+  name: string;
+  author: string;
   tone: string;
-  name:string;
-  author:string;
-  thumbnailUrl:string,
+  size: number;
+  sizeLabel: string;
+  width: number;
+  height: number;
+  thumbnailUrl: string;
+
+  // 🆕 Classification
+  type?: 'gift-card' | 'business-card' | 'seasonal' | 'enterprise';
+  theme?: 'christmas' | 'new_year' | 'valentine' | 'generic';
+
+  // 🆕 Styling Tokens
+  tokens?: {
+    borderStyle?: 'ornate' | 'minimal' | 'dashed';
+    fontFamily?: string;
+    accentColor?: string;
+  };
+
+  // 🆕 Preview Mode
+  previewMode?: 'wrapped' | 'flat' | 'printable';
+
+  // 🆕 Audit Metadata & Expressive Payload
+  meta?: {
+    createdBy?: string;
+    lastEditedBy?: string;
+    approvedBy?: string;
+    locked?: boolean;
+
+    // 💌 Emotional Payload
+    insideMessage?: string;
+    sticker?: string;
+    motifType?: string;
+    gradientStyle?: string;
+  };
+
+  // 🧩 Faces
   front?: {
     card: {
       width: number;
@@ -49,9 +87,11 @@ export interface DualTemplate {
       background: string;
       backgroundImage?: string;
       gridColors?: string[];
+      cellSize?: number;
     };
     elements: TemplateElement[];
   };
+
   back?: {
     card: {
       width: number;
@@ -59,10 +99,25 @@ export interface DualTemplate {
       background: string;
       backgroundImage?: string;
       gridColors?: string[];
+      cellSize?: number;
+    };
+    elements: TemplateElement[];
+  };
+
+  inside?: {
+    card: {
+      width: number;
+      height: number;
+      background: string;
+      backgroundImage?: string;
+      gridColors?: string[];
+      cellSize?: number;
     };
     elements: TemplateElement[];
   };
 }
+
+
 
 
 export function isTextElement(el: TemplateElement): el is Extract<TemplateElement, { type: 'text' }> {

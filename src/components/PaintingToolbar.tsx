@@ -19,8 +19,8 @@ const PaintingToolbar: React.FC<PaintingToolbarProps> = ({
     <div
       style={{
         position: 'absolute',
-        top: 60,
-        left: 20,
+        bottom: '50%',
+        right: 20,
         zIndex: 10,
         background: 'white',
         padding: '0.5rem',

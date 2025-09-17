@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Stage, Layer, Rect, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
@@ -14,6 +11,7 @@ import TextToolbar from '../components/TextToolbar';
 import PaintingToolbar from '../components/PaintingToolbar';
 import { computeAverageColor } from '../utils/colorUtils';
 import { renderToCanvas } from '../utils/renderToCanvas';
+import { renderToCanvasInsideFaces } from '../utils/renderToCanvasInsideFaces';
 
 import { serializeDualTemplate } from '../utils/serializeDualTemplate';
 import { type DualTemplate } from '../types/template';
@@ -21,6 +19,9 @@ import { type DualTemplate } from '../types/template';
 import { normalizeDualTemplate } from '../utils/normalizeDualTemplate';
 
 import { ExportRitualModal } from './ExportRitualModal';
+
+
+import InsideEditorView from './InsideEditorView';
 
 
 import { type CardState } from '../types/CardState';
@@ -40,6 +41,8 @@ import { ToneButton } from './ToneButton';
 
 import ImageToolbar from './ImageToolbar';
 import { ImageTools } from '../utils/imageTools';
+import { DecorationPicker } from './DecorationPicker';
+import { BackgroundPicker } from './BackgroundPicker';
 
 
 import { printSnapshots } from './printSnapshots';
@@ -51,13 +54,14 @@ import {
     Save,
     Undo,
     Redo,
-    ToggleLeft,
+    EyeOff,
+    LayoutIcon,
     ArrowLeft,
     Brush,
     CreditCard,
     RotateCw,
     XIcon,
-    Type
+    Type,
   } from 'lucide-react';
 
 
@@ -81,6 +85,8 @@ import { ImageUpload } from './ImageUpload';
 import { AddImageButton } from './AddImageButton';
 import { CropBoxOverlay } from './CropBoxOverlay';
 import { useMemo } from 'react';
+import { DesignModeLabel } from './DesignModalLabel';
+import { CanvasMode } from '../types/CanvasMode';
 
 
 
@@ -106,7 +112,8 @@ const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: w
 const [selectedFont, setSelectedFont] = useState('--font-inter');
 const [selectedColor, setSelectedColor] = useState('#ff595e');
 const [selectedFontSize, setSelectedFontSize] = useState(8);
-const [mode, setMode] = useState<'painting' | 'card' | 'preview'>('card');
+const [mode, setMode] = useState<'painting' | 'card' | 'preview' | 'insideFace'>('card');
+const [faceMode, setFaceMode] = useState<'insideFront' | 'insideBack' | 'front' | 'back'>('front');
 
 const [animatedCells, setAnimatedCells] = useState<Set<string>>(new Set());
 const [showToolbar, setShowToolbar] = useState(false);
@@ -135,6 +142,19 @@ const [showBleeds, setShowBleeds] = useState(true);
 const [bleedToggleDisabled, setBleedToggleDisabled] = useState(false);
 const [showExportModal, setShowExportModal]=useState(false)
 const [cropModeActive, setCropModeActive]=useState(false)
+const [cellSize, setCellSize]=useState(20)
+const [viewMode, setViewMode] = useState<'default' | 'spread'>('default');
+const [insideMessage, setInsideMessage] = useState<string | null>(null);
+
+const [designInside, setDesignInside] = useState(false);
+const [designComplete, setDesignComplete] = useState(false);
+
+
+
+//const [imageRef, setImageRef] = useState<Konva.Image | null>(null);
+const imageRef = useRef<Konva.Image>(null);
+
+
 
 const toolbarRef = useRef<HTMLDivElement>(null);
 const imagebarRef = useRef<HTMLDivElement>(null);
@@ -168,8 +188,22 @@ const [bgImage] = useImage(card?.backgroundImage || '');
 const [frontImage] = useImage(template?.front?.card.backgroundImage || '');
 const [backImage] = useImage(template?.back?.card.backgroundImage || '');
 
-const cols = 10;
-const rows = 6;
+
+
+
+
+console.log("cellSize?/?","side", cellSize,"Tobias");
+
+const cols = Math.floor((card?.width ?? 0) / (cellSize ?? 1)) ;
+const rows = Math.floor((card?.height ?? 0) / (cellSize ?? 1));
+
+
+if (card?.gridColors?.length == cols * rows) {
+    console.warn(`Grid matched: expected.... ${cols * rows} colors, got ${card?.gridColors?.length}`);
+  }
+  
+
+
 const gridColors = card?.gridColors ?? [];
 const cardX = (stageSize.width - (card?.width ?? 0)) / 2;
 const cardY = (stageSize.height - (card?.height ?? 0)) / 2;
@@ -177,12 +211,23 @@ const cardY = (stageSize.height - (card?.height ?? 0)) / 2;
 const canvasWidth = stageSize.width;
 const canvasHeight = stageSize.height;
 
+
 const canvasBounds = useMemo(() => ({
     x: cardX ?? 0,
     y: cardY ?? 0,
     width: card?.width ?? 0,
     height: card?.height ?? 0,
   }), [cardX, cardY, card?.width]);
+
+
+
+const getCanvasOffset = (): { x: number; y: number } => {
+   
+   return {x:canvasBounds.x, y:canvasBounds.y}
+  };
+const offsetBounds=getCanvasOffset();
+
+console.log("offsetBounds", offsetBounds)
 
 
 
@@ -201,10 +246,84 @@ const {
     resetTransformMode,
   } = useTransformMode();
 
+
+
+
 const setTransformModeActive =(bool:boolean)=>
     {
         activateTransformMode(selectedImageId ?? '', 'image')
     }
+
+
+
+const updateImageRef =(ref: Konva.Image | null)=>
+  {
+    imageRef.current=ref;
+  }
+  
+
+  function handleDecorationSelection(el: TemplateElement) {
+    if (el.type !== 'image') return;
+  
+    const img = new Image();
+    img.src = el.src;
+  
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const baseWidth = 80;
+      const baseHeight = baseWidth / aspectRatio;
+  
+      const newElement: TemplateElement = {
+        ...el,
+        id: `decoration-${Date.now()}`,
+        position: { x: 100, y: 100 },
+        size: { width: baseWidth, height: baseHeight },
+        role: 'decoration'
+      };
+  
+      setTemplate((prev) => {
+        if (!prev || !prev.front) return prev;
+  
+        return {
+          ...prev,
+          front: {
+            ...prev.front,
+            elements: [...prev.front.elements, newElement]
+          }
+        };
+      });
+  
+      console.log('✨ Decoration added with aspect ratio:', aspectRatio);
+    };
+  }
+
+
+
+
+  function handleBackgroundSelection(el: TemplateElement) {
+    if (el.type !== 'image') return;
+  
+    setTemplate((prev) => {
+      if (!prev || !prev[side]) return prev;
+  
+      const updatedFace = {
+        ...prev[side]!,
+        card: {
+          ...prev[side]!.card,
+          backgroundImage: el.src
+        }
+      };
+  
+      return {
+        ...prev,
+        [side]: updatedFace
+      };
+    });
+  
+    console.log(`🖼️ Background updated for ${side}:`, el.src);
+  }
+  
+  
   
 
 
@@ -487,6 +606,14 @@ const handlePrint = () => {
 
 const captureBothSides = async () => {
     if (!stageRef.current) return;
+    
+
+    
+    setShowBleeds(false);
+    setShowRulers(false);
+
+    
+    setMode('insideFace')
   
     setSide('front');
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -507,6 +634,7 @@ const captureBothSides = async () => {
     setSide('front');
     setSnapshots({ front, back });
     setShowGallery(true);
+    setLastSavedTemplate(template);
   };
   
   const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -643,13 +771,14 @@ const captureBothSides = async () => {
   
     const previous = history[history.length - 1];
   
-    // Prevent recording a redundant state if nothing changed
     const isSameState =
-      JSON.stringify(elements) === JSON.stringify(previous.cardState.elements) &&
-      card?.backgroundImage === previous.cardState.backgroundImage &&
-      card?.background === previous.cardState.background;
+    JSON.stringify(elements) === JSON.stringify(previous.cardState.elements) &&
+    card?.backgroundImage === previous.cardState.backgroundImage &&
+    card?.background === previous.cardState.background &&
+    JSON.stringify(card?.gridColors) === JSON.stringify(previous.cardState.gridColors);
   
-    if (isSameState) return;
+  if (isSameState) return;
+  
   
     // Remove last entry from history
     setHistory(prev => prev.slice(0, -1));
@@ -697,7 +826,8 @@ const captureBothSides = async () => {
     const isSameState =
       JSON.stringify(elements) === JSON.stringify(nextEntry.cardState.elements) &&
       card?.backgroundImage === nextEntry.cardState.backgroundImage &&
-      card?.background === nextEntry.cardState.background;
+      card?.background === nextEntry.cardState.background&&
+      JSON.stringify(card?.gridColors) === JSON.stringify(nextEntry.cardState.gridColors);
   
     if (isSameState) return;
   
@@ -736,7 +866,10 @@ const captureBothSides = async () => {
     }));
   
     setMode(nextEntry.mode);
-  };
+  }
+
+
+  
   
   
   const handleSaveCard = async () => {
@@ -785,6 +918,7 @@ const captureBothSides = async () => {
       savedAt: new Date().toISOString(),
       thumbnailUrl: "/assets/logo.png",
       userId: "chilongatobias@gmail.com",
+      insideMessage:insideMessage,
       data: serialized
     };
   
@@ -969,8 +1103,12 @@ const captureBothSides = async () => {
   };
   
   const handleCellPaint = (col: number, row: number) => {
+
+    
     const index = row * cols + col;
     if (!template || !card || index < 0 || index >= cols * rows) return;
+
+    console.log("handleCellPaint recording", "row", row, "col", col);
   
     commitHistoryEntry();
   
@@ -1002,6 +1140,8 @@ const captureBothSides = async () => {
         return next;
       });
     }, 300);
+
+
   };
   
   const buttonStyle = {
@@ -1012,14 +1152,25 @@ const captureBothSides = async () => {
     cursor: 'pointer',
     fontSize: '0.9rem'
   };
+
+  const showCompleteDesign = ()=>{
+    console.log("showCompleteDesign: showing complete design")
+    setDesignInside(false);
+  }
   
   const showDesignView = () => {
+   
     console.log("showDesignView", lastSavedTemplate);
     handleTemplateSelect(lastSavedTemplate ?? undefined);
     setShowGallery(false);
+    setShowBleeds(true);
+    setShowRulers(true);
   };
   
   const handleTemplateSelect = (tpl?: DualTemplate) => {
+
+    
+
     if (!tpl) {
       console.warn('⚠️ No template provided to handleTemplateSelect');
       return;
@@ -1037,40 +1188,85 @@ const captureBothSides = async () => {
       setInputPosition(null);
       setHistory([]);
       setFuture([]);
+      setCellSize(normalized.front?.card.cellSize ?? cellSize)
+      setMode('card');
   
       renderToCanvas(normalized, setTemplate, setMode);
+      setShowBleeds(true)
+      setShowRulers(true);
+      setShowGallery(false);
     } catch (err) {
       console.error('🛑 Failed to parse and render template:', err);
     }
   };
   
-  const handleSaveToArchive = () => {
+  const handleSaveToArchive = (mode:CanvasMode='front') => {
     if (!snapshots.front || !snapshots.back || !template) return;
   
     const timestamp = new Date().toISOString();
-  
-    const entryFront: SnapshotEntry = {
-      image: snapshots.front,
-      side: 'front',
-      timestamp,
-      templateId: template.id,
-      tone: template.tone
-    };
-  
-    const entryBack: SnapshotEntry = {
-      image: snapshots.back,
-      side: 'back',
-      timestamp,
-      templateId: template.id,
-      tone: template.tone
-    };
-  
-    setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+
+    
+
+    if(mode=='insideFace'){
+
+
+        const entryFront: SnapshotEntry = {
+            image: snapshots.front,
+            side: 'front',
+            timestamp,
+            templateId: template.id,
+            tone: template.tone,
+            type:'insideFront',
+            template:template
+          };
+
+          const entryBack: SnapshotEntry = {
+            image: snapshots.back,
+            side: 'back',
+            timestamp,
+            templateId: template.id,
+            tone: template.tone,
+            type:'insideBack',
+            template:template
+          };
+        
+          setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+
+    }else
+    {
+        const entryFront: SnapshotEntry = {
+            image: snapshots.front,
+            side: 'front',
+            timestamp,
+            templateId: template.id,
+            tone: template.tone,
+            type:'front',
+            template:template
+          };
+
+          const entryBack: SnapshotEntry = {
+            image: snapshots.back,
+            side: 'back',
+            timestamp,
+            templateId: template.id,
+            tone: template.tone,
+            type:'back',
+            template:template
+          };
+
+
+          setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+    }
+
+    
+
     console.log('Design saved to archive ✨');
     setLastSavedTemplate(template);
     setTemplate(null);
   };
   
+
+
   const handleRestore = (entry: SnapshotEntry) => {
     setSide(entry.side);
     setTemplate(loadTemplateFromSnapshot(entry));
@@ -1083,6 +1279,42 @@ const captureBothSides = async () => {
     {
         setCropModeActive(bool)
     }
+
+
+    const handleRenderBlankTemplate = () => {
+        if (!lastSavedTemplate) return;
+      
+        // Deep clone the template
+        const blankTemplate: DualTemplate = JSON.parse(JSON.stringify(lastSavedTemplate));
+      
+        console.log("🧼 handleRenderBlankTemplate → cloned template:", blankTemplate);
+      
+        // Blank front and back faces
+        const gridLength = lastSavedTemplate.front?.card?.gridColors?.length ?? 60;
+      
+        if (blankTemplate.front?.card && blankTemplate.back?.card) {
+          blankTemplate.front.card.gridColors = Array(gridLength).fill('#ffffff');
+          blankTemplate.back.card.gridColors = Array(gridLength).fill('#ffffff');
+      
+          blankTemplate.front.card.backgroundImage = '';
+          blankTemplate.back.card.backgroundImage = '';
+      
+          blankTemplate.front.elements = [];
+          blankTemplate.back.elements = [];
+        }
+      
+        // Trigger full render cycle
+        handleTemplateSelect(blankTemplate);
+      
+        // UI state adjustments
+        setShowGallery(false);
+        setShowBleeds(true);
+        setShowRulers(true);
+        setFaceMode("insideFront");
+      };
+      
+
+
 
 
 
@@ -1287,7 +1519,38 @@ const captureBothSides = async () => {
       setDynamicBackground(avg);
     }, [template, side]);
   
+  const updateMe = () => {
+    if (!cropModeActive || !selectedImageId || !template || !template[side]) return;
   
+    const element = template[side].elements.find(
+      el => el.id === selectedImageId && el.type === 'image'
+    );
+  
+    if (element && !isTextElement(element)) {
+      const localX = element.position.x;
+      const localY = element.position.y;
+      const width = element.size.width;
+      const height = element.size.height;
+  
+      const translatedX = canvasBounds.x + localX;
+      const translatedY = canvasBounds.y + localY;
+  
+      console.log('[Crop Init]', {
+        id: selectedImageId,
+        local: { x: localX, y: localY },
+        translated: { x: translatedX, y: translatedY },
+        size: { width, height },
+      });
+  
+      setCropRegion({
+        x: translatedX,
+        y: translatedY,
+        width,
+        height,
+      });
+    }
+  }
+  //useEffect(updateMe, [cropModeActive, selectedImageId, template, canvasBounds]);
 
 
     useEffect(() => {
@@ -1321,8 +1584,29 @@ const captureBothSides = async () => {
           });
         }
       }, [cropModeActive, selectedImageId, template, canvasBounds]);
+
+
+
+
+     /* useEffect(() => {
+        if (designInside) {
+           setMode('card'); // optional: switch to design mode
+           renderToCanvasInsideFaces(template, setTemplate, setMode);
+         
+          setShowGallery(false);
+          setShowBleeds(true);
+          setShowRulers(true);
+        }
+      }, [designInside]);*/
+
+
+   
+
+
+
+
       
-  
+
   
     if (!template) {
       return (
@@ -1333,6 +1617,7 @@ const captureBothSides = async () => {
             onSelect={handleTemplateSelect}
             snapshotArchive={snapshotArchive}
             setSnapshotArchive={setSnapshotArchive}
+            showDesigns={designComplete}
           />
          
         </div>
@@ -1340,6 +1625,12 @@ const captureBothSides = async () => {
         </>
       );
     }else{ console.log("template is set rendering continuing")}
+
+
+
+
+
+    
 
 
     const exitEditingMode = () => {
@@ -1401,89 +1692,173 @@ const captureBothSides = async () => {
             overflow: 'hidden'
           }}
         >
-    
-    <ToneButtonGroup tone={template.tone as "primary" | "accent" | "ceremonial" | "neutral" }>
-      <ToneButtonSection label="Navigation & Mode" initiallyOpen={false}>
-        {/* Back, Mode Toggle, Flip */}
-        <ToneButton fontSize="text-sm" icon={<ArrowLeft size={18} />} label="Back" tone={template.tone} 
-        isActive={false} onClick={() => setTemplate(null)} 
-         />
-        <ToneButton fontSize="text-sm" icon={mode === 'card' ? <Brush size={18} /> : <CreditCard size={18} />} 
-        label={`${mode === 'card' ? 'Painting' : 'Card'} Mode`} tone={template.tone} 
-        isActive={false} onClick={() => setMode((prev) => (prev === 'card' ? 'painting' : 'card'))} 
-        />
-    
-       <ToneButton fontSize="text-sm" icon={side === 'front' ? <RotateCcw size={18} /> : <RotateCw size={18} />} 
-        label={`Flip to ${side === 'front' ? 'Back' : 'Front'}`} tone={template.tone} 
-       isActive={false} onClick={handleFlipSide} 
-       />
-    
-      </ToneButtonSection>
-    
-      <ToneButtonSection label="Actions" initiallyOpen={false}>
-        {/* Undo, Redo, Save, Snapshot, Print */}
-    
-       <ToneButton fontSize="text-sm" icon={<Undo size={18} />} label="Undo" tone={template.tone} isActive={false} onClick={handleUndo} />
-       <ToneButton fontSize="text-sm" icon={<Redo size={18} />} label="Redo" tone={template.tone} isActive={false} onClick={handleRedo} />
-       <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Save" tone={template.tone} isActive={false} onClick={handleSaveCard} />
-        <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Snapshot" tone={template.tone} isActive={false} onClick={captureBothSides} />
-    
-       
-      </ToneButtonSection>
-    
-      <ToneButtonSection label="Canvas Tools" initiallyOpen={true}>
-        {/* AddBackgroundButton, Zoom, Rulers, Bleeds */}
-    
-        <ToneButton
-          fontSize="text-sm"
-          icon={<Type size={18} />}
-          label="Add Text"
-          tone={template.tone}
-          isActive={false}
-          onClick={handleAddText}
-        />
 
-
-         <AddImageButton
-          tone={template.tone}
-          onUpload={handleOnUploadImage}
-         />
-
-
-<ToneButton
-  fontSize="text-sm"
-  icon={<XIcon size={18} />}
-  label="Remove Text"
-  tone={template.tone}
-  isActive={!!selectedTextId} // ✅ active only if something is selected
-  onClick={selectedTextId ? handleRemoveText : () => {}} // ✅ disables click if nothing is selected
-/>
-
-
-       <ToneButton
-          fontSize="text-sm"
-          icon={<Type size={18} />}
-          label="Resize Image"
-          tone={template.tone}
-          isActive={false}
-          onClick={() => activateTransformMode(selectedImageId ?? '', 'image')}
-
-        />
+    <DesignModeLabel faceMode={faceMode} mode={mode} />
     
-        <IconButton icon={<ZoomIn size={20} />} tone={template.tone} onClick={() => handleZoom(1.1)} />
-        <IconButton icon={<ZoomOut size={20} />} tone={template.tone} onClick={() => handleZoom(0.9)} />
-        <ToggleCheckbox label="Show Rulers" checked={showRulers} onToggle={() => setShowRulers((prev) => !prev)} tone={template.tone} />
-        <ToggleCheckbox label="Show Bleeds" checked={showBleeds} onToggle={() => setShowBleeds((prev) => !prev)} tone={template.tone} disabled={bleedToggleDisabled} />
-    
-    
-        
-      </ToneButtonSection>
-    
+    <ToneButtonGroup tone={template.tone as 'primary' | 'accent' | 'ceremonial' | 'neutral'}>
+  {/* Navigation & Mode */}
+  <ToneButtonSection label="Navigation & Mode" initiallyOpen={false}>
+    <div className="flex flex-col gap-2">
+      <ToneButton
+        fontSize="text-sm"
+        icon={<ArrowLeft size={18} />}
+        label="Back"
+        tone={template.tone}
+        isActive={false}
+        onClick={() => setTemplate(null)}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={mode === 'card' ? <Brush size={18} /> : <CreditCard size={18} />}
+        label={`${mode === 'card' ? 'Painting' : 'Card'} Mode`}
+        tone={template.tone}
+        isActive={false}
+        onClick={() => setMode((prev) => (prev === 'card' ? 'painting' : 'card'))}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={side === 'front' ? <RotateCcw size={18} /> : <RotateCw size={18} />}
+        label={`Flip to ${side === 'front' ? 'Back' : 'Front'}`}
+        tone={template.tone}
+        isActive={false}
+        onClick={handleFlipSide}
+      />
+    </div>
+  </ToneButtonSection>
+
+  {/* Actions */}
+  <ToneButtonSection label="Actions" initiallyOpen={false}>
+    <div className="flex flex-col gap-2">
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Undo size={18} />}
+        label="Undo"
+        tone={template.tone}
+        isActive={false}
+        onClick={handleUndo}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Redo size={18} />}
+        label="Redo"
+        tone={template.tone}
+        isActive={false}
+        onClick={handleRedo}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Save size={18} />}
+        label="Save"
+        tone={template.tone}
+        isActive={false}
+        onClick={handleSaveCard}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Save size={18} />}
+        label="Preview"
+        tone={template.tone}
+        isActive={false}
+        onClick={captureBothSides}
+      />
+    </div>
+  </ToneButtonSection>
+
+  {/* Canvas Tools */}
+  <ToneButtonSection label="Canvas Tools" initiallyOpen={true}>
+    <div className="flex flex-col gap-2">
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Type size={18} />}
+        label="Add Text"
+        tone={template.tone}
+        isActive={false}
+        onClick={handleAddText}
+      />
+
+      <AddImageButton tone={template.tone} onUpload={handleOnUploadImage} />
+
+      <ToneButton
+        fontSize="text-sm"
+        icon={<XIcon size={18} />}
+        label="Remove Text"
+        tone={template.tone}
+        isActive={!!selectedTextId}
+        onClick={selectedTextId ? handleRemoveText : () => {}}
+      />
+
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Type size={18} />}
+        label="Resize Image"
+        tone={template.tone}
+        isActive={false}
+        onClick={() => activateTransformMode(selectedImageId ?? '', 'image')}
+      />
+
       
-    </ToneButtonGroup>
+    </div>
+  </ToneButtonSection>
+
+
+
+
+</ToneButtonGroup>
+
+
+<div className="absolute top-6 right-4 z-20 flex items-center gap-3
+            bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg ">
+  {/* Zoom Controls */}
+  <IconButton
+    icon={<ZoomIn size={20} />}
+    tone={template.tone}
+    onClick={() => handleZoom(1.1)}
+  />
+  <IconButton
+    icon={<ZoomOut size={20} />}
+    tone={template.tone}
+    onClick={() => handleZoom(0.9)}
+  />
+
+  {/* Toggle Controls */}
+  <ToggleCheckbox
+    label="Show Rulers"
+    checked={showRulers}
+    onToggle={() => setShowRulers((prev) => !prev)}
+    tone={template.tone}
+  />
+
+  <ToggleCheckbox
+    label="Show Bleeds"
+    checked={showBleeds}
+    onToggle={() => setShowBleeds((prev) => !prev)}
+    tone={template.tone}
+    disabled={bleedToggleDisabled}
+  />
+</div>
+
+
+
+
+    {template && (
+  <div className="absolute top-1/2 left-20 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-md shadow-md text-sm text-gray-700 font-inter pointer-events-none">
+    <h3 className="text-base font-semibold text-gray-900">{template.name}</h3>
+    <p className="text-sm text-gray-600">by {template.author}</p>
+    <p className="mt-1 text-xs text-gray-500 italic">
+      {template.sizeLabel} ({template.width}×{template.height})
+    </p>
+
     
-      
     
+   
+  </div>
+
+  
+)}
+
+
+
+
       
           {mode === 'painting' && (
             <PaintingToolbar
@@ -1503,31 +1878,38 @@ const captureBothSides = async () => {
             style={{ zIndex: 0, opacity: 1 }}
           />
       
-          <CardGridBackground
-            width={card.width}
-            height={card.height}
-            x={cardX}
-            y={cardY}
-            cellSize={64}
-            stroke={tone === 'dark' ? '#444' : '#f0f0f0'}
-            cols={cols}
-            rows={rows}
-            side={side}
-            getCellColor={(col, row) => {
-              const index = row * cols + col;
-              return gridColors?.[index] || '#f0f0f0';
-            }}
-            previewColor={selectedColor}
-            onAverageColorChange={setDynamicBackground}
-            onCellPaint={handleCellPaint}
-            style={{
-              zIndex: mode === 'painting' ? 2 : 0,
-              opacity: mode === 'painting' ? 1 : 0,
-              transition: 'opacity 0.3s ease-in-out',
-              pointerEvents: 'auto',
-              cursor: 'crosshair'
-            }}
-          />
+         {mode=="painting" &&(
+
+<CardGridBackground
+width={card.width}
+height={card.height}
+x={cardX}
+y={cardY}
+cellSize={cellSize}
+stroke={tone === 'dark' ? '#444' : '#f0f0f0'}
+cols={cols}
+rows={rows}
+side={side}
+getCellColor={(col, row) => {
+  const index = row * cols + col;
+  return gridColors?.[index] || '#000000';
+}}
+previewColor={selectedColor}
+onAverageColorChange={setDynamicBackground}
+onCellPaint={handleCellPaint}
+style={{
+  zIndex: mode === 'painting' ? 2 : 0,
+  opacity: mode === 'painting' ? 1 : 0,
+  transition: 'opacity 0.3s ease-in-out',
+  pointerEvents: 'auto',
+  cursor: 'crosshair'
+}}
+/>
+
+)}
+
+
+         
       
           <Stage
             ref={stageRef}
@@ -1625,10 +2007,15 @@ const captureBothSides = async () => {
     stageRef={stageRef}
     zoom={zoom}
     mode={mode}
+    rows={rows}
+    cols={cols}
+    cellSize={cellSize}
     brushColor={brushColor}
     bgImage={side === 'front' ? frontImage : backImage}
     setTemplate={setTemplate}
     handlers={{
+      
+      setImageRef:updateImageRef,
       onPaint: handleCellPaint,
       onImageUpdate: handleImageUpdate,
       onTextClick: handleTextClick,
@@ -1726,35 +2113,97 @@ const captureBothSides = async () => {
 </Layer>
 
 
+
+
+
  
 
 </Stage>
 
 
+  
+
+
 {snapshots.front && snapshots.back && showGallery && (
   <div className="fixed inset-0 bg-white z-50 overflow-auto p-8">
-    <SnapshotGallery snapshots={snapshots} tone={template.tone} card={card} />
+    <SnapshotGallery snapshots={snapshots} 
+    tone={template.tone as 'warm' | 'reflective' | 'minimal' | 'neutral'} 
+    card={card} 
+    viewMode={viewMode}
+    setInsideMessage={(msg)=>{setInsideMessage(msg)}}/>
 
     <div
-      style={{
-        position: 'relative',
-        top: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        display: 'flex',
-        gap: '0.5rem',
-        padding: '10px',
-      }}
-    >
+  style={{
+    position: 'absolute',
+    top: '1rem',
+    right: '1rem',
+    zIndex: 60,
+    display: 'flex',
+    gap: '0.75rem',
+    padding: '0.5rem 0.75rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+  }}
+>
+
+{mode === 'insideFace' && (
+  <div className="mt-6 text-center">
+    {designInside ? (
+    
+      <button
+        onClick={()=>{
+            setDesignComplete(true);
+            setDesignInside(false);
+            handleSaveToArchive('insideFace');
+            showCompleteDesign();}
+        }
+        
+        className="px-4 py-2 rounded bg-green-100 hover:bg-green-200 transition text-sm font-medium"
+      >
+        🎉 See your complete design →
+      </button>
+    ) : (
+      <button
+        onClick={() => {
+          setDesignInside(true);
+          setDesignComplete(false);
+          handleSaveToArchive('front');
+           // triggers inside face design
+          handleRenderBlankTemplate();
+        }}
+        className="px-4 py-2 rounded bg-indigo-100 hover:bg-indigo-200 transition text-sm"
+      >
+        ✨ Click here to design and include inside faces
+      </button>
+    )}
+  </div>
+)}
+
+
+
+<ToneButton
+  label={viewMode === 'spread' ? 'View as Preview' : 'View as Spread'}
+  icon={viewMode === 'spread' ? <EyeOff size={18} /> : <LayoutIcon size={18} />}
+  tone={template.tone}
+  isActive={false}
+  fontSize="text-sm"
+  onClick={() => setViewMode(viewMode === 'spread' ? 'default' : 'spread')}
+/>
+
+
+
+
+
       <ToneButton
-        icon={<XIcon size={18} />}
         fontSize="text-sm"
-        label="Close"
-        tone={template.tone as 'primary' | 'accent' | 'ceremonial' | 'neutral'}
+        icon={<Save size={18} />}
+        label="Save"
+        tone={template.tone}
         isActive={false}
-        onClick={showDesignView}
+        onClick={handleSaveCard}
       />
+     
 
       <ToneButton
         icon={<CreditCard size={18} />}
@@ -1770,10 +2219,24 @@ const captureBothSides = async () => {
 
          <ToneButton fontSize="text-sm" icon={<Save size={18} />} label="Export" 
          tone={template.tone} isActive={false} onClick={() => setShowExportModal(true)}/>
+
+      <ToneButton
+        icon={<XIcon size={18} />}
+        fontSize="text-sm"
+        label="Exit"
+        tone={template.tone as 'primary' | 'accent' | 'ceremonial' | 'neutral'}
+        isActive={false}
+        onClick={showDesignView}
+      />
     
     </div>
   </div>
 )}
+
+
+
+  
+
 
 
 {showExportModal && (
@@ -1816,10 +2279,14 @@ const captureBothSides = async () => {
       tone={template.tone}
       setTemplate={setTemplate}
       side={side}
-      recordSnapshot={_recordSnapshot}
+      recordSnapshot={recordSnapshot}
       setTransformModeActive={setTransformModeActive}
       setCropMode={setModeActive}
       onToggleCropMode={setModeActive}
+      imageRef={imageRef}
+      cropRegion={cropRegion}
+      canvasBounds={offsetBounds}
+    
     />
   </div>
 )}
@@ -1831,7 +2298,15 @@ const captureBothSides = async () => {
 
 
 
+
+
+
+
+
 </div>
+
+
+
 
 
 

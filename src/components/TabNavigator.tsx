@@ -8,21 +8,38 @@ import { ToneButton } from './ToneButton';
 import { Brush, Save, Archive } from 'lucide-react';
 import { type Tab } from '../types/Tab';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { groupSnapshotsByTemplate } from '../utils/groupSnapshotsByTemplate';
+
+
+
 
 interface TabNavigatorProps {
   userId: string;
   onSelect: (tpl: DualTemplate) => void;
   snapshotArchive: SnapshotEntry[];
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
+  showDesigns?:boolean;
 }
 
 export default function TabNavigator({
   userId,
   onSelect,
   snapshotArchive,
-  setSnapshotArchive
+  setSnapshotArchive,
+  showDesigns
 }: TabNavigatorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('templates');
+
+
+  const grouped = groupSnapshotsByTemplate(snapshotArchive);
+
+  if(grouped) console.log("grouped....", grouped);
+
+  useEffect(()=>{
+    if(showDesigns) setActiveTab('archive');
+  },[showDesigns])
+
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-6">

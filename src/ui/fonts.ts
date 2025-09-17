@@ -5,6 +5,7 @@ import {
   Open_Sans,
   Playfair_Display,
   Montserrat,
+  Mountains_of_Christmas,
 } from 'next/font/google';
 
 export const inter = Inter({
@@ -69,5 +70,19 @@ export const allFonts = [
     className: '--font-montserrat',
     key: 'montserrat',
     family: 'Montserrat',
-  }
+  },
+
+
+  {
+    name: 'Mountains of Christmas',
+    className: '--font-mountains-of-christmas',
+    key: 'mountainsOfChristmas',
+    family: 'Mountains of Christmas',
+  },
 ];
+
+  
+
+
+  
+

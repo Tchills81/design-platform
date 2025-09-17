@@ -38,38 +38,27 @@ export default function ToneButtonGroup({ children, tone = 'neutral' }: ToneButt
 
   return (
     <div
-      className={`absolute top-5 left-1/2 transform -translate-x-1/2 z-10 px-4 py-3 rounded-xl shadow-soft transition-all duration-300 ${toneBg[tone]}`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className={`text-sm font-semibold tracking-wide uppercase ${toneText[tone]}`}>
-          Design Controls
-        </span>
-        <button
-          onClick={toggleExpanded}
-          className="p-1.5 rounded-full border border-gray-300 hover:border-gray-500 transition duration-200 bg-white shadow-sm hover:shadow-md"
-          title={isExpanded ? 'Collapse Controls' : 'Expand Controls'}
-        >
-          {isExpanded ? (
-            <ChevronUp size={20} className="text-gray-600" />
-          ) : (
-            <ChevronDown size={20} className="text-gray-600" />
-          )}
-        </button>
-      </div>
-
-      <div
-        ref={contentRef}
-        style={{
-          maxHeight: isExpanded ? '1000px' : '0px',
-          overflow: 'hidden',
-          transition: 'max-height 0.4s ease-in-out',
-        }}
-      >
-       <div className="flex gap-4 overflow-x-auto whitespace-nowrap pb-1">
+    className={`absolute top-4 left-10 z-10 px-4 py-3 rounded-xl 
+      shadow-soft transition-all duration-300 font-inter ${toneBg[tone]}`}
+  >
+    <div className="flex items-center justify-between gap-4 mb-2">
+      <div className="flex gap-4 overflow-x-auto whitespace-nowrap">
         {children}
-       </div>
-
       </div>
     </div>
+  
+    <div
+      ref={contentRef}
+      style={{
+        maxHeight: isExpanded ? '1000px' : '0px',
+        overflow: 'hidden',
+        transition: 'max-height 0.4s ease-in-out',
+      }}
+    >
+      {/* Optional expanded content goes here */}
+    </div>
+  </div>
+  
+  
   );
 }

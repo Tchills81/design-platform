@@ -6,6 +6,7 @@ import TextElement from './TextElement';
 import { TemplateElement, DualTemplate, isTextElement } from '../types/template';
 import { CanvasMode } from '../types/CanvasMode';
 import { useRef, Fragment } from 'react';
+import Konva from 'konva';
 
 interface CardSideLayerProps {
   card: {
@@ -14,7 +15,9 @@ interface CardSideLayerProps {
     background: string;
     backgroundImage?: string;
     gridColors?: string[];
+    
   };
+
   elements: TemplateElement[];
   side: 'front' | 'back';
   templateId: string;
@@ -39,9 +42,13 @@ interface CardSideLayerProps {
   selectedElement?:boolean;
   editingText?:string
   transformModeActive?:boolean
+  rows:number;
+  cols:number;
+  cellSize:number;
 
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   handlers: {
+    setImageRef?: (ref: Konva.Image | null) => void;
     onPaint?: (col: number, row: number) => void;
     onImageUpdate: (e: any, id: string) => void;
     onTextClick: (label: string, pos: { x: number; y: number }, id: string) => void; // ✅ updated
@@ -54,6 +61,8 @@ interface CardSideLayerProps {
     setShowToolbar: (show: boolean) => void;
     setSelectedImageId: (id: string) => void;
     onFontSizeChange: (size: number) => void;
+    
+
   };
 }
 
@@ -89,14 +98,27 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   bgImage,
   handlers,
   setTemplate,
-  transformModeActive
+  transformModeActive,
+  rows,
+  cols,
+  cellSize
+
 }) => {
+
+  const imageRef = useRef<Konva.Image>(null);
   const cardBounds = {
     x: cardX,
     y: cardY,
     width: card.width,
     height: card.height
   };
+
+  const setSelectedRef =(ref: Konva.Image | null)=>
+  {
+      console.log("setSelectedRef in CardSideLayer", ref)
+    if (handlers.setImageRef)
+      handlers.setImageRef(ref)
+  }
 
   return (
     <Layer x={position.x} y={position.y} scaleX={zoom} scaleY={zoom}>
@@ -106,8 +128,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
         y={cardY}
         width={card.width}
         height={card.height}
-        cols={6}
-        rows={6}
+        cols={cols}
+        rows={rows}
         gridColors={card.gridColors ?? []}
         mode={mode}
         brushColor={brushColor}
@@ -149,6 +171,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
             setGhostLines={handlers.setGhostLines}
             onSelect={() => handlers.setSelectedImageId(el.id)}
             handleImageUpdate={(e) => handlers.onImageUpdate(e, el.id)}
+
+            setSelectedRef={setSelectedRef}
           />
         ))}
 

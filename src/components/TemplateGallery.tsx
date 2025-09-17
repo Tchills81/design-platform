@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { type DualTemplate } from '../types/template';
 
+import { TemplateSize} from '../enumarations/TemplateSize';
+import { TemplateGeometry } from '../enumarations/TemplateGeometry';
+import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
+
+
 type TemplateGalleryProps = {
   onSelect: (template: DualTemplate) => void;
 };
@@ -15,13 +20,21 @@ export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
   );
 
   useEffect(() => {
-    fetch('/api/loadDualTemplates')
+    fetch('/api/loadChristmasGift')
       .then(res => res.json())
       .then(data => {
         const parsedTemplates: DualTemplate[] = data
+        
           .map((entry: any) => {
             try {
               const parsed = JSON.parse(entry.data);
+
+              const size = entry.size as TemplateSize;
+              const geometry = TemplateGeometry[size];
+              const sizeLabel = TemplateSizeLabel[size];
+
+              console.log("size", size, "geometry", geometry, "sizeLabel", sizeLabel)
+              
               return {
                 id: String(entry.id),
                 name: entry.name,
@@ -29,6 +42,10 @@ export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
                 savedAt: entry.savedAt,
                 tone: parsed.tone ?? 'neutral',
                 mode: parsed.mode ?? 'card',
+                size,
+                sizeLabel,
+                width: geometry?.width,
+                height: geometry?.height,
                 front: parsed.front,
                 back: parsed.back
               };

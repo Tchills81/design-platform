@@ -4,7 +4,9 @@ import { type DualTemplate } from "../types/template";
 import { TemplateElement } from "../types/template";
 
 export const loadTemplateFromSnapshot = (entry: SnapshotEntry): DualTemplate => {
-    const defaultCard = {
+
+    return entry.template;
+    /*const defaultCard = {
       width: 600,
       height: 300,
       background: '#ffffff',
@@ -30,6 +32,6 @@ export const loadTemplateFromSnapshot = (entry: SnapshotEntry): DualTemplate => 
       thumbnailUrl: entry.image,
       front,
       back
-    };
+    };*/
   };
   

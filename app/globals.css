@@ -137,6 +137,116 @@
 }
 
 
+.card-flip-container {
+  perspective: 1200px;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+}
+
+.card-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s ease;
+  transform-style: preserve-3d;
+}
+
+.card-flip.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  top: 0;
+  left: 0;
+}
+
+.card-face.back {
+  transform: rotateY(180deg);
+}
+
+
+.folded-card-preview {
+  perspective: 1200px;
+  cursor: pointer;
+}
+
+.folded-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+}
+
+.folded-card-preview.flipped .folded-card-inner {
+  transform: rotateY(180deg);
+}
+
+.folded-card-front,
+.folded-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.folded-card-back {
+  transform: rotateY(180deg);
+}
+
+
+.folded-card-preview {
+  perspective: 1200px;
+  cursor: pointer;
+}
+
+.folded-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+}
+
+.folded-card-preview.flipped .folded-card-inner {
+  transform: rotateY(180deg);
+}
+
+.folded-card-front,
+.folded-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.folded-card-back {
+  transform: rotateY(180deg);
+}
+
+
+.perspective {
+  perspective: 1000px;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+
+
+
+
+
 
 
 :root {

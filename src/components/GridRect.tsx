@@ -41,6 +41,7 @@ const GridRect: React.FC<GridRectProps> = ({
 
           return (
             <Rect
+            stroke={fill}
              key={`cell-${col}-${row}`}
              x={col * cellWidth}
              y={row * cellHeight}

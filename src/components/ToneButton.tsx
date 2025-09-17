@@ -23,7 +23,18 @@ const toneClasses: Record<string, string> = {
   reflective: 'text-blue-600 bg-blue-100 hover:bg-blue-200 shadow-blue-300',
   minimal: 'text-gray-500 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
   neutral: 'text-gray-700 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
+  green: 'bg-green-500 text-white shadow-md',
+  danger: 'bg-red-500 text-white shadow-md',
+  calm: 'bg-teal-500 text-white shadow-md',
+  bold: 'bg-purple-600 text-white shadow-md',
+
+  // 🎄 Newly added tones
+  festive: 'text-red-700 bg-red-100 hover:bg-red-200 shadow-red-300',
+  soft: 'text-pink-600 bg-pink-100 hover:bg-pink-200 shadow-pink-300',
+  elegant: 'text-indigo-700 bg-indigo-100 hover:bg-indigo-200 shadow-indigo-300',
+  playful: 'text-orange-600 bg-orange-100 hover:bg-orange-200 shadow-orange-300'
 };
+
 
 const toneActiveClasses: Record<string, string> = {
   warm: 'bg-yellow-500 text-white shadow-md',
