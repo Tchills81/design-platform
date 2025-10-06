@@ -87,6 +87,8 @@ import { CropBoxOverlay } from './CropBoxOverlay';
 import { useMemo } from 'react';
 import { DesignModeLabel } from './DesignModalLabel';
 import { CanvasMode } from '../types/CanvasMode';
+import { injectAssetIntoTemplate } from '../utils/injectAssetIntoTemplate';
+import { tone } from '../types/tone';
 
 
 
@@ -112,7 +114,7 @@ const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: w
 const [selectedFont, setSelectedFont] = useState('--font-inter');
 const [selectedColor, setSelectedColor] = useState('#ff595e');
 const [selectedFontSize, setSelectedFontSize] = useState(8);
-const [mode, setMode] = useState<'painting' | 'card' | 'preview' | 'insideFace'>('card');
+const [mode, setMode] = useState<CanvasMode>('card');
 const [faceMode, setFaceMode] = useState<'insideFront' | 'insideBack' | 'front' | 'back'>('front');
 
 const [animatedCells, setAnimatedCells] = useState<Set<string>>(new Set());
@@ -484,12 +486,11 @@ const handleTextEdit = (
 };
 
 
-const handleOnUploadImage = (src: string, role: 'background' | 'element') => {
+const handleOnUploadImage = async (src: string, role: 'background' | 'element') => {
     if (!template || !template[side]) return;
   
     recordSnapshot();
   
-    // Snapshot current state before mutation
     setHistory(prev => [
       ...prev,
       {
@@ -505,78 +506,19 @@ const handleOnUploadImage = (src: string, role: 'background' | 'element') => {
       },
     ]);
   
-    if (role === 'background') {
-      // Apply background image mutation
-      setTemplate(prev => {
-        if (!prev || !prev[side]) return prev;
-        return {
-          ...prev,
-          [side]: {
-            ...prev[side],
-            card: {
-              ...prev[side].card,
-              backgroundImage: src,
-            },
-            elements: [...(prev[side].elements ?? [])],
-          },
-        };
-      });
-      return;
-    }
+    const enriched = await injectAssetIntoTemplate(template, { src, role });
   
-    // For 'element' role, load image to preserve aspect ratio
-    const img = new window.Image();
-    img.onload = () => {
-      const aspectRatio = img.width / img.height;
-      const baseWidth = 200;
-      const newElement: TemplateElement = {
-        type: 'image',
-        id: `img-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
-        src,
-        position: { x: 100, y: 100 },
-        size: {
-          width: baseWidth,
-          height: baseWidth / aspectRatio,
-        },
-        tone,
+    setTemplate(prev => {
+      if (!prev || !prev[side]) return prev;
+      return {
+        ...prev,
+        [side]: enriched[side],
       };
-  
-      setTemplate(prev => {
-        if (!prev || !prev[side]) return prev;
-        return {
-          ...prev,
-          [side]: {
-            ...prev[side],
-            card: {
-              ...prev[side].card,
-            },
-            elements: [...(prev[side].elements ?? []), newElement],
-          },
-        };
-      });
-    };
-    img.src = src;
+    });
   };
   
   
 
-const handleOnUploadBackground = (src: string) => {
-  setTemplate(prev => {
-    if (!prev || !prev[side]) return prev;
-
-    return {
-      ...prev,
-      [side]: {
-        ...prev[side],
-        card: {
-          ...prev[side].card,
-          backgroundImage: src,
-        },
-        elements: [...(prev[side].elements ?? [])],
-      },
-    };
-  });
-};
 
 
 
@@ -1213,9 +1155,11 @@ const captureBothSides = async () => {
         const entryFront: SnapshotEntry = {
             image: snapshots.front,
             side: 'front',
+            width:card?.width,
+            height:card?.height,
             timestamp,
             templateId: template.id,
-            tone: template.tone,
+            tone: template.tone as tone,
             type:'insideFront',
             template:template
           };
@@ -1223,9 +1167,11 @@ const captureBothSides = async () => {
           const entryBack: SnapshotEntry = {
             image: snapshots.back,
             side: 'back',
+            width:card?.width,
+            height:card?.height,
             timestamp,
             templateId: template.id,
-            tone: template.tone,
+            tone: template.tone as tone,
             type:'insideBack',
             template:template
           };
@@ -1237,9 +1183,11 @@ const captureBothSides = async () => {
         const entryFront: SnapshotEntry = {
             image: snapshots.front,
             side: 'front',
+            width:card?.width,
+            height:card?.height,
             timestamp,
             templateId: template.id,
-            tone: template.tone,
+            tone: template.tone as tone,
             type:'front',
             template:template
           };
@@ -1247,9 +1195,11 @@ const captureBothSides = async () => {
           const entryBack: SnapshotEntry = {
             image: snapshots.back,
             side: 'back',
+            width:card?.width,
+            height:card?.height,
             timestamp,
             templateId: template.id,
-            tone: template.tone,
+            tone: template.tone as tone,
             type:'back',
             template:template
           };
@@ -1435,73 +1385,8 @@ const captureBothSides = async () => {
       }
     }, [side]);
   
-    /*useEffect(() => {
-      const loadLatestDesign = async () => {
-        try {
-          const res = await fetch('/api/loadDualTemplates');
-          const designs = await res.json();
     
-          console.log('📦 Loaded designs:', designs);
-    
-          if (designs.length === 0) {
-            console.warn('🛑 No designs found in dual_templates');
-            return;
-          }
-    
-          let raw = JSON.parse(designs[0].data);
-          raw = normalizeDualTemplate(raw);
   
-          console.log('🎨 Final patched template:', raw);
-         console.log('🔍 raw.back.card:', raw.back.card);
-  
-    
-          // Patch front face
-          if (!raw.front || !raw.front.card) {
-            console.warn('⚠️ Missing front face or card, patching with defaults');
-            raw.front = {
-              card: {
-                width: 600,
-                height: 400,
-                background: '#ffffff',
-                gridColors: Array(60).fill('#f0f0f0')
-              },
-              elements: []
-            };
-          } else if (!raw.front.card.gridColors) {
-            raw.front.card.gridColors = Array(60).fill('#f0f0f0');
-          }
-    
-          // Patch back face
-          if (!raw.back || !raw.back.card) {
-            console.warn('⚠️ Missing back face or card, patching with defaults');
-            raw.back = {
-              card: {
-                width: 600,
-                height: 400,
-                background: '#fafafa',
-                gridColors: Array(60).fill('#f5f5f5')
-              },
-              elements: []
-            };
-          } else if (!raw.back.card.gridColors) {
-            raw.back.card.gridColors = Array(60).fill('#f5f5f5');
-          }
-    
-          console.log('🎨 Final patched template:', raw);
-          
-          setTemplate(raw)
-          renderToCanvas(raw, setTemplate, setMode);
-  
-          
-          
-        } catch (err) {
-          console.error('🚨 Failed to load dual template:', err);
-        }
-      };
-    
-      loadLatestDesign();
-    }, []);
-    */
   
   
     useEffect(() => {
@@ -1776,7 +1661,7 @@ const captureBothSides = async () => {
         onClick={handleAddText}
       />
 
-      <AddImageButton tone={template.tone} onUpload={handleOnUploadImage} />
+      <AddImageButton context='design' tone={template.tone} onUpload={handleOnUploadImage} />
 
       <ToneButton
         fontSize="text-sm"

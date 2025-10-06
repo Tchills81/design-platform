@@ -256,6 +256,13 @@ export default async function handler(req, res) {
         templateId: tpl.templateId,
         tone: tpl.tone,
         size: tpl.size,
+        sizeLabel: tpl.size === 'gift-card-small'
+          ? 'Small Gift Card'
+          : tpl.size === 'portrait-postcard'
+          ? 'Portrait Postcard'
+          : 'Postcard',
+        width,
+        height,
         type: 'seasonal',
         theme: 'christmas',
         previewMode: 'printable',
@@ -291,6 +298,7 @@ export default async function handler(req, res) {
           back: createFace(backElements, backGridColors, cellSize)
         })
       };
+      
 
       await db.run(
         `INSERT INTO christmas_templates (name, author, templateId, tone, size, savedAt, data) VALUES (?, ?, ?, ?, ?, ?, ?)`,

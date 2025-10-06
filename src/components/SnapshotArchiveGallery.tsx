@@ -6,6 +6,7 @@ import { groupSnapshotsByTemplate } from '../utils/groupSnapshotsByTemplate';
 
 import CompleteCardPreview from './CompleteCardPreview';
 import React, { useState } from 'react';
+import ThreeCardCanvas from './ThreeCardCanvas';
 
 
 interface Props {
@@ -19,29 +20,29 @@ export default function SnapshotArchiveGallery({ archive, onRestore }: Props) {
   const [showCompleteView, setShowCompleteView] = useState(false);
   const grouped = groupSnapshotsByTemplate(archive);
 
-  console.log(grouped)
+
+
+
+  //.log(grouped)
+  //console.log( "archive", JSON.stringify( archive, null, 2));
+
 
   return (
     <div>
       <button
+         className="px-4 py-2 rounded bg-green-100 hover:bg-green-200 transition text-sm font-medium"
         onClick={() => setShowCompleteView(prev => !prev)}
-        style={{
-          marginBottom: '1rem',
-          padding: '0.5rem 1rem',
-          background: '#f0f0ff',
-          borderRadius: '6px',
-          border: '1px solid #ccc',
-          cursor: 'pointer',
-        }}
+        
       >
-        {showCompleteView ? '🔙 View Individual Snapshots' : '📖 View Complete Designs'}
+        {showCompleteView ? '🔙 See Spread View ->' : '📖 See Complete Preview ->'}
       </button>
 
       {showCompleteView ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+          
           {Object.entries(grouped).map(([id, card]) => (
             <div key={id} style={{ border: '1px solid #ddd', padding: '1rem', borderRadius: '8px', background: '#fff' }}>
-              <CompleteCardPreview card={card} />
+              <CompleteCardPreview card={card} onExit={()=>setShowCompleteView(false)}/>
               <button
                 onClick={() => onRestore(card.template)}
                 style={{

@@ -62,74 +62,68 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
 
   return (
     <div
-      id="text-toolbar"
-      className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50 rounded-xl shadow-lg px-4 py-5 min-w-[340px] font-sans flex flex-col gap-4"
-    >
-      {/* Styling Controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        <FontDropdown selectedFont={selectedFont} onChange={onFontChange} />
-        <ColorPicker selectedColor={selectedColor} onChange={onColorChange} />
-        <FontSizeDropdown selectedSize={selectedFontSize} onChange={onFontSizeChange} />
-
-        <ToggleCheckbox
-  label="Bold"
-  checked={isBold}
-  onToggle={onToggleBold}
-  tone={tone}
-/>
-
-<ToggleCheckbox
-  label="Italic"
-  checked={isItalic}
-  onToggle={onToggleItalic}
-  tone={tone}
-/>
-
-
-        <button
-          onClick={exitEditingMode}
-          className="ml-auto text-sm text-gray-800 hover:scale-95 transition-transform"
-        >
-          ✕ Close
-        </button>
-      </div>
-
-      {/* Text Input */}
-      <input
-        type="text"
-        value={editingText}
-        onChange={(e) => onTextChange(e.target.value)}
-        onBlur={onTextBlur}
-        className={`w-full px-3 py-2 rounded-md border border-gray-300 shadow-inner text-[${selectedFontSize}px] font-[${isBold ? 'bold' : 'normal'}] ${
-          isItalic ? 'italic' : ''
-        }`}
-        style={{ fontFamily: selectedFont, color: selectedColor }}
-        autoFocus
-        aria-label="Text input"
-        title="Edit text"
-      />
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-        <ToneButton
-          fontSize="text-sm"
-          icon={<Type size={18} />}
-          label="Add Text"
-          tone={tone}
-          isActive={true}
-          onClick={onAddText ?? (() => {})}
-        />
-        <ToneButton
-          fontSize="text-sm"
-          icon={<XIcon size={18} />}
-          label="Remove Text"
-          tone={tone}
-          isActive={isTextSelected}
-          onClick={onRemoveText ?? (() => {})}
-          title={!isTextSelected ? 'Select a text element to remove' : undefined}
-        />
-      </div>
+    id="text-toolbar"
+    className="absolute top-4 left-1/2 -translate-x-1/2 z-50
+     bg-gray-50 rounded-xl shadow-lg px-4 py-5 min-w-[340px] font-sans flex flex-col gap-4"
+  >
+    {/* Close Button */}
+    <div className="flex justify-end">
+      <button
+        onClick={exitEditingMode}
+        className="text-sm text-gray-800 hover:scale-95 transition-transform"
+        title="Close toolbar"
+      >
+        ✕
+      </button>
     </div>
+  
+    {/* Styling Controls */}
+    <div className="grid grid-cols-[auto_auto_auto_auto_auto_1fr] items-center gap-3">
+
+      <FontDropdown selectedFont={selectedFont} onChange={onFontChange} />
+      <ToggleCheckbox label="Bold" checked={isBold} onToggle={onToggleBold} tone={tone} />
+      <ToggleCheckbox label="Italic" checked={isItalic} onToggle={onToggleItalic} tone={tone} />
+      <ColorPicker selectedColor={selectedColor} onChange={onColorChange} />
+      <FontSizeDropdown selectedSize={selectedFontSize} onChange={onFontSizeChange} />
+    </div>
+  
+    {/* Text Input */}
+    <input
+      type="text"
+      value={editingText}
+      onChange={(e) => onTextChange(e.target.value)}
+      onBlur={onTextBlur}
+      className={`w-full px-3 py-2 rounded-md border border-gray-300 shadow-inner text-[${selectedFontSize}px] font-[${isBold ? 'bold' : 'normal'}] ${
+        isItalic ? 'italic' : ''
+      }`}
+      style={{ fontFamily: selectedFont, color: selectedColor }}
+      autoFocus
+      aria-label="Text input"
+      title="Edit text"
+    />
+  
+    {/* Action Buttons */}
+    <div className="flex justify-end gap-2">
+      <ToneButton
+        fontSize="text-sm"
+        icon={<Type size={18} />}
+        label="Add Text"
+        tone={tone}
+        isActive={true}
+        onClick={onAddText ?? (() => {})}
+      />
+      <ToneButton
+        fontSize="text-sm"
+        icon={<XIcon size={18} />}
+        label="Remove Text"
+        tone={tone}
+        isActive={isTextSelected}
+        onClick={onRemoveText ?? (() => {})}
+        title={!isTextSelected ? 'Select a text element to remove' : undefined}
+      />
+    </div>
+  </div>
+  
   );
 };
 

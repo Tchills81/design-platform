@@ -1,1 +1,1 @@
-export type Tab = 'templates' | 'saved' | 'archive' | null;
+export type Tab = 'templates' | 'saved' | 'archive' | 'guided'| 'import'| null;

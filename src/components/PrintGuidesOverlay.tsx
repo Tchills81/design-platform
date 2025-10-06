@@ -3,8 +3,8 @@ import { Rect } from "react-konva";
 interface PrintGuidesOverlayProps {
   cardX: number;
   cardY: number;
-  cardWidth: number;
-  cardHeight: number;
+  cardWidth?: number;
+  cardHeight?: number;
   bleed?: number;
   safeZone?: number;
   visible?: boolean;
@@ -27,8 +27,8 @@ export const PrintGuidesOverlay: React.FC<PrintGuidesOverlayProps> = ({
       <Rect
         x={cardX - bleed}
         y={cardY - bleed}
-        width={cardWidth + bleed * 2}
-        height={cardHeight + bleed * 2}
+        width={(cardWidth ?? 1) + bleed * 2}
+        height={(cardHeight ?? 1) + bleed * 2}
         stroke="blue"
         strokeWidth={1}
         dash={[4, 4]}
@@ -51,8 +51,8 @@ export const PrintGuidesOverlay: React.FC<PrintGuidesOverlayProps> = ({
       <Rect
         x={cardX + safeZone}
         y={cardY + safeZone}
-        width={cardWidth - safeZone * 2}
-        height={cardHeight - safeZone * 2}
+        width={(cardWidth ?? 1) - safeZone * 2}
+        height={(cardHeight ?? 1) - safeZone * 2}
         stroke="green"
         strokeWidth={1}
         dash={[2, 2]}

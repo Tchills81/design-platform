@@ -1,61 +1,76 @@
 import { useEffect, useState } from 'react';
-
 import { type DualTemplate } from '../types/template';
+import { getToneColor, galleryStyles as styles } from '../styles/galleryStyles';
+import { loadDesigns } from '../utils/parseSavedDesigns';
 
 type Props = {
   userId: string;
   onSelect: (template: DualTemplate) => void;
+  setDualFaces: (dualFaces: DualTemplate[]) => void;
 };
 
-export default function SavedDesignGallery({ userId, onSelect }: Props) {
+export default function SavedDesignGallery({ userId, onSelect, setDualFaces }: Props) {
   const [designs, setDesigns] = useState<DualTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTone, setSelectedTone] = useState<string>('all');
+
+  const filteredDesigns = designs.filter(design =>
+    selectedTone === 'all' ? true : design.tone === selectedTone
+  );
 
   useEffect(() => {
-    fetch(`/api/loadSavedDesigns?userId=${encodeURIComponent(userId)}`)
-      .then(res => res.json())
-      .then(data => {
-        const parsed = data.map((entry: any) => {
-          try {
-            const parsedData = JSON.parse(entry.data);
-            return {
-              id: String(entry.id),
-              name: entry.name,
-              author: entry.author,
-              savedAt: entry.savedAt,
-              tone: parsedData.tone,
-              mode: parsedData.mode,
-              front: parsedData.front,
-              back: parsedData.back,
-              thumbnailUrl: entry.thumbnailUrl
-            };
-          } catch (err) {
-            console.warn(`Failed to parse saved design ${entry.id}:`, err);
-            return null;
-          }
-        }).filter(Boolean);
-
-        setDesigns(parsed);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load saved designs:', err);
-        setLoading(false);
-      });
+    //loadDesigns(`/api/loadSavedDesigns?userId=${encodeURIComponent(userId)}`)
+    loadDesigns(`/api/loadSavedDesigns?userId=chilongatobias@gmail.com`)
+      .then(setDesigns)
+      .finally(() => setLoading(false));
   }, [userId]);
 
-  if (loading) return <div>Loading your designs...</div>;
-  if (designs.length === 0) return <div>No saved designs yet. Start creating!</div>;
+  if (loading) return <div style={styles.loading}>Loading your saved designs...</div>;
+  if (designs.length === 0) return <div style={styles.loading}>No saved designs yet. Start creating!</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
-      {designs.map(design => (
-        <div key={design.id} style={{ padding: '1rem', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', cursor: 'pointer' }} onClick={() => onSelect(design)}>
-          <img src={design.thumbnailUrl} alt={design.name} style={{ width: '100%', borderRadius: '6px', marginBottom: '0.5rem' }} />
-          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{design.name}</h3>
-          <p style={{ fontSize: '0.85rem', color: '#666' }}>{design.tone} tone</p>
-        </div>
-      ))}
-    </div>
+    <>
+      <select
+        value={selectedTone}
+        onChange={(e) => setSelectedTone(e.target.value)}
+        style={{ marginBottom: '1rem', padding: '0.5rem' }}
+      >
+        <option value="all">All Tones</option>
+        <option value="reflective">Reflective</option>
+        <option value="warm">Warm</option>
+        <option value="minimal">Minimal</option>
+      </select>
+
+      <div style={styles.gallery}>
+        {filteredDesigns.map(design => {
+          const toneColor = getToneColor(design.tone);
+
+          return (
+            <div
+              key={design.id}
+              style={styles.card}
+              onClick={() => {
+                const dualFaces: DualTemplate[] = [design];
+                setDualFaces(dualFaces);
+                onSelect(design);
+              }}
+            >
+              <div
+                style={{
+                  ...styles.thumbPlaceholder,
+                  backgroundColor: toneColor.bg,
+                  color: toneColor.text,
+                }}
+              >
+                <span>{design.tone} tone</span>
+              </div>
+              <h3 style={styles.title}>{design.name}</h3>
+              <p style={styles.description}>by {design.author}</p>
+              <p style={styles.description}>{design.width} × {design.height}</p>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

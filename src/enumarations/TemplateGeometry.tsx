@@ -1,10 +1,11 @@
 
 import { TemplateSize } from "./TemplateSize";
 export const TemplateGeometry: Record<TemplateSize, { width: number; height: number; defaultCellSize: number }> = {
-    [TemplateSize.POSTCARD]: { width: 700, height: 400, defaultCellSize: 64 },
-    [TemplateSize.GIFT_CARD_SMALL]: { width: 400, height: 250, defaultCellSize: 20 },
-    [TemplateSize.POSTER_WIDE]: { width: 1000, height: 600, defaultCellSize: 80 },
-  };
+  [TemplateSize.POSTCARD]: { width: 700, height: 400, defaultCellSize: 64 },
+  [TemplateSize.GIFT_CARD_SMALL]: { width: 400, height: 250, defaultCellSize: 20 },
+  [TemplateSize.POSTER_WIDE]: { width: 1000, height: 600, defaultCellSize: 80 },
+  [TemplateSize.PORTRAIT_POSTCARD]: { width: 400, height: 600, defaultCellSize: 64 } // ✅ Match your seed logic
+};
 
 
   export function inferCellSize(size: TemplateSize, gridColorsLength: number): number {

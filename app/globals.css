@@ -243,6 +243,109 @@
 }
 
 
+/* global.css */
+.bg-spring {
+  background: linear-gradient(to bottom right, #fef6f9, #e0f7e9);
+}
+.bg-summer {
+  background: linear-gradient(to bottom right, #fffbe6, #ffe0b2);
+}
+.bg-autumn {
+  background: linear-gradient(to bottom right, #fdf6e3, #f5e1da);
+}
+.bg-winter {
+  background: linear-gradient(to bottom right, #f0f4f8, #dbe9f4);
+}
+
+/* global.css */
+.fade-in {
+  animation: fadeIn 1.2s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* global.css */
+
+.link-fade:nth-child(1) { animation-delay: 0.2s; }
+.link-fade:nth-child(2) { animation-delay: 0.4s; }
+
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+.link-fade {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInLink 1s ease forwards;
+}
+
+@keyframes fadeInLink {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* tailwind.config.js or global CSS */
+.animate-slide-left {
+  animation: slideLeft 300ms ease-in-out;
+}
+.animate-slide-right {
+  animation: slideRight 300ms ease-in-out;
+}
+.animate-slide-up {
+  animation: slideUp 300ms ease-in-out;
+}
+.animate-slide-down {
+  animation: slideDown 300ms ease-in-out;
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideRight {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+
+
+
 
 
 

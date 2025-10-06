@@ -1,44 +1,52 @@
 'use client';
-/**
- * Build the most emotionally intelligent, modular, and scalable design platform in the
- *  world—where enterprise meets empathy and every design is a journey worth remembering.”
- */
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
+import Link from 'next/link';
+import ToneAwareLogo from '@/src/components/ToneAwareLogo';
+import Image from 'next/image';
 
-import dynamic from 'next/dynamic';
+export default function FrontPage() {
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
-
-
-//const KonvaCanvas = dynamic(() => import('../src/canvas/KonvaCanvas'), { ssr: false });
-const KonvaCanvas = dynamic(() => import('../src/components/temp'), { ssr: false });
-
-export default function Home() {
   return (
-    <main style={{ padding: '2rem', fontFamily: 'Inter', position: 'relative' }}>   
+    <main className={`relative min-h-screen px-6 py-8 ${backgroundClass}`}>
+      {/* Top Bar */}
+      <div className="absolute top-6 left-6 fade-in">
+        <ToneAwareLogo size={64} />
+      </div>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-   
       
-  {/* Header content */}
 
+      {/* Hero */}
+      <div className="flex flex-col items-center justify-center text-center pt-32 fade-in">
+        <h1 className="text-5xl font-serif text-ceremonial tracking-wide">
+          🪄 {heroText}
+        </h1>
+        <p className="text-lg text-muted font-inter mt-2">
+          Every design is a legacy. Every click, a ceremony.
+        </p>
+        <div className="w-12 h-1 mx-auto bg-ceremonial rounded-full mt-4 animate-pulse" />
+      </div>
+
+
+
+      <div className="absolute top-6 right-6 flex flex-row items-center gap-4 fade-in">
   
+ 
+  <Link href="/guest" className="btn-reflective link-fade" >Continue as Guest</Link>
+  <Link href="/onboarding" className="btn-accent link-fade">Explore Seasonal Ritual</Link>
+  <Link href="/design" className="btn-primary link-fade">{cta}</Link>
+  <Link href="/import" className="btn-primary link-fade">Upload</Link>
+  <Link href="/templates" className="btn-accent link-fade">Browse</Link>
+  <Link href="/auth" className="btn-muted">Sign Up / Login</Link>
+</div>
 
-  
-      {/* Render the canvas */}
-      <KonvaCanvas />
 
-      {/* Portal target for DOM overlays */}
-      <div
-        id="canvas-portal"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 10
-        }}
-      />
+
+      {/* Seasonal Preview */}
+      <div className="mt-16 text-center text-muted text-sm fade-in">
+        <p>Coming soon: <strong>{nextSeason.heroText}</strong></p>
+        <Image src={nextSeason.logo} alt="Next Season Logo" width={48} height={48} />
+      </div>
     </main>
   );
 }

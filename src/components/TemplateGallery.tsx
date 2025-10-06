@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react';
 import { type DualTemplate } from '../types/template';
-
-import { TemplateSize} from '../enumarations/TemplateSize';
+import { TemplateSize } from '../enumarations/TemplateSize';
 import { TemplateGeometry } from '../enumarations/TemplateGeometry';
 import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
+import { injectAssetIntoTemplate } from '../utils/injectAssetIntoTemplate';
+import { getToneColor, galleryStyles as styles } from '../styles/galleryStyles';
+import { loadTemplates } from '../utils/loadTemplates';
 
 
 type TemplateGalleryProps = {
   onSelect: (template: DualTemplate) => void;
+  setDualFaces:(dualFaces:DualTemplate[])=>void;
+  importedAsset?: {
+    src: string;
+    role: 'background' | 'element';
+  };
 };
 
-export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
+export default function TemplateGallery({ onSelect, importedAsset, setDualFaces }: TemplateGalleryProps) {
   const [templates, setTemplates] = useState<DualTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTone, setSelectedTone] = useState<string>('all');
@@ -20,49 +27,8 @@ export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
   );
 
   useEffect(() => {
-    fetch('/api/loadChristmasGift')
-      .then(res => res.json())
-      .then(data => {
-        const parsedTemplates: DualTemplate[] = data
-        
-          .map((entry: any) => {
-            try {
-              const parsed = JSON.parse(entry.data);
-
-              const size = entry.size as TemplateSize;
-              const geometry = TemplateGeometry[size];
-              const sizeLabel = TemplateSizeLabel[size];
-
-              console.log("size", size, "geometry", geometry, "sizeLabel", sizeLabel)
-              
-              return {
-                id: String(entry.id),
-                name: entry.name,
-                author: entry.author,
-                savedAt: entry.savedAt,
-                tone: parsed.tone ?? 'neutral',
-                mode: parsed.mode ?? 'card',
-                size,
-                sizeLabel,
-                width: geometry?.width,
-                height: geometry?.height,
-                front: parsed.front,
-                back: parsed.back
-              };
-            } catch (err) {
-              console.warn(`🛑 Failed to parse template ${entry.id}:`, err);
-              return null;
-            }
-          })
-          .filter(Boolean);
-
-        setTemplates(parsedTemplates);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load templates:', err);
-        setLoading(false);
-      });
+    loadTemplates('/api/loadChristmasGift').then(setTemplates);
+    setLoading(false);
   }, []);
 
   if (loading) return <div style={styles.loading}>Loading templates...</div>;
@@ -88,13 +54,31 @@ export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
             <div
               key={template.id}
               style={styles.card}
-              onClick={() => onSelect(template)}
+              onClick={async () => {
+                const enriched = importedAsset
+                  ? await injectAssetIntoTemplate(template, importedAsset)
+                  : template;
+
+                  const dualFaces:DualTemplate[]=[enriched]
+                  setDualFaces(dualFaces);
+
+                  console.log("setDualFaces", setDualFaces, 'dualFaces', dualFaces)
+
+                onSelect(enriched);
+              }}
             >
-              <div style={{ ...styles.thumbPlaceholder, backgroundColor: toneColor.bg, color: toneColor.text }}>
+              <div
+                style={{
+                  ...styles.thumbPlaceholder,
+                  backgroundColor: toneColor.bg,
+                  color: toneColor.text,
+                }}
+              >
                 <span>{template.tone} tone</span>
               </div>
               <h3 style={styles.title}>{template.name}</h3>
               <p style={styles.description}>by {template.author}</p>
+              <p style={styles.description}>by {template.width} x {template.height}</p>
             </div>
           );
         })}
@@ -103,62 +87,3 @@ export default function TemplateGallery({ onSelect }: TemplateGalleryProps) {
   );
 }
 
-function getToneColor(tone: string) {
-  switch (tone) {
-    case 'reflective':
-      return { bg: '#DBEAFE', text: '#1E3A8A' }; // blue-100 / blue-900
-    case 'warm':
-      return { bg: '#FEF3C7', text: '#92400E' }; // amber-100 / amber-900
-    case 'minimal':
-      return { bg: '#F3F4F6', text: '#374151' }; // gray-100 / gray-700
-    default:
-      return { bg: '#F0F0F0', text: '#666666' }; // neutral fallback
-  }
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  gallery: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '2rem',
-    padding: '2rem'
-  },
-  card: {
-    cursor: 'pointer',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-    padding: '1.25rem',
-    transition: 'transform 0.2s ease',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
-  },
-  thumbPlaceholder: {
-    width: '100%',
-    height: '180px',
-    borderRadius: '12px',
-    marginBottom: '0.75rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '0.9rem',
-    fontWeight: 500
-  },
-  title: {
-    fontSize: '1.2rem',
-    fontWeight: 600,
-    margin: '0.5rem 0',
-    textAlign: 'center'
-  },
-  description: {
-    fontSize: '1rem',
-    color: '#666',
-    textAlign: 'center'
-  },
-  loading: {
-    padding: '2rem',
-    fontSize: '1rem',
-    textAlign: 'center'
-  }
-};

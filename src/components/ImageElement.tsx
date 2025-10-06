@@ -1,9 +1,12 @@
 import React, { useRef, useEffect } from 'react';
-import { Image, Transformer } from 'react-konva';
+import { Image as KonvaImage, Rect, Circle, Line, Transformer } from 'react-konva';
 import useImage from 'use-image';
 import { KonvaEventObject } from 'konva/lib/Node';
 import SelectionFrame from './SelectionFrame';
+import { DesignElement } from '../types/DesignElement';
 import Konva from 'konva';
+import { TemplateElement } from '../types/template';
+import { supportedShapes } from './elements/shapeRegistry';
 
 interface ImageElementProps {
   id: string;
@@ -19,13 +22,14 @@ interface ImageElementProps {
   selectedImageId?: string;
   containerRef: React.RefObject<HTMLDivElement | null>;
   stageRef: React.RefObject<any>;
+  element:TemplateElement;
+  
   canvasBounds: { x: number; y: number; width: number; height: number };
   handleImageUpdate: (e: KonvaEventObject<Event>, id: string) => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
   onSelect: () => void;
-  forwardedRef?: React.RefObject<Konva.Image | null>;// NEW: external ref for selected image
+  forwardedRef?: React.RefObject<Konva.Image | null>;
   setSelectedRef?: (ref: Konva.Image | null) => void;
-
 }
 
 const ImageElement: React.FC<ImageElementProps> = ({
@@ -45,7 +49,8 @@ const ImageElement: React.FC<ImageElementProps> = ({
   transformModeActive,
   selectedImageId,
   forwardedRef,
-  setSelectedRef
+  setSelectedRef,
+  element
 }) => {
   const internalRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<any>(null);
@@ -53,7 +58,6 @@ const ImageElement: React.FC<ImageElementProps> = ({
   const padding = 2;
   const gridSpacing = 50;
 
-  // Assign internal ref to forwardedRef if selected
   useEffect(() => {
     if (isSelected && forwardedRef) {
       forwardedRef.current = internalRef.current;
@@ -67,13 +71,12 @@ const ImageElement: React.FC<ImageElementProps> = ({
     }
   }, [isSelected, showTransformer]);
 
-
   const handleOnSelect = () => {
     if (setSelectedRef) setSelectedRef(internalRef.current);
-    console.log("handleOnSelect ref: ", internalRef.current)
-    onSelect(); // still notify parent
+
+    console.log('setSelectedRef', setSelectedRef);
+    onSelect();
   };
-  
 
   const handleTransformEnd = () => {
     const node = internalRef.current;
@@ -81,7 +84,6 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-
     const originalWidth = node.width();
     const originalHeight = node.height();
 
@@ -150,38 +152,80 @@ const ImageElement: React.FC<ImageElementProps> = ({
     } as KonvaEventObject<Event>, id);
   };
 
+
+
+  const sharedProps = {
+    ref: internalRef,
+    onClick: handleOnSelect,
+    onDragMove: handleDragMove,
+    onDragEnd: handleDragEnd,
+    onTransformEnd: handleTransformEnd,
+    cursor: isSelected ? 'move' : 'default',
+    isSelected,
+    zoom,
+    fillColor: element.type=='shape'? element.fill:"#ffffff", // or from color picker state
+    showTransformer
+  };
+
+
+  const shapeMeta = element.type === 'shape' ? supportedShapes[element.shapeType] : null;
+  const offset = internalRef.current && shapeMeta?.getAnchorOffset
+  ? shapeMeta.getAnchorOffset(internalRef.current)
+  : { x: 0, y: 0 };
+
+  
+  
+
   return (
     <>
-      <SelectionFrame
-        x={position.x}
-        y={position.y}
-        width={size.width}
-        height={size.height}
-        selected={isSelected}
-      />
+    <SelectionFrame
+  x={position.x}
+  y={position.y}
+  width={size.width}
+  height={size.height}
+  selected={isSelected}
+  shapeType={element.type === 'shape' ? element.shapeType : undefined}
+  refNode={internalRef.current}
+/>
 
-      <Image
-        ref={internalRef}
-        image={image}
-        x={position.x}
-        y={position.y}
-        width={size.width}
-        height={size.height}
-        onClick={handleOnSelect}
-        draggable={zoom === 1}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
-        cursor={isSelected ? 'move' : 'default'}
-        stroke={showTransformer && isSelected ? '#00f0ff' : undefined}
-        strokeWidth={showTransformer ? 2 : 0}
-        shadowColor={showTransformer ? '#00f0ff' : undefined}
-        shadowBlur={showTransformer ? 10 : 0}
-      />
-
+      {element.type === 'shape' &&
+      element.shapeType &&
+      supportedShapes[element.shapeType] ? (
+        supportedShapes[element.shapeType].render(
+          {
+            ...element,
+            x: position.x,
+            y: position.y,
+            width: size.width,
+            height: size.height
+          },
+          sharedProps
+        )
+      ) : (
+        <KonvaImage
+          ref={internalRef}
+          image={image}
+          x={position.x}
+          y={position.y}
+          width={size.width}
+          height={size.height}
+          onClick={handleOnSelect}
+          draggable={zoom === 1}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+          onTransformEnd={handleTransformEnd}
+          cursor={isSelected ? 'move' : 'default'}
+          stroke={showTransformer && isSelected ? '#00f0ff' : undefined}
+          strokeWidth={showTransformer ? 2 : 0}
+          shadowColor={showTransformer ? '#00f0ff' : undefined}
+          shadowBlur={showTransformer ? 10 : 0}
+        />
+      )}
+  
       {isSelected && showTransformer && <Transformer ref={transformerRef} />}
     </>
   );
+  
 };
 
 export default ImageElement;

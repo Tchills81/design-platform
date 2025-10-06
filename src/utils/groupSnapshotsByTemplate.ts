@@ -17,7 +17,9 @@ export function groupSnapshotsByTemplate(
 
 
     archive.forEach(entry => {
-        console.log(`Entry type: ${entry.type}, side: ${entry.side}, templateId: ${entry.templateId}`);
+       // console.log(`Entry  image: ${entry.type} ${entry.image.slice(entry.image.length-100, entry.image.length)}`);
+        //let image=entry.image.slice(entry.image.length-100, entry.image.length);
+        //entry.image = image;
       });
       
 
@@ -45,6 +47,8 @@ export function groupSnapshotsByTemplate(
         acc[id].insideBack = entry;
         break;
     }
+
+    //console.log("acc", acc);
 
     return acc;
   }, {} as Record<string, GroupedSnapshot>);

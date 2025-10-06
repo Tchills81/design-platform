@@ -1,0 +1,386 @@
+/**
+ * Renders tone-aware controls: 
+ * navigation, mode toggle, undo/redo, save, 
+ * preview, painting tools, and zoom/ruler toggles.
+ */
+
+
+// src/canvas/CanvasControls.tsx
+import { ArrowLeft, Brush, Image, Text, XIcon } from 'lucide-react';
+
+import { ToneButton } from '@/src/components/ToneButton';
+import SidebarModule from '@/src/components/SidebarModule';
+import SidebarSection from '@/src/components/SidebarSection';
+import CanvasActionCluster from '@/src/components/CanvasActionCluster';
+import PaintingCluster from '@/src/components/PaintingCluster';
+
+import PaintingToolbar from '@/src/components/PaintingToolbar';
+import { AddImageButton } from '@/src/components/AddImageButton';
+import { DualTemplate } from '@/src/types/template';
+import { tone } from '@/src/types/tone';
+import { CanvasMode } from '@/src/types/CanvasMode';
+import TopControlBar from '@/src/components/TopControlBar';
+import AddFaceButton from '@/src/components/AddFaceButton';
+import FaceSectionSwitcher from '@/src/components/FaceSectionSwitcher';
+import { map } from 'framer-motion/client';
+import regenerateGrid from '@/src/utils/regenerateGrid';
+import { useState } from 'react';
+import TonePalette from '@/src/components/TonePalette';
+import { HistoryEntry } from '@/src/types/HistoryEntry';
+import ProfileCard from '@/src/components/ProfileCard';
+import ElementPanel from '@/src/components/ElementPanel';
+import { DesignElement } from '@/src/types/DesignElement';
+
+export interface CanvasControlsProps {
+    canvasWidth:number;
+    canvasHeight:number;
+    cardX:number;
+    cardY:number;
+    template: DualTemplate | null;
+    mode: CanvasMode;
+    faceMode: CanvasMode;
+    modes:CanvasMode[]
+    setModes:(modes:CanvasMode[])=>void;
+    side: 'front' | 'back';
+    brushSize: number;
+    selectedColor: string;
+    showRulers: boolean;
+    showBleeds: boolean;
+    showGrids:boolean;
+    bleedToggleDisabled: boolean;
+    selectedTextId: string | null;
+    selectedImageId: string | null;
+    setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
+    setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
+    setMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
+    setTemplate: (tpl: DualTemplate | null) => void;
+    setLastSavedTemplate:(template:DualTemplate | null)=>void;
+    lastSavedTemplate:DualTemplate | null;
+    setDualFaces: React.Dispatch<React.SetStateAction<DualTemplate[]>>;
+    history: HistoryEntry[];
+    future: HistoryEntry[];
+    dualFaces:DualTemplate[];
+    designElements:DesignElement[];
+    setShowRulers: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowBleeds: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowGrids: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowBackground: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowReflectionModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setElementId?: React.Dispatch<React.SetStateAction<string>>;
+    setDesignElement:(el:DesignElement)=>void;
+    setBrushSize: (size: number) => void;
+    setSelectedColor: (color: string) => void;
+    handleUndo: () => void;
+    handleZoom: (zoom:number) => void;
+    handleRedo: () => void;
+    handleSaveCard: () => void;
+    captureBothSides: () => void;
+    handleAddText: () => void;
+    resetDesign:()=>void;
+    
+    handleRemoveText: () => void;
+    activateTransformMode: (id: string, type: 'image' | 'text') => void;
+    handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
+    handleRenderBlankTemplate: () => void;
+    handleTemplateSelect:(tpl:DualTemplate)=>void;
+}
+
+export default function CanvasControls({
+    template,
+    canvasWidth,
+    canvasHeight,
+    cardX,
+    cardY,
+    mode,
+    modes,
+    setModes,
+    side,
+    brushSize,
+    selectedColor,
+    showRulers,
+    showBleeds,
+    showGrids,
+    bleedToggleDisabled,
+    selectedTextId,
+    selectedImageId,
+    setMode,
+    setSide,
+    setTemplate,
+    setShowRulers,
+    setShowBleeds,
+    setShowGrids,
+    setBrushSize,
+    setSelectedColor,
+    setShowBackground,
+    setShowReflectionModal,
+    setElementId,
+    setDesignElement,
+    handleUndo,
+    handleZoom,
+    handleRedo,
+    handleSaveCard,
+    captureBothSides,
+    handleAddText,
+   
+    handleRemoveText,
+    activateTransformMode,
+    handleOnUploadImage,
+    handleRenderBlankTemplate,
+    handleTemplateSelect,
+    setLastSavedTemplate,
+    lastSavedTemplate,
+    dualFaces,
+    setDualFaces,
+    faceMode,
+    setFaceMode,
+    history,
+    future,
+    designElements,
+    resetDesign
+  }: CanvasControlsProps) {
+    // ...render logic
+  if (!template) return null;
+
+
+  const [showPalette, setShowPalette] = useState(false);
+
+  const handleDesignSelected=(el:DesignElement)=>{
+
+    console.log(template, 'template')
+    setDesignElement(el);
+    
+  }
+  
+
+  
+  return (
+    <>
+      <SidebarModule tone={template.tone as tone}>
+      <ToneButton
+  icon={<ArrowLeft />}
+  label="Back to Templates"
+  tone={template.tone}
+  onClick={() => {
+    setModes(['front', 'back']);
+    console.log('resetting design ....', resetDesign)
+    resetDesign();
+    setTemplate(null);
+  }}
+/>
+
+
+
+<SidebarSection label="Elements">
+  <ElementPanel onSelect={(el:DesignElement)=>{
+    
+    handleDesignSelected(el);
+
+  }}/>
+
+  </SidebarSection>
+
+
+      <SidebarSection label="Canvas Rituals">
+  <CanvasActionCluster
+  tone={template.tone as tone}
+  mode={mode === 'card' ? 'card' : 'painting'}
+  side={side}
+  faceMode={faceMode}
+  onToggleMode={() =>{
+    setShowBackground(false);
+    setMode(prev => (prev === 'card' ? 'painting' : 'card'));
+
+   
+    }
+  }
+  onFlipSide={() => {
+    if (faceMode === 'insideFront') {
+      setFaceMode('insideBack');
+    } else if (faceMode === 'insideBack') {
+      setFaceMode('insideFront');
+    } else {
+      setSide(prev => (prev === 'front' ? 'back' : 'front'));
+      setFaceMode(prev => (prev === 'front' ? 'back' : 'front'));
+    }
+  }}
+  onUndo={handleUndo}
+  onRedo={handleRedo}
+  history={history}
+  future={future}
+  onSave={handleSaveCard}
+  onPreview={captureBothSides}
+/>
+
+</SidebarSection>
+
+
+  <SidebarSection label="Canvas Tools">
+    <ToneButton icon={<Text />} label="Add Text" onClick={handleAddText} tone={template.tone} />
+    
+    <ToneButton icon={<XIcon />} label="Remove Text" onClick={handleRemoveText} tone={template.tone} isActive={!!selectedTextId} />
+    <AddImageButton context="design" tone={template.tone} onUpload={handleOnUploadImage} />
+    <ToneButton icon={<Image />} label="Resize Image" onClick={() => activateTransformMode(selectedImageId ?? '', 'image')} tone={template.tone} />
+  </SidebarSection>
+ 
+  
+ 
+</SidebarModule>
+
+
+      <TopControlBar
+        tone={template.tone as tone}
+        zoomIn={() => handleZoom(1.1)}
+        zoomOut={() => handleZoom(0.9)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        history={history}
+        future={future}
+        showRulers={showRulers}
+        toggleRulers={() => setShowRulers(prev => !prev)}
+        showBleeds={showBleeds}
+        toggleBleeds={() => setShowBleeds(prev => !prev)}
+        showGrids={showGrids}
+        toggleGrids={() => setShowGrids(prev => !prev)}
+        toggleReflectionsModal={() => {
+          
+          setShowReflectionModal(prev => !prev);
+          console.log('showReflectionModal...')
+        }}
+        bleedToggleDisabled={bleedToggleDisabled}
+        activeMode={faceMode}
+      />
+
+
+{mode === 'painting' && (
+  <>
+    <PaintingToolbar
+      brushSize={brushSize}
+      onSizeChange={setBrushSize}
+      brushColor={selectedColor}
+      onColorChange={setSelectedColor}
+    />
+
+   <PaintingCluster
+  tone={template.tone as tone}
+  brushSize={brushSize}
+  onBrushSizeIncrease={() => setBrushSize(brushSize+ 4)}
+  onResetGrid={() => {
+    console.log("Reset grid invoked");
+  
+    const updatedGrid = regenerateGrid(template, side);
+  
+    const updatedTemplate: DualTemplate = {
+      ...template,
+      [side]: {
+        ...template[side],
+        card: {
+          ...template[side]?.card,
+          gridColors: updatedGrid
+        },
+        elements: [...template[side]?.elements ?? []]
+      }
+    };
+  
+    setTemplate(updatedTemplate);
+  }}
+  
+  onSave={handleSaveCard}
+  onOpenPalette={() => {setShowPalette(prev => !prev); console.log('onPallete', showPalette)}}
+  onToggleBackground={()=>{
+    setMode('card')
+    setShowBackground(prev => !prev);
+  }}
+
+  onBack={() => setMode('card')}
+  onExitCanvas={() => {
+    setModes(['front', 'back']);
+    setTemplate(null);
+  }}
+/>
+
+  </>
+)}
+
+
+
+{mode === 'painting' && showPalette && (
+  <TonePalette
+    tone={template.tone as tone}
+    selectedColor={selectedColor}
+    onSelect={setSelectedColor}
+  />
+)}
+
+
+
+<div className="absolute bottom-4 left-40 -translate-x-1/2 z-10">
+      
+      <FaceSectionSwitcher
+      tone={template.tone as tone}
+      activeMode={faceMode}
+      availableModes={modes}
+      onAddInsideFace={()=>{ 
+
+
+        if (!template || dualFaces.length === 0 ) return;
+
+        console.log('mode...', mode, template);
+
+        /* Save current canvas state into front–back slot
+        setDualFaces((prev: DualTemplate[]) => {
+          const updated = [...prev];
+          updated[0] = { ...template };
+          return updated;
+        });*/
+
+
+        if(dualFaces){
+          
+          if(dualFaces.length==1){
+            setLastSavedTemplate(template);
+            
+            setModes(['front', 'back', 'insideFront', 'insideBack']);
+
+          }
+
+          setMode('insideFront'); 
+          setFaceMode('insideFront'); 
+          
+           
+        }
+        
+        //console.log("dualFaces...pushed",dualFaces);
+        
+      }}
+
+
+
+      onSelectMode={(newMode:CanvasMode)=>{
+
+        console.log('mode...', mode, template);
+
+        if (!template || dualFaces.length === 0 ) return;
+        
+
+        if(dualFaces)
+          {
+            if(dualFaces.length>=1){
+              setMode(newMode);
+              setFaceMode(newMode); 
+            }
+          }
+         
+        }}
+
+        
+      template={template}
+      setLastSavedTemplate={setLastSavedTemplate}
+      handleTemplateSelect={handleTemplateSelect}
+      lastSavedTemplate={lastSavedTemplate}
+     
+      />
+    </div>
+      
+    </>
+  );
+}

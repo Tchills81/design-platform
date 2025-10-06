@@ -1,5 +1,6 @@
 import React from 'react';
 import { Group, Rect } from 'react-konva';
+import { CanvasMode } from '../types/CanvasMode';
 
 interface GridRectProps {
   x: number;
@@ -10,9 +11,11 @@ interface GridRectProps {
   rows: number;
   gridColors: string[];
   cornerRadius?: number;
-  mode?: 'card' | 'painting' | 'preview';
+  mode?: CanvasMode;
   brushColor?: string;
   onPaint?: (col: number, row: number) => void;
+  showDynamicBackground?: boolean;
+  dynamicColor?: string;
 }
 
 const GridRect: React.FC<GridRectProps> = ({
@@ -25,40 +28,52 @@ const GridRect: React.FC<GridRectProps> = ({
   gridColors,
   cornerRadius = 8,
   mode,
-  brushColor, 
-  onPaint
-  
+  brushColor,
+  onPaint,
+  showDynamicBackground = false,
+  dynamicColor
 }) => {
   const cellWidth = width / cols;
   const cellHeight = height / rows;
 
   return (
     <Group x={x} y={y}>
-      {Array.from({ length: rows }).flatMap((_, row) =>
-        Array.from({ length: cols }).map((_, col) => {
-          const index = row * cols + col;
-          const fill = gridColors[index] || '#ffffff';
+      {showDynamicBackground ? (
+        <Rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill={dynamicColor || '#f3f4f6'}
+          cornerRadius={cornerRadius}
+          listening={false}
+        />
+      ) : (
+        Array.from({ length: rows }).flatMap((_, row) =>
+          Array.from({ length: cols }).map((_, col) => {
+            const index = row * cols + col;
+            const fill = gridColors[index] || '#ffffff';
 
-          return (
-            <Rect
-            stroke={fill}
-             key={`cell-${col}-${row}`}
-             x={col * cellWidth}
-             y={row * cellHeight}
-             width={cellWidth}
-             height={cellHeight}
-             fill={fill}
-             cornerRadius={0}
-             listening={true} // ✅ Enable interaction
-             onClick={() => {
-             if (mode === 'painting' && onPaint) {
-                onPaint(col, row);
-              }
-          }}
-          />
-
-          );
-        })
+            return (
+              <Rect
+                key={`cell-${col}-${row}`}
+                x={col * cellWidth}
+                y={row * cellHeight}
+                width={cellWidth}
+                height={cellHeight}
+                fill={fill}
+                stroke={fill}
+                cornerRadius={0}
+                listening={true}
+                onClick={() => {
+                  if (mode === 'painting' && onPaint) {
+                    onPaint(col, row);
+                  }
+                }}
+              />
+            );
+          })
+        )
       )}
       <Rect
         x={0}

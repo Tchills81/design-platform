@@ -5,13 +5,9 @@ import { AddImageButton } from './AddImageButton';
 import { Crop, XIcon, Type, Check } from 'lucide-react';
 import { ImageTools, TemplateSideKey } from '../utils/imageTools';
 import { DualTemplate } from '../types/template';
-
 import Konva from 'konva';
-
-import { cropImageFromNode } from './cropImageFromNode';
-
 import { cropRenderedRegion } from '../utils/cropRenderedRegion';
-
+import { supportedShapeTypes } from './elements/shapes/types';
 
 type ImageToolbarProps = {
   selectedElementId: string | null;
@@ -23,8 +19,7 @@ type ImageToolbarProps = {
   recordSnapshot: () => void;
   onToggleCropMode?: (enabled: boolean) => void;
   setCropMode: (enabled: boolean) => void;
-
-  imageRef?: React.RefObject<Konva.Image | null>; // pass this from parent
+  imageRef?: any;
   cropRegion?: { x: number; y: number; width: number; height: number };
   canvasBounds?: { x: number; y: number };
 };
@@ -45,6 +40,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
 }) => {
   const isElementSelected = !!selectedElementId;
   const [isCropMode, setIsCropMode] = useState(false);
+  const [color, setColor] = useState('#f43f5e');
 
   const handleResizeClick = () => {
     if (!selectedElementId || !setTransformModeActive) return;
@@ -63,30 +59,16 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     ImageTools.remove(selectedElementId, side, setTemplate, recordSnapshot);
   };
 
-  
-
   const handleCropConfirm = () => {
-
-
-    console.log("imageRef?.current", imageRef?.current, 
-        "cropRegion", cropRegion, 
-        "selectedElementId", selectedElementId,
-       "canvasBounds", canvasBounds)
-    
-     //console.log("imageRef?.current", imageRef?.current, "cropRegion", cropRegion, "selectedElementId", selectedElementId)
     if (!imageRef?.current || !cropRegion || !canvasBounds || !selectedElementId) return;
-
-    
-
     const layer = imageRef.current?.getLayer();
     const croppedSrc = layer ? cropRenderedRegion(layer, cropRegion) : null;
     if (!croppedSrc) return;
 
     setTemplate(prev => {
       if (!prev) return prev;
-
       const updatedElements = prev[side]?.elements.map(el => {
-        if (el.id === selectedElementId && el.type === 'image') {
+        if (el.id === selectedElementId) {
           return {
             ...el,
             src: croppedSrc,
@@ -117,6 +99,44 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     setCropMode(false);
     onToggleCropMode?.(false);
   };
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newColor = e.target.value;
+    setColor(newColor);
+
+    if (!selectedElementId) return;
+
+    setTemplate(prev => {
+      if (!prev) return prev;
+      const updatedElements = prev[side]?.elements.map(el => {
+        if (el.id === selectedElementId) {
+          return {
+            ...el,
+            fill: newColor
+          };
+        }
+        return el;
+      });
+
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    });
+
+    recordSnapshot();
+  };
+
+  console.log('shapeType', (imageRef?.current.getClassName()));
+  
+  const showColorPicker =
+  isElementSelected &&
+  imageRef?.current &&
+  supportedShapeTypes.includes(imageRef.current.getClassName());
+
 
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50 rounded-xl shadow-lg px-4 py-5 min-w-[340px] font-sans flex flex-col gap-4">
@@ -176,6 +196,18 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
             onToggleCropMode(next);
           }}
         />
+      )}
+
+      {showColorPicker && (
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Fill Color:</label>
+          <input
+            type="color"
+            value={color}
+            onChange={handleColorChange}
+            className="w-8 h-8 border rounded cursor-pointer"
+          />
+        </div>
       )}
     </div>
   );
