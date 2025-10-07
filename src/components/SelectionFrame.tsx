@@ -1,6 +1,8 @@
 import { Rect } from 'react-konva';
 import Konva from 'konva';
 import { supportedShapes } from './elements/shapeRegistry';
+import { template } from 'lodash';
+import { tone } from '../types/tone';
 
 interface SelectionFrameProps {
   x: number;
@@ -14,6 +16,7 @@ interface SelectionFrameProps {
   stroke?: string;
   dash?: number[];
   cornerRadius?: number;
+  tone?:tone
 }
 
 const SelectionFrame: React.FC<SelectionFrameProps> = ({
@@ -50,6 +53,8 @@ const SelectionFrame: React.FC<SelectionFrameProps> = ({
       height={height + padding * 2}
       stroke={stroke}
       strokeWidth={1}
+      fill='text-gray-800'
+      opacity={.2}
       dash={dash}
       cornerRadius={cornerRadius}
       listening={false}

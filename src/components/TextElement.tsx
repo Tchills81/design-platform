@@ -3,13 +3,14 @@
 import React, { useRef } from 'react';
 import { Text } from 'react-konva';
 import Konva from 'konva';
-import { Group, Rect} from 'react-konva';
+import { Group, Rect } from 'react-konva';
 import SelectionFrame from './SelectionFrame';
-
+import { TemplateElement } from '../types/template';
 
 interface TextElementProps {
   id: string;
   templateId: string;
+  el?: TemplateElement;
   text: string;
   position: { x: number; y: number };
   fontFamily: string;
@@ -18,23 +19,11 @@ interface TextElementProps {
   size: number;
   color: string;
   selected?: boolean;
-  transformModeActive?:boolean;
-
+  transformModeActive?: boolean;
   cardBounds: { x: number; y: number; width: number; height: number };
   onUpdate: (updated: { id: string; text: string; position: { x: number; y: number } }) => void;
   onEdit: (text: string, position: { x: number; y: number }) => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
-  el: {
-    label: string;
-    position: { x: number; y: number };
-    font: string;
-    size: number;
-    color: string;
-    fontStyle?: string;
-    fontWeight?: string;
-    isBold?: boolean;
-    isItalic?: boolean;
-  };
   index: number;
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
 }
@@ -84,11 +73,10 @@ const TextElement: React.FC<TextElementProps> = ({
   };
 
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
       console.log('Editing:', text, absPos);
-      onEdit(text, position)
+      onEdit(text, position);
     }
 
     if (onClick) {
@@ -122,33 +110,30 @@ const TextElement: React.FC<TextElementProps> = ({
 
   return (
     <Group>
-   <SelectionFrame
-    x={position.x}
-    y={position.y}
-    width={textRef.current?.width() ?? 0}
-    height={textRef.current?.height() ?? 0}
-    selected={!!selected} // ← this guarantees a boolean
-   />
+      <SelectionFrame
+        x={position.x}
+        y={position.y}
+        width={textRef.current?.width() ?? 0}
+        height={textRef.current?.height() ?? 0}
+        selected={!!selected}
+      />
 
-    <Text
-      ref={textRef}
-      text={text}
-      x={position.x}
-      y={position.y}
-      fontSize={size}
-      fontFamily={fontFamily}
-      fontStyle={fontStyle}
-      fill={color}
-      draggable
-      onClick={handleClick}
-      dragBoundFunc={dragBoundFunc}
-      onDragEnd={handleDragEnd}
-      cursor={selected ? 'move' : 'default'}
-      
-    />
-  </Group>
-  
-  
+      <Text
+        ref={textRef}
+        text={text}
+        x={position.x}
+        y={position.y}
+        fontSize={size}
+        fontFamily={fontFamily}
+        fontStyle={fontStyle}
+        fill={color}
+        draggable
+        onClick={handleClick}
+        dragBoundFunc={dragBoundFunc}
+        onDragEnd={handleDragEnd}
+        cursor={selected ? 'move' : 'default'}
+      />
+    </Group>
   );
 };
 

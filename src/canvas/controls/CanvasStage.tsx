@@ -14,6 +14,7 @@ import { useCanvasActions } from '../hooks/useCanvasActions';
 
 import { Line } from 'react-konva';
 import { Text } from 'react-konva';
+import { tone } from '@/src/types/tone';
 
 export interface CanvasStageProps {
   template: DualTemplate | null;
@@ -96,7 +97,8 @@ export default function CanvasStage({
     onFontSizeChange,
     handleWheel,
     onPrimitiveSelect,
-    resetDesign
+    resetDesign,
+    setModeActive,
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -108,6 +110,7 @@ export default function CanvasStage({
   return (
     <div className="canvas-stage bg-neutral-100">
       <Stage 
+           
                   ref={stageRef}
                   onWheel={handleWheel}
                   width={stageSize.width}
@@ -143,7 +146,7 @@ export default function CanvasStage({
                       if ((!isImage && !isShape)  && !isTransformer) {
                           setSelectedImageId(null);
                           resetTransformMode(); // ← graceful exit from resize mode
-                          console.log("isImage", isImage,  clickedNode.name?.(), (!isImage )  && !isTransformer)
+                          setModeActive(false);
                           
                         }
 
@@ -196,7 +199,7 @@ export default function CanvasStage({
           side={side}
           editingText={editingText}
           templateId={template.id}
-          tone={template.tone}
+          tone={template.tone as tone}
           selectedImageId={selectedImageId}
           selectedTextId={selectedTextId} // ✅ migrated
           transformModeActive={transformModeActive}

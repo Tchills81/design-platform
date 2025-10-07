@@ -3,6 +3,7 @@ import { Rect } from 'react-konva';
 
 type CropDragOverlayProps = {
   isActive: boolean;
+  tone?: string;
   onComplete: (region: { x: number; y: number; width: number; height: number }) => void;
 };
 

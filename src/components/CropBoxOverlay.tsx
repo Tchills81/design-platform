@@ -64,6 +64,30 @@ export const CropBoxOverlay: React.FC<CropBoxProps> = ({
     }
   }, [cropRegion]);
 
+
+
+  useEffect(() => {
+    const node = rectRef.current;
+    if (!node) return;
+  
+    let dashOffset = 0;
+    let frameId: number;
+  
+    const animate = () => {
+      dashOffset = (dashOffset + 1) % 12;
+      node.dashOffset(dashOffset);
+      node.getLayer()?.batchDraw();
+      frameId = requestAnimationFrame(animate);
+    };
+  
+    animate();
+  
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, []);
+  
+
   const handleTransformEnd = () => {
     const node = rectRef.current;
     if (!node) return;
@@ -125,6 +149,7 @@ export const CropBoxOverlay: React.FC<CropBoxProps> = ({
         }}
         rotateEnabled={false}
         anchorSize={8}
+        anchorCornerRadius={4}
       />
    <Circle
   ref={handleRef}

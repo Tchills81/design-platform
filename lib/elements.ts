@@ -5,8 +5,8 @@ import { DesignElement,  } from '@/src/types/DesignElement';
 
 export const ELEMENT_LIBRARY: DesignElement[] = [
   // 📝 Text Elements
-  { id: 'text-1', type: 'text', label: 'Heading', x: 250, y: 250 },
-  { id: 'text-2', type: 'text', label: 'Body Text', x: 200, y: 100 },
+  { id: 'text-1', type: 'text', label: 'Heading', x: 250, y: 250, shapeType:'heading' },
+  { id: 'text-2', type: 'text', label: 'Body Text', x: 200, y: 100, shapeType:'body' },
 
   // 🟦 Shape Elements
   { id: 'shape-1', type: 'shape', label: 'Rectangle', x: 100, y: 100, shapeType: 'rectangle' },

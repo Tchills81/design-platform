@@ -139,7 +139,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
 
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50 rounded-xl shadow-lg px-4 py-5 min-w-[340px] font-sans flex flex-col gap-4">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50
+     rounded-xl shadow-lg px-4 py-5 min-w-[200px] font-inter flex flex-col gap-4">
       <AddImageButton tone={tone} onUpload={handleOnUploadImage} />
 
       <ToneButton

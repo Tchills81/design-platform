@@ -8,13 +8,14 @@ import { TemplateElement, DualTemplate, isLegacyTextElement,
   isPrimitiveShapeElement, isTextElementForTextComponent, isPrimitiveImageElement
        } from '../types/template';
 
-import { PrimitiveShapeElement, PrimitiveTextElement, PrimitiveImageElement } from './elements/designElements';
+
 
 import { CanvasMode } from '../types/CanvasMode';
 import { useRef, Fragment } from 'react';
 import Konva from 'konva';
 import { template } from 'lodash';
 import { DesignElement } from '../types/DesignElement';
+import { tone } from '../types/tone';
 
 interface CardSideLayerProps {
   card: {
@@ -31,7 +32,7 @@ interface CardSideLayerProps {
   elements: TemplateElement[];
   side: 'front' | 'back';
   templateId: string;
-  tone: string;
+  tone: tone;
   selectedImageId: string | null;
   selectedTextId: string | null; // ✅ migrated
   cardX: number;
@@ -186,7 +187,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
       }}
       size={el.size}
       zoom={zoom}
-      tone={tone}
+      tone={tone as tone}
       isSelected={selectedImageId === el.id}
       showTransformer={transformModeActive}
       containerRef={containerRef}

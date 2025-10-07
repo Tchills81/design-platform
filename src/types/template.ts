@@ -1,6 +1,6 @@
 import { CanvasMode } from "./CanvasMode";
 
-export  type shapeType = 'rectangle' | 'circle' | 'line' | 'regularPolygon' |'ring' |'star' | 'arrow'|'heart';
+export  type shapeType = 'rectangle' | 'circle' | 'line' | 'regularPolygon' |'ring' |'star' | 'arrow'|'heart' | 'heading' |'body';
 
 export type TemplateElement =
   | {

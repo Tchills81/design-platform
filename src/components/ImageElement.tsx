@@ -7,6 +7,8 @@ import { DesignElement } from '../types/DesignElement';
 import Konva from 'konva';
 import { TemplateElement } from '../types/template';
 import { supportedShapes } from './elements/shapeRegistry';
+import { tone } from '../types/tone';
+import { toneColorMap } from '../types/tone';
 
 interface ImageElementProps {
   id: string;
@@ -15,7 +17,7 @@ interface ImageElementProps {
   position: { x: number; y: number };
   size: { width: number; height: number };
   zoom: number;
-  tone?: string;
+  tone: tone;
   isSelected: boolean;
   showTransformer?: boolean;
   transformModeActive?: boolean;
@@ -50,7 +52,8 @@ const ImageElement: React.FC<ImageElementProps> = ({
   selectedImageId,
   forwardedRef,
   setSelectedRef,
-  element
+  element,
+  tone
 }) => {
   const internalRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<any>(null);
@@ -175,6 +178,7 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
   
   
+  
 
   return (
     <>
@@ -186,6 +190,7 @@ const ImageElement: React.FC<ImageElementProps> = ({
   selected={isSelected}
   shapeType={element.type === 'shape' ? element.shapeType : undefined}
   refNode={internalRef.current}
+  tone={tone}
 />
 
       {element.type === 'shape' &&

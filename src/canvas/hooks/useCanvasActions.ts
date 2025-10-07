@@ -57,6 +57,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setZoom,
     setPosition,
     setBleedToggleDisabled,
+    cropModeActive,
     setCropModeActive,
     setSelectedFont,
     setSelectedFontSize,
@@ -341,6 +342,7 @@ const setDesignElement = useCallback(
           type: 'text',
           id: newId,
           label: el.label ?? 'New Text',
+          shapeType:el.shapeType ?? 'heading',
           text: el.label ?? 'New Text',
           font: el.font ?? '--font-inter',
           size: el.fontSize ?? 16,
@@ -391,6 +393,7 @@ const setDesignElement = useCallback(
         type: 'text',
         id: newId,
         label: 'New Text',
+        shapeType:'heading',
         text: 'New Text',
         font: '--font-inter',
         size: 16,
@@ -739,7 +742,13 @@ const setDesignElement = useCallback(
 
   const setModeActive = useCallback((bool: boolean) => {
     setCropModeActive(bool);
-  }, []);
+
+   /*if (cropModeActive) {
+      document.body.style.cursor = 'crosshair';
+    } else {
+      document.body.style.cursor = 'default';
+    }*/
+  }, [cropModeActive]);
 
   const captureBothSides = useCallback(async () => {
     if (!stageRef.current) return;
@@ -1029,7 +1038,6 @@ const setDesignElement = useCallback(
   const resetDesign = useCallback(() => {
     setSelectedImageId(null);
     resetTransformMode();
-    
     setCropModeActive(false);
   }, []);
 

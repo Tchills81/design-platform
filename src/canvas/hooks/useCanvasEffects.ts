@@ -196,11 +196,7 @@ useEffect(() => {
     height: bounds.height,
   });
 
-  if (cropModeActive) {
-    document.body.style.cursor = 'crosshair';
-  } else {
-    document.body.style.cursor = 'default';
-  }
+  
   
 }, [cropModeActive, selectedImageId, template, canvasBounds, imageRef?.current]);
 
