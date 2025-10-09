@@ -17,8 +17,8 @@ export const ELEMENT_LIBRARY: DesignElement[] = [
   { id: 'shape-6', type: 'shape', label: 'Line', x: 140, y: 140, shapeType: 'line', width:200, height: 0 },
   { id: 'shape-7', type: 'shape', label: 'Arrow', x: 100, y: 100, shapeType: 'arrow', width: 10, height: 0 },
   { id: 'shape-8', type: 'shape', label: 'Heart', x: 100, y: 100, shapeType: 'heart', width:120, height: 105 },
-
+  //{ id: 'shape-9', type: 'shape', label: 'Flower', x: 100, y: 100, shapeType: 'flower', width:120, height: 105 },
 
   // 🖼️ Media Elements
-  { id: 'image-1', type: 'image', label: 'Placeholder Image', x: 240, y: 240 }
+  { id: 'image-1', type: 'image', label: 'Placeholder Image', x: 240, y: 240 , shapeType:'image'}
 ];

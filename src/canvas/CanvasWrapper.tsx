@@ -18,6 +18,8 @@ import { tone } from "../types/tone";
 import CardGridBackground from "../components/CardGridBackground";
 import GridBackground from "../components/GridBackground";
 import ShareModal from "../modals/ShareModal";
+import ReflectionModal from "../modals/ReflectionModal";
+import CommentModal from "../modals/CommentModal";
 import { useEffect } from "react";
 
 export default function CanvasWrapper() {
@@ -81,7 +83,17 @@ export default function CanvasWrapper() {
     history,
     future,
     showReflectionModal,
-    
+    reflections,
+    showShareModal,
+    showCommentModal,
+    elementId,
+    setTextAlign,
+    setIsMultline,
+    setIsUnderline,
+    isMultiline,
+    isUnderline,
+    textAlign,
+    stageRef
     
   } = state;
 
@@ -127,6 +139,9 @@ export default function CanvasWrapper() {
     setDynamicBackground,
     setShowBackground,
     setShowReflectionModal,
+    setShowCommentModal,
+    setReflections,
+    setShowShareModal,
     setDesignElement,
     setDualFaces,
     resetDesign,
@@ -193,6 +208,8 @@ export default function CanvasWrapper() {
         setBrushSize={setBrushSize}
         setShowBackground={setShowBackground}
         setShowReflectionModal={setShowReflectionModal}
+        setShowCommentModal={setShowCommentModal}
+        setShowShareModal={setShowShareModal}
         setDesignElement={ setDesignElement}
         setSelectedColor={setSelectedColor}
         handleUndo={handleUndo}
@@ -326,6 +343,12 @@ export default function CanvasWrapper() {
       exitEditingMode={exitEditingMode}
       showToolbar={showToolbar}
       inputPosition={inputPosition}
+      setTextAlign={setTextAlign}
+      setIsMultline={setIsMultline}
+      setIsUnderline={setIsUnderline}
+      isMultiline={isMultiline}
+      isUnderline={isUnderline}
+      textAlign={textAlign}
       mode={mode}
       />
 
@@ -334,15 +357,45 @@ export default function CanvasWrapper() {
 
 
 
-{showReflectionModal && (
+{showShareModal && (
   <ShareModal
   isOpen={true}
   shareLink=""
-  onClose={()=>{}}
+  onClose={()=>{setShowShareModal(false)}}
   onInvite={()=>{}}
   onAccessChange={()=>{}}
   accessLevel="view"/>
 )}
+
+{showReflectionModal && (
+  <ReflectionModal 
+    isOpen={true}
+    konvaStageRef={stageRef}
+    reflections={reflections}
+    onClose={() => setShowReflectionModal(false)}
+  />
+)}
+
+
+
+{showCommentModal && (
+  <CommentModal
+    isOpen={true}
+    designId={template.id}
+    elementId={elementId}
+    createdBy="tobias" // Replace with actual user context
+    onClose={() => setShowCommentModal(false)}
+    onSubmitSuccess={() => {
+      // Refresh reflections
+      fetch(`/api/reflections?designId=${template.id}`)
+        .then(res => res.json())
+        .then(data => setReflections(data));
+    }}
+  />
+)}
+
+
+
 
       
 

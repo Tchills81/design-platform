@@ -1,6 +1,6 @@
 // src/components/TopControlBar.tsx
 
-import { ZoomIn, ZoomOut, Undo, Redo, Share2, MessageCircle, LogOutIcon } from 'lucide-react';
+import { ZoomIn, ZoomOut, Undo, Redo, Share2, MessageCircle, LogOutIcon, Eye, FlipHorizontal2Icon as reflection, FlipHorizontal2Icon} from 'lucide-react';
 import { IconButton } from './IconButton';
 import { ToggleCheckbox } from './ToggleCheckbox';
 import { tone } from '@/src/types/tone';
@@ -10,14 +10,18 @@ import { CanvasMode } from '../types/CanvasMode';
 import { toneColorMap } from '@/src/types/tone';
 import AvatarDropdown from './AvatarDropdown';
 import { signOut } from 'next-auth/react';
+import FooterControlCluster from '@/src/components/FooterControlCluster';
+import { DualTemplate } from '../types/template';
+
 
 
 interface TopControlBarProps {
   tone: tone;
   history: HistoryEntry[];
   future: HistoryEntry[];
+  template?:DualTemplate;
   activeMode: CanvasMode;
-
+  onPreview: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
   onUndo: () => void;
@@ -27,12 +31,16 @@ interface TopControlBarProps {
   showBleeds: boolean;
   toggleBleeds: () => void;
   toggleReflectionsModal:()=>void;
+  toggleShareModal:()=>void;
+
+  toggleCommentModal:()=>void;
   showGrids: boolean;
   toggleGrids: () => void;
   bleedToggleDisabled?: boolean;
 }
 
 export default function TopControlBar({
+  template,
   tone,
   zoomIn,
   zoomOut,
@@ -41,8 +49,11 @@ export default function TopControlBar({
   showBleeds,
   toggleBleeds,
   showGrids,
+  onPreview,
   toggleGrids,
   toggleReflectionsModal,
+  toggleCommentModal,
+  toggleShareModal,
   bleedToggleDisabled,
   history,
   future,
@@ -65,12 +76,9 @@ export default function TopControlBar({
 
 
   return (
+    <>
     <div className="absolute top-6 right-4 z-20 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg">
      
-     
-
-
-
 
      <ToneButton
         icon={<Undo />}
@@ -88,52 +96,52 @@ export default function TopControlBar({
         disabled={future?.length === 0}
       />
 
+
+<div className="flex items-center gap-3 pr-3 border-r border-neutral-300 font-inter min-w-[180px]">
+  <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-white via-neutral-100 to-white shadow-sm w-full">
+    <span className="text-xs uppercase tracking-wide text-neutral-500">Face</span>
+    <span className={`text-sm font-semibold ${toneTextClass}`}>
+      {template?.name + '->'+ currentFaceLabel}
+    </span>
+  </div>
+</div>
+
+
+     <ToneButton
+        icon={<Eye />}
+        label="Preview"
+        tone={tone}
+        onClick={onPreview}
+      />
+
 <ToneButton
-  icon={<Share2 />}
-  label="Share"
+  icon={<FlipHorizontal2Icon />}
+  label="Reflections"
   tone={tone}
-  onClick={() => {
-    console.log("Share action triggered");
-    // You can scaffold share modal logic here
-  }}
+  onClick={toggleReflectionsModal}
 />
 
 <ToneButton
   icon={<MessageCircle />}
-  label=""
+  label="Comment"
   tone={tone}
-  onClick={toggleReflectionsModal}
+  onClick={toggleCommentModal}
 />
+
+<ToneButton
+  icon={<Share2 />}
+  label="Share"
+  tone={tone}
+  onClick={toggleShareModal}
+/>
+
+
      
-     <div className="flex items-center gap-2 pr-2 border-r border-neutral-300 font-inter">
-     <span className={`text-sm font-medium ${toneTextClass}`}>
-          Active: {currentFaceLabel} 
-        </span>
-      </div>
 
 
-      <IconButton icon={<ZoomIn size={20} />} tone={tone} onClick={zoomIn} />
-      <IconButton icon={<ZoomOut size={20} />} tone={tone} onClick={zoomOut} />
 
-      <ToggleCheckbox
-        label="Show Rulers"
-        checked={showRulers}
-        onToggle={toggleRulers}
-        tone={tone}
-      />
-      <ToggleCheckbox
-        label="Show Bleeds"
-        checked={showBleeds}
-        onToggle={toggleBleeds}
-        tone={tone}
-        disabled={bleedToggleDisabled}
-      />
-      <ToggleCheckbox
-        label="Show Grid"
-        checked={showGrids}
-        onToggle={toggleGrids}
-        tone={tone}
-      />
+
+     
 
 <AvatarDropdown/>
 
@@ -147,6 +155,24 @@ export default function TopControlBar({
     // You can scaffold comment logic here
   }}
 />
+
+
+
     </div>
+
+    <FooterControlCluster
+  tone={tone}
+  zoomIn={zoomIn}
+  zoomOut={zoomOut}
+  showRulers={showRulers}
+  toggleRulers={toggleRulers}
+  showBleeds={showBleeds}
+  toggleBleeds={toggleBleeds}
+  showGrids={showGrids}
+  toggleGrids={toggleGrids}
+  bleedToggleDisabled={bleedToggleDisabled}
+/>
+</>
+
   );
 }

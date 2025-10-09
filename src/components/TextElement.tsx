@@ -14,6 +14,11 @@ interface TextElementProps {
   text: string;
   position: { x: number; y: number };
   fontFamily: string;
+  textAlign:'left'|'center'|'right';
+  isMultiline:boolean;
+  isUnderline:boolean;
+  textWidth?: number;
+  lineHeight?: number;
   fontStyle?: 'normal' | 'bold' | 'italic' | 'italic bold';
   fontWeight?: 'normal' | 'bold';
   size: number;
@@ -22,10 +27,12 @@ interface TextElementProps {
   transformModeActive?: boolean;
   cardBounds: { x: number; y: number; width: number; height: number };
   onUpdate: (updated: { id: string; text: string; position: { x: number; y: number } }) => void;
-  onEdit: (text: string, position: { x: number; y: number }) => void;
+  onEdit: (text: string, position: { x: number; y: number }, align:'left'|'center'|'right') => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
   index: number;
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+ 
+
 }
 
 const TextElement: React.FC<TextElementProps> = ({
@@ -34,6 +41,7 @@ const TextElement: React.FC<TextElementProps> = ({
   text,
   position,
   fontFamily,
+  textAlign,
   fontStyle,
   fontWeight,
   size,
@@ -44,7 +52,11 @@ const TextElement: React.FC<TextElementProps> = ({
   onUpdate,
   onEdit,
   onClick,
-  setGhostLines
+  setGhostLines,
+  isMultiline,
+  isUnderline,
+  textWidth,
+  lineHeight
 }) => {
   const textRef = useRef<Konva.Text>(null);
   const padding = 2;
@@ -76,7 +88,7 @@ const TextElement: React.FC<TextElementProps> = ({
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
       console.log('Editing:', text, absPos);
-      onEdit(text, position);
+      onEdit(text, position, textAlign);
     }
 
     if (onClick) {
@@ -118,21 +130,28 @@ const TextElement: React.FC<TextElementProps> = ({
         selected={!!selected}
       />
 
-      <Text
-        ref={textRef}
-        text={text}
-        x={position.x}
-        y={position.y}
-        fontSize={size}
-        fontFamily={fontFamily}
-        fontStyle={fontStyle}
-        fill={color}
-        draggable
-        onClick={handleClick}
-        dragBoundFunc={dragBoundFunc}
-        onDragEnd={handleDragEnd}
-        cursor={selected ? 'move' : 'default'}
-      />
+<Text
+  id={id}
+  ref={textRef}
+  text={text}
+  x={position.x}
+  y={position.y}
+  fontSize={size}
+  fontFamily={fontFamily}
+  align={textAlign}
+  fontStyle={fontStyle}
+  fill={color}
+  draggable
+  onClick={handleClick}
+  dragBoundFunc={dragBoundFunc}
+  onDragEnd={handleDragEnd}
+  cursor={selected ? 'move' : 'default'}
+  wrap={isMultiline ? 'word' : undefined}
+  width={isMultiline ? textWidth ?? 240 : undefined}
+  lineHeight={isMultiline ? lineHeight ?? 1.4 : undefined}
+  textDecoration={isUnderline ? 'underline' : undefined}
+/>
+
     </Group>
   );
 };

@@ -139,8 +139,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
 
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-50
-     rounded-xl shadow-lg px-4 py-5 min-w-[200px] font-inter flex flex-col gap-4">
+    <div className="absolute top-1/2 right-4 -translate-x-1/2 z-50 bg-gray-50
+     rounded-xl shadow-lg px-4 py-5 min-w-[250px] font-inter flex flex-col gap-4">
       <AddImageButton tone={tone} onUpload={handleOnUploadImage} />
 
       <ToneButton
@@ -210,6 +210,10 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
           />
         </div>
       )}
+
+       <div className="text-xs text-gray-500 text-center pt-2 select-none">
+        Drag this toolbar anywhere
+      </div>
     </div>
   );
 };

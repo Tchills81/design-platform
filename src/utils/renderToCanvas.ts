@@ -2,7 +2,7 @@ export const renderToCanvas = (
   design: any, // expected to be DualTemplate
   setTemplate: (updater: (prev: any) => any) => void,
   setMode: (mode: 'card' | 'painting') => void,
-  side: 'front' | 'back' = 'front' // default to front
+  side: 'front' | 'back' = 'front'
 ) => {
   const face = design?.[side];
 
@@ -14,11 +14,9 @@ export const renderToCanvas = (
   const { mode } = design;
   const { card, elements } = face;
 
- 
-
-  setTemplate(prev => {
+  setTemplate((prev) => {
     const safePrev = prev ?? { front: {}, back: {} };
-  
+
     return {
       ...safePrev,
       [side]: {
@@ -36,37 +34,47 @@ export const renderToCanvas = (
             position: el.position,
             size: el.size
           };
-  
+
           if (el.type === 'image') {
             return {
               ...base,
-              src: el.src ?? '',
-              tone: el.tone ?? ''
+              src: el.src,
+              tone: el.tone,
+              role: el.role,
+              label: el.label
             };
           }
-  
+
           if (el.type === 'text') {
-            
-            return  {
+            return {
               ...base,
-              text: el.text ?? el.label ?? '',
-              label: el.label ?? '',
-              font: el.font ?? 'Arial',
-              color: el.color ?? '#333',
+              text: el.text,
+              label: el.label,
+              font: el.font,
+              color: el.color,
               isBold: el.isBold === true || el.isBold === 'true',
               isItalic: el.isItalic === true || el.isItalic === 'true',
-              tone: el.tone ?? '',
-              
+              tone: el.tone,
+              role: el.role
             };
-
-            
           }
 
-          
-  
+          if (el.type === 'shape') {
+            return {
+              ...base,
+              shapeType: el.shapeType, // ✅ required, no fallback
+              fill: el.fill,
+              stroke: el.stroke,
+              strokeWidth: el.strokeWidth,
+              tone: el.tone,
+              role: el.role,
+              label: el.label
+            };
+          }
+
           return base;
         })
       }
     };
   });
-}  
+};

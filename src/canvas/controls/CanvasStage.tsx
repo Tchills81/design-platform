@@ -81,6 +81,11 @@ export default function CanvasStage({
     showBackground,
     dynamicBackground,
     designElements,
+    textAlign,
+    setTextAlign,
+    isMultiline,
+    isUnderline,
+    setElementId,
     
 
   } = state;
@@ -202,6 +207,7 @@ export default function CanvasStage({
           tone={template.tone as tone}
           selectedImageId={selectedImageId}
           selectedTextId={selectedTextId} // ✅ migrated
+          setElementId={setElementId}
           transformModeActive={transformModeActive}
           cardX={cardX}
           cardY={cardY}
@@ -218,6 +224,9 @@ export default function CanvasStage({
           bgImage={side === 'front' ? frontImage : backImage}
           showBackground={showBackground}
           dynamicBackground={dynamicBackground}
+          textAlign={textAlign}
+          isMultiline={isMultiline}
+          isUnderline={isUnderline}
           setTemplate={setTemplate}
           handlers={{
             

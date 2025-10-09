@@ -13,8 +13,10 @@ import {
   Square
 } from 'lucide-react';
 import { ToneButton } from './ToneButton';
+import { tone } from '../types/tone';
 
 export interface ElementPanelProps {
+  tone:tone;
   onSelect: (element: DesignElement) => void;
 }
 
@@ -32,7 +34,7 @@ const iconMap: Record<string, JSX.Element> = {
   shape: <Shapes /> // fallback for generic shapes
 };
 
-export default function ElementPanel({ onSelect }: ElementPanelProps) {
+export default function ElementPanel({ onSelect, tone }: ElementPanelProps) {
   const grouped = ELEMENT_LIBRARY.reduce((acc, el) => {
     const key = el.type;
     acc[key] = acc[key] || [];
@@ -56,6 +58,7 @@ export default function ElementPanel({ onSelect }: ElementPanelProps) {
                   icon={icon}
                   label={el.label}
                   onClick={() => onSelect(el)}
+                  tone={tone}
                 />
               );
             })}

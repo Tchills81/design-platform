@@ -47,11 +47,16 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setStageSize,
     setGhostOpacity,
     setEditingText,
+    setTextAlign,
+    setIsMultline,
+    setIsUnderline,
     setShowToolbar,
     setPortalTarget,
     setDynamicBackground,
     setShowBackground,
     setShowReflectionModal,
+    setShowShareModal,
+    setShowCommentModal,
     setCellSize,
     cellSize,
     setZoom,
@@ -297,52 +302,52 @@ const setDesignElement = useCallback(
 
     recordSnapshot();
 
-    let newElement: TemplateElement;
     const newId = createPrimitiveId(el.type);
+    let newElement: TemplateElement;
 
     switch (el.type) {
       case 'shape':
         newElement = {
-          type: 'shape',
           id: newId,
-          shapeType: el.shapeType ?? 'circle', // ✅ use passed shapeType
+          type: 'shape',
           position: { x: el.x ?? 100, y: el.y ?? 100 },
           size: {
             width: el.width ?? 60,
-            height: el.height ?? 60
+            height: el.height ?? 60,
           },
           fill: el.fill ?? '#f0f0f0',
+          shapeType: el.shapeType,
           stroke: el.stroke,
           strokeWidth: el.strokeWidth,
           tone: template.tone,
           role: 'accent',
-          label: el.label ?? ''
+          label: el.label ?? '',
         };
         break;
 
       case 'image':
         newElement = {
-          type: 'image',
           id: newId,
+          type: 'image',
           src: el.src ?? '/assets/logo.png',
           position: { x: el.x ?? 100, y: el.y ?? 100 },
           size: {
             width: el.width ?? 100,
-            height: el.height ?? 80
+            height: el.height ?? 80,
           },
           tone: template.tone,
           role: 'decoration',
-          label: el.label ?? ''
+          label: el.label ?? '',
         };
         break;
 
       case 'text':
         console.log('text type of element created ', el.label);
         newElement = {
-          type: 'text',
           id: newId,
+          type: 'text',
           label: el.label ?? 'New Text',
-          shapeType:el.shapeType ?? 'heading',
+          shapeType: el.shapeType,
           text: el.label ?? 'New Text',
           font: el.font ?? '--font-inter',
           size: el.fontSize ?? 16,
@@ -351,22 +356,22 @@ const setDesignElement = useCallback(
           isBold: el.isBold ?? false,
           isItalic: el.isItalic ?? false,
           tone: template.tone,
-          role: 'message'
+          role: 'message',
         };
         break;
 
-      default: 
+      default:
         return;
     }
 
-    setTemplate(prev => {
+    setTemplate((prev) => {
       if (!prev || !prev[side]) return null;
       return {
         ...prev,
         [side]: {
           ...prev[side],
-          elements: [...prev[side].elements, newElement]
-        }
+          elements: [...prev[side].elements, newElement],
+        },
       };
     });
 
@@ -376,6 +381,7 @@ const setDesignElement = useCallback(
   },
   [template, side]
 );
+
 
 
 
@@ -491,7 +497,7 @@ const setDesignElement = useCallback(
     console.log("🖋️ Text selected with ID:", id, "label:", text);
   }, [activateTransformMode]);
 
-  const handleTextBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+  const handleTextBlur = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
     const toolbarEl = document.getElementById("text-toolbar");
     const relatedTarget = e.relatedTarget as HTMLElement;
     if (!relatedTarget || (toolbarEl && toolbarEl.contains(relatedTarget))) return;
@@ -752,6 +758,10 @@ const setDesignElement = useCallback(
 
   const captureBothSides = useCallback(async () => {
     if (!stageRef.current) return;
+
+    //const clonedTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
+
+    
   
     setShowBleeds(false);
     setShowRulers(false);
@@ -777,6 +787,11 @@ const setDesignElement = useCallback(
     setSnapshots({ front, back });
     setShowGallery(true);
     setLastSavedTemplate(template);
+    
+    //console.log('clonedTemplate', clonedTemplate)
+
+    //handleTemplateSelect(clonedTemplate || undefined);
+  
   }, [stageRef, canvasBounds, template]);
 
 
@@ -903,7 +918,7 @@ const setDesignElement = useCallback(
       console.log("🧩 handleTemplateSelect → normalized template:",
                       normalized, normalized.width, 
                       normalized.height,
-                   'cellSize', normalized.front?.card.cellSize 
+                   'cellSize', normalized.front?.elements
                   );
   
       setTemplate(normalized);
@@ -1039,6 +1054,9 @@ const setDesignElement = useCallback(
     setSelectedImageId(null);
     resetTransformMode();
     setCropModeActive(false);
+    setIsMultline(false);
+    setIsUnderline(false);
+    
   }, []);
 
 
@@ -1099,11 +1117,14 @@ const setDesignElement = useCallback(
     setStageSize,
     setGhostOpacity,
     setEditingText,
+    setTextAlign,
     setShowToolbar,
     setPortalTarget,
     setDynamicBackground,
     setShowBackground,
     setShowReflectionModal,
+    setShowCommentModal,
+    setShowShareModal,
     setCellSize,
     setZoom,
     setPosition,

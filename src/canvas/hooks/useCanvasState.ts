@@ -21,6 +21,7 @@ export function useCanvasState() {
 
 
   //refelections...
+  const [showCommentModal, setShowCommentModal] = useState(false);
   const [reflections, setReflections] = useState([]);
   const [showReflectionModal, setShowReflectionModal]=useState<boolean>(false);
   const [showShareModal, setShowShareModal]=useState<boolean>(false);
@@ -45,6 +46,9 @@ export function useCanvasState() {
   const [editingText, setEditingText] = useState<string>("");
   const [inputPosition, setInputPosition] = useState<{ x: number; y: number } | null>(null);
   const [pendingStyle, setPendingStyle] = useState<{ isBold?: boolean; isItalic?: boolean }>({});
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [isMultiline, setIsMultline] = useState<boolean>(false);
+  const [isUnderline, setIsUnderline] = useState<boolean>(false)
 
   // 🖼️ Image editing
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
@@ -209,6 +213,8 @@ export function useCanvasState() {
     setReflections,
     showReflectionModal, 
     setShowReflectionModal,
+    showCommentModal, 
+    setShowCommentModal,
     elementId, 
     setElementId,
     designElements, 
@@ -247,6 +253,12 @@ export function useCanvasState() {
     setInputPosition,
     pendingStyle,
     setPendingStyle,
+    textAlign, 
+    setTextAlign,
+    isMultiline,
+    setIsMultline,
+    isUnderline,
+    setIsUnderline,
 
     // 🖼️ Image
     selectedImageId,

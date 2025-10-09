@@ -342,6 +342,12 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+.highlighted {
+  outline: 2px dashed #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+
 
 
 

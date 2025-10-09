@@ -208,6 +208,7 @@ const ImageElement: React.FC<ImageElementProps> = ({
         )
       ) : (
         <KonvaImage
+          id={id}
           ref={internalRef}
           image={image}
           x={position.x}

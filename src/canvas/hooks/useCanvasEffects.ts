@@ -44,6 +44,7 @@ export function useCanvasEffects(
     dualFaces,
     showBackground,
     showReflectionModal,
+    showCommentModal,
     designElement,
     setDesignElements,
     imageRef,
@@ -263,7 +264,7 @@ useEffect(() => {
       const res = await fetch(`/api/reflections?designId=${template?.id}`);
       const data = await res.json();
       setReflections(data);
-      console.log('showReflectionModal', showReflectionModal)
+      console.log('showReflectionModal', showReflectionModal, 'showCommentModal', showCommentModal)
     }
   
     fetchReflections();
@@ -271,9 +272,15 @@ useEffect(() => {
 
 
   useEffect(() => {
-    console.log('designElement...  useEffect', designElement)
-  }, [designElement])
+    async function fetchReflections() {
+      if (!template?.id || !showReflectionModal) return;
+      const res = await fetch(`/api/reflections?designId=${template.id}`);
+      const data = await res.json();
+      setReflections(data);
+    }
   
+    fetchReflections();
+  }, [template?.id, showReflectionModal]);
 }
 
 

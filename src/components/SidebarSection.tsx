@@ -9,17 +9,30 @@ interface SidebarSectionProps {
   children: ReactNode;
 }
 
-export default function SidebarSection({ label, isOpen = false, onToggle, children }: SidebarSectionProps) {
+export default function SidebarSection({
+  label,
+  isOpen = false,
+  onToggle,
+  children,
+}: SidebarSectionProps) {
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 w-56">
-      <div
-        className="flex justify-between items-center cursor-pointer text-sm font-semibold mb-2"
+    <section className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 w-56">
+      <button
+        type="button"
         onClick={onToggle}
+        className="flex justify-between items-center w-full text-sm font-semibold mb-2 cursor-pointer"
+        aria-expanded={isOpen}
+        aria-controls={`section-${label}`}
       >
         <span>{label}</span>
         <span>{isOpen ? '−' : '+'}</span>
-      </div>
-      {isOpen && <div className="flex flex-col gap-2">{children}</div>}
-    </div>
+      </button>
+
+      {isOpen && (
+        <div id={`section-${label}`} className="flex flex-col gap-2">
+          {children}
+        </div>
+      )}
+    </section>
   );
 }

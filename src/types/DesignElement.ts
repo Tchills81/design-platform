@@ -27,5 +27,5 @@ export interface DesignElement {
   src?: string;
 
   // Shape-specific
-  shapeType?: shapeType;
+  shapeType: shapeType;
 }

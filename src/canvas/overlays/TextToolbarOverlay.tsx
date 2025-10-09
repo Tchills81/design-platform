@@ -4,6 +4,12 @@ import { CanvasMode } from "@/src/types/CanvasMode";
 
 export interface TextToolbarOverlayProps {
   toolbarRef: React.RefObject<HTMLDivElement | null>;
+  setTextAlign: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
+  setIsMultline: React.Dispatch<React.SetStateAction<boolean>>
+  setIsUnderline: React.Dispatch<React.SetStateAction<boolean>>
+  textAlign:"left" | "center" | "right";
+  isMultiline:boolean;
+  isUnderline:boolean;
   showToolbar: boolean;
   inputPosition: { x: number; y: number } | null;
   mode: CanvasMode;
@@ -20,7 +26,7 @@ export interface TextToolbarOverlayProps {
   onToggleBold: () => void;
   onToggleItalic: () => void;
   onTextChange: (text: string) => void;
-  onTextBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onTextBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   onAddText: () => void;
   onRemoveText: () => void;
   exitEditingMode: () => void;
@@ -47,7 +53,13 @@ export default function TextToolbarOverlay({
   onTextBlur,
   onAddText,
   onRemoveText,
-  exitEditingMode
+  exitEditingMode,
+  setTextAlign,
+  setIsUnderline,
+  setIsMultline,
+  isMultiline,
+  isUnderline,
+  textAlign,
 }: TextToolbarOverlayProps) {
   if (!showToolbar || !inputPosition || mode !== "card") return null;
 
@@ -72,6 +84,14 @@ export default function TextToolbarOverlay({
           onAddText={onAddText}
           onRemoveText={onRemoveText}
           exitEditingMode={exitEditingMode}
+          onAlignChange={(align: 'left' | 'center' | 'right')=>{ setTextAlign(align); }}
+          onToggleMultiline={()=>{setIsMultline(prev=>!prev)}}
+          onToggleUnderline={()=>{ setIsUnderline(prev=>!prev)}}
+          onLineHeightChange={()=>{}}
+          onWidthChange={()=>{}}
+          isMultiline={isMultiline}
+          isUnderlined={isUnderline}
+          textAlign={textAlign}
         />
       </div>
     </FloatingToolbar>

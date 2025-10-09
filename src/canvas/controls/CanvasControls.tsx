@@ -31,6 +31,7 @@ import ProfileCard from '@/src/components/ProfileCard';
 import ElementPanel from '@/src/components/ElementPanel';
 import { DesignElement } from '@/src/types/DesignElement';
 
+
 export interface CanvasControlsProps {
     canvasWidth:number;
     canvasHeight:number;
@@ -66,6 +67,8 @@ export interface CanvasControlsProps {
     setShowGrids: React.Dispatch<React.SetStateAction<boolean>>;
     setShowBackground: React.Dispatch<React.SetStateAction<boolean>>;
     setShowReflectionModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
+    setShowShareModal: React.Dispatch<React.SetStateAction<boolean>>;
     setElementId?: React.Dispatch<React.SetStateAction<string>>;
     setDesignElement:(el:DesignElement)=>void;
     setBrushSize: (size: number) => void;
@@ -113,6 +116,8 @@ export default function CanvasControls({
     setSelectedColor,
     setShowBackground,
     setShowReflectionModal,
+    setShowCommentModal,
+    setShowShareModal,
     setElementId,
     setDesignElement,
     handleUndo,
@@ -165,13 +170,14 @@ export default function CanvasControls({
     console.log('resetting design ....', resetDesign)
     resetDesign();
     setTemplate(null);
+    setLastSavedTemplate(template);
   }}
 />
 
 
 
-<SidebarSection label="Elements">
-  <ElementPanel onSelect={(el:DesignElement)=>{
+<SidebarSection label="Elements" >
+  <ElementPanel tone={template.tone as tone}  onSelect={(el:DesignElement)=>{
     
     handleDesignSelected(el);
 
@@ -228,6 +234,7 @@ export default function CanvasControls({
 
 
       <TopControlBar
+        template={template}
         tone={template.tone as tone}
         zoomIn={() => handleZoom(1.1)}
         zoomOut={() => handleZoom(0.9)}
@@ -243,9 +250,26 @@ export default function CanvasControls({
         toggleGrids={() => setShowGrids(prev => !prev)}
         toggleReflectionsModal={() => {
           
-          setShowReflectionModal(prev => !prev);
+          setShowReflectionModal(true);
           console.log('showReflectionModal...')
         }}
+
+
+
+        toggleShareModal={() => {
+          
+          setShowShareModal(true);
+          console.log('showReflectionModal...')
+        }}
+
+
+
+        toggleCommentModal={() => {
+          
+          setShowCommentModal(true);
+          console.log('showModal...', setShowCommentModal)
+        }}
+        onPreview={()=>{captureBothSides();}}
         bleedToggleDisabled={bleedToggleDisabled}
         activeMode={faceMode}
       />

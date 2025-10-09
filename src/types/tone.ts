@@ -23,3 +23,40 @@ export const palettes: Record<tone, string[]> = {
     elegant: 'text-purple-600',
     minimal: 'text-gray-800'
   };
+
+
+  export const toneFocusClasses: Record<string, string> = {
+    warm: 'focus:ring-yellow-500',
+    reflective: 'focus:ring-blue-500',
+    minimal: 'focus:ring-gray-400',
+    neutral: 'focus:ring-gray-600',
+  };
+  
+  export const toneClasses: Record<string, string> = {
+    warm: 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200 shadow-yellow-300',
+    reflective: 'text-blue-600 bg-blue-100 hover:bg-blue-200 shadow-blue-300',
+    minimal: 'text-gray-500 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
+    neutral: 'text-gray-700 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
+    green: 'bg-green-500 text-white shadow-md',
+    danger: 'bg-red-500 text-white shadow-md',
+    calm: 'bg-teal-500 text-white shadow-md',
+    bold: 'bg-purple-600 text-white shadow-md',
+  
+    // 🎄 Newly added tones
+    festive: 'text-red-700 bg-red-100 hover:bg-red-200 shadow-red-300',
+    soft: 'text-pink-600 bg-pink-100 hover:bg-pink-200 shadow-pink-300',
+    elegant: 'text-indigo-700 bg-indigo-100 hover:bg-indigo-200 shadow-indigo-300',
+    playful: 'text-orange-600 bg-orange-100 hover:bg-orange-200 shadow-orange-300'
+  };
+
+
+export const toneActiveClasses: Record<string, string> = {
+  warm: 'bg-yellow-500 text-white shadow-md',
+  reflective: 'bg-blue-500 text-white shadow-md',
+  minimal: 'bg-gray-500 text-white shadow-md',
+  neutral: 'bg-gray-600 text-white shadow-md',
+  green: 'bg-green-500 text-white shadow-md',
+  danger: 'bg-red-500 text-white shadow-md',
+  calm: 'bg-teal-500 text-white shadow-md',
+  bold: 'bg-purple-600 text-white shadow-md'
+};

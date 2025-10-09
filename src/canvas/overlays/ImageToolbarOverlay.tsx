@@ -1,11 +1,11 @@
 'use client';
 
-import FloatingToolbar from "@/src/components/FloatingToolbar";
 import ImageToolbar from "@/src/components/ImageToolbar";
 import Konva from "konva";
 import { DualTemplate } from "@/src/types/template";
 import { CanvasMode } from "@/src/types/CanvasMode";
-import { RefObject } from "react";
+import { RefObject, useState } from "react";
+import { motion } from "framer-motion";
 
 export interface ImageToolbarOverlayProps {
   selectedImageId: string | null;
@@ -42,14 +42,15 @@ export default function ImageToolbarOverlay({
 }: ImageToolbarOverlayProps) {
   if (!selectedImageId || mode !== 'card') return null;
 
-  const position = {
-    x: canvasBounds.x + canvasBounds.width + 200, // 24px offset from canvas edge
-    y: canvasBounds.y + canvasBounds.height/2 -200 // center vertically, adjust for toolbar height
-  };
-
   return (
-    <FloatingToolbar position={position}>
-      <div ref={imagebarRef} id="image-toolbar">
+    <div className="fixed inset-0 flex items-center justify-end pointer-events-none z-50">
+      <motion.div
+        ref={imagebarRef}
+        id="image-toolbar"
+        className="pointer-events-auto cursor-grab bg-white shadow-lg rounded-xl p-4 flex flex-col gap-3 mb-[10vh] mr-6"
+        drag
+        dragMomentum={false}
+      >
         <ImageToolbar
           selectedElementId={selectedImageId}
           handleOnUploadImage={handleOnUploadImage}
@@ -64,7 +65,8 @@ export default function ImageToolbarOverlay({
           cropRegion={cropRegion}
           canvasBounds={canvasBounds}
         />
-      </div>
-    </FloatingToolbar>
+       
+      </motion.div>
+    </div>
   );
 }

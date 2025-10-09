@@ -1,6 +1,7 @@
 import { CanvasMode } from "./CanvasMode";
 
-export  type shapeType = 'rectangle' | 'circle' | 'line' | 'regularPolygon' |'ring' |'star' | 'arrow'|'heart' | 'heading' |'body';
+export  type shapeType = 'rectangle' | 'circle' | 'line' | 'regularPolygon' |'ring' |'star' |
+                         'arrow'|'heart' | 'heading' |'body'|'image' |'flower';
 
 export type TemplateElement =
   | {
@@ -17,6 +18,7 @@ export type TemplateElement =
       type: 'text';
       id: string;
       label: string;
+      shapeType: shapeType;
       text: string;
       font: string;
       size: number;

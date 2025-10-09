@@ -2,6 +2,7 @@ import React from 'react';
 import { Rect, Circle, Line, Star, Ring, RegularPolygon, Arrow } from 'react-konva';
 import type { DesignElement } from '@/src/types/DesignElement';
 import { Heart } from './shapes/customShapes';
+import { Flower } from './shapes/FlowerShape';
 
 
 import type { ReactElement } from 'react';
@@ -36,6 +37,7 @@ export type ShapeMeta = {
     rectangle: {
       render: (element, props) =>
         React.createElement(Rect, {
+          id:element.id,
           x: element.x,
           y: element.y,
           width: element.width ?? 100,
@@ -53,6 +55,7 @@ export type ShapeMeta = {
     circle: {
       render: (element, props) =>
         React.createElement(Circle, {
+          id:element.id,
           x: element.x,
           y: element.y,
           radius: Math.min(element.width ?? 100, element.height ?? 100) / 2,
@@ -75,6 +78,7 @@ export type ShapeMeta = {
     line: {
       render: (element, props) =>
         React.createElement(Line, {
+          id:element.id,
           x: element.x,
           y: element.y,
           width: element.width ?? 100,
@@ -94,6 +98,7 @@ export type ShapeMeta = {
     star: {
       render: (element, props) =>
         React.createElement(Star, {
+          id:element.id,
           x: element.x,
           y: element.y,
           numPoints: 5,
@@ -117,6 +122,7 @@ export type ShapeMeta = {
     ring: {
       render: (element, props) =>
         React.createElement(Ring, {
+          id:element.id,
           x: element.x,
           y: element.y,
           innerRadius: (element.width ?? 100) / 3,
@@ -140,6 +146,7 @@ export type ShapeMeta = {
     regularPolygon: {
       render: (element, props) =>
         React.createElement(RegularPolygon, {
+          id:element.id,
           x: element.x,
           y: element.y,
           sides: 6,
@@ -163,6 +170,7 @@ export type ShapeMeta = {
     arrow: {
       render: (element, props) =>
         React.createElement(Arrow, {
+          id:element.id,
           x: element.x,
           y: element.y,
           points: [0, 0, element.width ?? 100, element.height ?? 100],
@@ -181,6 +189,7 @@ export type ShapeMeta = {
     heart: {
       render: (element, props) =>
         React.createElement(Heart, {
+          id:element.id,
           x: element.x,
           y: element.y,
           width: element.width ?? 120,
@@ -194,5 +203,32 @@ export type ShapeMeta = {
         }),
       getAnchorOffset: () => ({ x: 0, y: 0 }),
       drawsFromCenter: false
+    },
+
+    flower: {
+      render: (element, props) =>
+        React.createElement(Flower, {
+          id:element.id,
+          x: element.x,
+          y: element.y,
+          petals: 6,
+          radius: (element.width ?? 100) / 2,
+          petalWidth: 12,
+          fill: props.fillColor ?? element.fill,
+          stroke: props.isSelected ? '#00f0ff' : element.stroke,
+          strokeWidth: props.isSelected ? 2 : element.strokeWidth,
+          draggable: props.zoom === 1,
+          name: 'Shape',
+          ...props
+        }),
+      getAnchorOffset: (node) => {
+        const shapeNode = node as Konva.Shape;
+        const width = shapeNode.width?.() ?? 100;
+        const height = shapeNode.height?.() ?? 100;
+        return { x: width / 2, y: height / 2 };
+      },
+      drawsFromCenter: true
     }
+    
+    
   };

@@ -56,8 +56,12 @@ interface CardSideLayerProps {
   rows:number;
   cols:number;
   cellSize:number;
+  textAlign:"center" | "left" | "right";
+  isMultiline:boolean;
+  isUnderline:boolean;
 
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
+  setElementId:React.Dispatch<React.SetStateAction<string>>
   designElements:DesignElement[];
   handlers: {
     setImageRef?: (ref: Konva.Image | null) => void;
@@ -111,6 +115,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   bgImage,
   handlers,
   setTemplate,
+  setElementId,
   transformModeActive,
   rows,
   cols,
@@ -118,6 +123,9 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   showBackground,
   dynamicBackground,
   designElements,
+  textAlign,
+  isMultiline,
+  isUnderline,
 
 }) => {
 
@@ -194,7 +202,10 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
       stageRef={stageRef}
       canvasBounds={cardBounds}
       setGhostLines={handlers.setGhostLines}
-      onSelect={() => handlers.setSelectedImageId(el.id)}
+      onSelect={() => {
+        handlers.setSelectedImageId(el.id);
+        setElementId(el.id);
+      }}
       handleImageUpdate={(e) => handlers.onImageUpdate(e, el.id)}
       setSelectedRef={setSelectedRef}
     />
@@ -215,6 +226,9 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
         x: cardX + el.position.x,
         y: cardY + el.position.y
       }}
+      textAlign={textAlign}
+      isMultiline={isMultiline}
+      isUnderline={isUnderline}
       fontFamily={el.font}
       fontStyle={resolveFontStyle(el.isBold, el.isItalic)}
       fontWeight={el.isBold ? 'bold' : 'normal'}
@@ -248,13 +262,15 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
           handlers.setSelectedFont(el.font);
           handlers.setSelectedColor(el.color);
           handlers.onTextClick(el.label, pointerPos, el.id);
+          setElementId(el.id);
         }
       }}
-      onEdit={(text, pos) => {
+      onEdit={(text, pos, align) => {
         handlers.onTextEdit(text, pos, el);
         handlers.setSelectedFont(el.font || '--font-inter');
         handlers.setSelectedColor(el.color || '#000000');
         handlers.setInputPosition(pos);
+
       }}
     />
   ))}

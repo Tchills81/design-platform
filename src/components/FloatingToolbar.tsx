@@ -11,15 +11,15 @@ export default function FloatingToolbar({ position, children }: FloatingToolbarP
 
   useEffect(() => {
     setStyle({
-      left: position.x,
-      top: position.y+50
+      left: position.x+50,
+      top:  position.y
     });
   }, [position]);
 
   return (
     <div
-      className="absolute z-30 bg-white/90 backdrop-blur-md rounded-lg shadow-lg p-3 flex gap-2"
-      style={{ left: style.left, top: style.top }}
+      className="absolute z-30 top-0.5 bottom-0.5 bg-white/90 backdrop-blur-md rounded-lg shadow-lg p-3 flex gap-2"
+      
     >
       {children}
     </div>
