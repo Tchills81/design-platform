@@ -57,6 +57,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setShowReflectionModal,
     setShowShareModal,
     setShowCommentModal,
+    setAccessLevel,
     setCellSize,
     cellSize,
     setZoom,
@@ -95,14 +96,20 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     cols,
     rows,
     mode,
+    showBleeds, 
+    showRulers,
     faceMode,
     selectedColor,
+    accessLevel,
     activateTransformMode,
     dualFaces,
     setReflections,
     designElements,
     setDesignElements,
-    resetTransformMode
+    resetTransformMode,
+    initialZoomedOutValue,
+    setGridPosition,
+    setOverlayStyle,
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -237,21 +244,54 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setFuture(prev => prev.slice(1));
   }, [future, template, card, elements, mode, side]);
   
-  
-  const handleZoom = useCallback((scaleBy: number) => {
+  const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
     const oldZoom = zoom;
-    const newZoom = Math.max(1, oldZoom * scaleBy);
-    const center = { x: stageSize.width / 2, y: stageSize.height / 2 };
+    const rawZoom = oldZoom * (scaleBy);
+  
+    const newZoom = allowBelowOne ? rawZoom : Math.max(initialZoomedOutValue, rawZoom);
+
+    // 🧩 Apply zoom and position
+    setZoom(newZoom);
+    
+  
+    // 🧭 Center of the stage
+    const center = {
+      x: stageSize.width / 2,
+      y: stageSize.height / 2
+    };
+  
+    // 🎯 Recalculate position to keep canvas centered
     const newPosition = {
       x: center.x - ((center.x - position.x) / oldZoom) * newZoom,
-      y: center.y - ((center.y - position.y) / oldZoom) * newZoom,
+      y: center.y - ((center.y - position.y) / oldZoom) * newZoom
     };
-    setZoom(newZoom);
-    setPosition(newPosition);
-    setShowBleeds(newZoom <= 1);
+  
+    
+    setPosition(newPosition); // ✅ This ensures canvas and grid stay aligned
+  
+    // 🎨 Bleed logic
+    //setShowBleeds(newZoom <= 1);
     setBleedToggleDisabled(newZoom > 1);
-  }, [zoom, position, stageSize]);
+  }, [zoom, position, stageSize, initialZoomedOutValue]);
 
+
+
+
+  const setDesignGridPosition = useCallback(() => {
+    if (!stageRef.current || !template) return;
+    const stageRect = stageRef.current.getStage().container().getBoundingClientRect();
+    const globalX = stageRect.left + position.x;
+    const globalY = stageRect.top + position.y;
+    const scaledWidth = template.width * zoom;
+    const scaledHeight = template.height * zoom;
+
+    setGridPosition({ x: globalX, y: globalY, width: scaledWidth, height: scaledHeight })
+  }, [position, zoom, stageRef, template])
+  
+  
+
+  
+  
 
   const createShapeId = useCallback(
     (side: 'front' | 'back', elements: TemplateElement[]) => {
@@ -765,10 +805,14 @@ const setDesignElement = useCallback(
   
     setShowBleeds(false);
     setShowRulers(false);
+
+
+
     setMode("insideFace");
   
     setSide("front");
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('generating preview for front', showBleeds, showRulers)
     const front = captureCardFaceSnapshot({
       stageRef,
       bounds: canvasBounds,
@@ -776,7 +820,8 @@ const setDesignElement = useCallback(
     });
   
     setSide("back");
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('generating preview for back', showBleeds, showRulers)
     const back = captureCardFaceSnapshot({
       stageRef,
       bounds: canvasBounds,
@@ -792,7 +837,7 @@ const setDesignElement = useCallback(
 
     //handleTemplateSelect(clonedTemplate || undefined);
   
-  }, [stageRef, canvasBounds, template]);
+  }, [stageRef, canvasBounds, template, showRulers, showBleeds]);
 
 
   const handleSaveCard = useCallback(async () => {
@@ -933,8 +978,8 @@ const setDesignElement = useCallback(
       setMode("card");
   
       renderToCanvas(normalized, setTemplate, setMode);
-      setShowBleeds(true);
-      setShowRulers(true);
+      //setShowBleeds(true);
+      //setShowRulers(true);
       setShowGallery(false);
 
      
@@ -966,8 +1011,8 @@ const setDesignElement = useCallback(
   
     handleTemplateSelect(blankTemplate);
     setShowGallery(false);
-    setShowBleeds(true);
-    setShowRulers(true);
+    //setShowBleeds(true);
+    //setShowRulers(true);
     setFaceMode("insideFront");
     setLastSavedTemplate(lastSavedTemplate);
     return blankTemplate;
@@ -978,8 +1023,8 @@ const setDesignElement = useCallback(
     console.log("showDesignView", lastSavedTemplate);
     handleTemplateSelect(lastSavedTemplate ?? undefined);
     setShowGallery(false);
-    setShowBleeds(true);
-    setShowRulers(true);
+    //setShowBleeds(true);
+    //setShowRulers(true);
   }, [lastSavedTemplate, handleTemplateSelect]);
 
   
@@ -998,6 +1043,8 @@ const setDesignElement = useCallback(
 
   const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
+
+    return;
   
     const scaleBy = 1.05;
     const stage = stageRef.current;
@@ -1058,6 +1105,36 @@ const setDesignElement = useCallback(
     setIsUnderline(false);
     
   }, []);
+
+
+
+  const handleInvite = useCallback(async (email: string) => {
+    if(!template || !accessLevel) return;
+    const id = template.id;
+    const body ={
+      id,
+      //userId,
+      accessLevel,
+      invitedEmail: email
+    }
+    try {
+      const res = await fetch('/api/shareDesign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({body})
+      });
+  
+      if (!res.ok) {
+        throw new Error('Failed to send invite');
+      }
+  
+      // Optional: toast or feedback
+      console.log(`✅ Invitation sent to ${email}`);
+    } catch (err) {
+      console.error('🚨 Invite error:', err);
+      // Optional: toast or error feedback
+    }
+  }, [template, accessLevel]);
 
 
   const addDesignElement = useCallback((el:DesignElement) => {
@@ -1125,6 +1202,7 @@ const setDesignElement = useCallback(
     setShowReflectionModal,
     setShowCommentModal,
     setShowShareModal,
+    setAccessLevel,
     setCellSize,
     setZoom,
     setPosition,
@@ -1166,6 +1244,7 @@ const setDesignElement = useCallback(
 
     // Zoom and transform
     handleZoom,
+    setDesignGridPosition,
     setModeActive,
     activateTransformMode,
 
@@ -1184,6 +1263,8 @@ const setDesignElement = useCallback(
     onPrimitiveSelect,
     setReflections,
     resetDesign,
+    handleInvite,
+    setOverlayStyle,
     
     //handleAddElement,
     

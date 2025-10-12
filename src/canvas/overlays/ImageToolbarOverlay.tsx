@@ -18,6 +18,7 @@ export interface ImageToolbarOverlayProps {
   imagebarRef: RefObject<HTMLDivElement | null>;
   handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
+  setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
   recordSnapshot: () => void;
   setTransformModeActive: (active: boolean) => void;
   setCropMode: (active: boolean) => void;
@@ -37,6 +38,7 @@ export default function ImageToolbarOverlay({
   setTemplate,
   recordSnapshot,
   setTransformModeActive,
+  setShowCommentModal,
   setCropMode,
   onToggleCropMode
 }: ImageToolbarOverlayProps) {
@@ -61,6 +63,7 @@ export default function ImageToolbarOverlay({
           setTransformModeActive={setTransformModeActive}
           setCropMode={setCropMode}
           onToggleCropMode={onToggleCropMode}
+          toggleCommentModal={()=>{setShowCommentModal(true)}}
           imageRef={imageRef}
           cropRegion={cropRegion}
           canvasBounds={canvasBounds}

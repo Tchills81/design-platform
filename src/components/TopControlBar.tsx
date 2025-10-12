@@ -1,6 +1,6 @@
 // src/components/TopControlBar.tsx
 
-import { ZoomIn, ZoomOut, Undo, Redo, Share2, MessageCircle, LogOutIcon, Eye, FlipHorizontal2Icon as reflection, FlipHorizontal2Icon} from 'lucide-react';
+import { ZoomIn, ZoomOut, Undo, Redo, Share2, MessageCircle, LogOutIcon, Eye, FlipHorizontal2Icon as reflection, FlipHorizontal2Icon, PlusIcon, ListPlus} from 'lucide-react';
 import { IconButton } from './IconButton';
 import { ToggleCheckbox } from './ToggleCheckbox';
 import { tone } from '@/src/types/tone';
@@ -22,6 +22,7 @@ interface TopControlBarProps {
   template?:DualTemplate;
   activeMode: CanvasMode;
   onPreview: () => void;
+  zoom:number;
   zoomIn: () => void;
   zoomOut: () => void;
   onUndo: () => void;
@@ -32,7 +33,7 @@ interface TopControlBarProps {
   toggleBleeds: () => void;
   toggleReflectionsModal:()=>void;
   toggleShareModal:()=>void;
-
+  setZoom: (newZoom:number)=>void;
   toggleCommentModal:()=>void;
   showGrids: boolean;
   toggleGrids: () => void;
@@ -42,6 +43,8 @@ interface TopControlBarProps {
 export default function TopControlBar({
   template,
   tone,
+  zoom,
+  setZoom,
   zoomIn,
   zoomOut,
   showRulers,
@@ -122,7 +125,7 @@ export default function TopControlBar({
 />
 
 <ToneButton
-  icon={<MessageCircle />}
+  icon={<ListPlus/>}
   label="Comment"
   tone={tone}
   onClick={toggleCommentModal}
@@ -159,19 +162,7 @@ export default function TopControlBar({
 
 
     </div>
-
-    <FooterControlCluster
-  tone={tone}
-  zoomIn={zoomIn}
-  zoomOut={zoomOut}
-  showRulers={showRulers}
-  toggleRulers={toggleRulers}
-  showBleeds={showBleeds}
-  toggleBleeds={toggleBleeds}
-  showGrids={showGrids}
-  toggleGrids={toggleGrids}
-  bleedToggleDisabled={bleedToggleDisabled}
-/>
+ 
 </>
 
   );

@@ -1,21 +1,15 @@
-import { Layer } from 'react-konva';
+import { Layer, Group } from 'react-konva';
 import KonvaImage from './KonvaImage';
 import GridRect from './GridRect';
 import ImageElement from './ImageElement';
 import TextElement from './TextElement';
-import BackgroundLayer from './BackgroundLayer';
-import { TemplateElement, DualTemplate, isLegacyTextElement, 
-  isPrimitiveShapeElement, isTextElementForTextComponent, isPrimitiveImageElement
-       } from '../types/template';
-
-
-
+import { TemplateElement, DualTemplate, isTextElementForTextComponent } from '../types/template';
 import { CanvasMode } from '../types/CanvasMode';
-import { useRef, Fragment } from 'react';
+import { useRef } from 'react';
 import Konva from 'konva';
-import { template } from 'lodash';
 import { DesignElement } from '../types/DesignElement';
 import { tone } from '../types/tone';
+import { Rect } from 'react-konva';
 
 interface CardSideLayerProps {
   card: {
@@ -24,50 +18,44 @@ interface CardSideLayerProps {
     background: string;
     backgroundImage?: string;
     gridColors?: string[];
-    
   };
-
-  showBackground:boolean;
-  dynamicBackground:string;
+  showBackground: boolean;
+  dynamicBackground: string;
   elements: TemplateElement[];
   side: 'front' | 'back';
   templateId: string;
+  template?:DualTemplate;
   tone: tone;
   selectedImageId: string | null;
-  selectedTextId: string | null; // ✅ migrated
+  selectedTextId: string | null;
   cardX: number;
   cardY: number;
   position: { x: number; y: number };
-  canvasBounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  canvasBounds: { x: number; y: number; width: number; height: number };
   containerRef?: any;
+  cardGridGroupRef?:any;
   stageRef: React.RefObject<any>;
   zoom: number;
   mode: CanvasMode;
   brushColor: string;
   bgImage?: HTMLImageElement;
-  selectedElement?:boolean;
-  editingText?:string
-  transformModeActive?:boolean
-  rows:number;
-  cols:number;
-  cellSize:number;
-  textAlign:"center" | "left" | "right";
-  isMultiline:boolean;
-  isUnderline:boolean;
-
+  selectedElement?: boolean;
+  editingText?: string;
+  transformModeActive?: boolean;
+  rows: number;
+  cols: number;
+  cellSize: number;
+  textAlign: 'center' | 'left' | 'right';
+  isMultiline: boolean;
+  isUnderline: boolean;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
-  setElementId:React.Dispatch<React.SetStateAction<string>>
-  designElements:DesignElement[];
+  setElementId: React.Dispatch<React.SetStateAction<string>>;
+  designElements: DesignElement[];
   handlers: {
     setImageRef?: (ref: Konva.Image | null) => void;
     onPaint?: (col: number, row: number) => void;
     onImageUpdate: (e: any, id: string) => void;
-    onTextClick: (label: string, pos: { x: number; y: number }, id: string) => void; // ✅ updated
+    onTextClick: (label: string, pos: { x: number; y: number }, id: string) => void;
     onTextEdit: (text: string, pos: { x: number; y: number }, el: TemplateElement) => void;
     onTextUpdate: (updated: TemplateElement) => void;
     setGhostLines: (lines: { x?: number; y?: number }) => void;
@@ -77,9 +65,7 @@ interface CardSideLayerProps {
     setShowToolbar: (show: boolean) => void;
     setSelectedImageId: (id: string) => void;
     onFontSizeChange: (size: number) => void;
-    onPrimitiveSelect:()=>void;
-    
-
+    onPrimitiveSelect: () => void;
   };
 }
 
@@ -98,9 +84,10 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   elements,
   side,
   templateId,
+  template,
   tone,
   selectedImageId,
-  selectedTextId, // ✅ migrated
+  selectedTextId,
   editingText,
   cardX,
   cardY,
@@ -108,6 +95,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   canvasBounds,
   containerRef,
   stageRef,
+  cardGridGroupRef,
   zoom,
   mode,
   selectedElement,
@@ -126,9 +114,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   textAlign,
   isMultiline,
   isUnderline,
-
 }) => {
-
   const imageRef = useRef<Konva.Image>(null);
   const cardBounds = {
     x: cardX,
@@ -137,145 +123,198 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
     height: card.height
   };
 
-  const setSelectedRef =(ref: Konva.Image | null)=>
-  {
-      console.log("setSelectedRef in CardSideLayer", ref)
-    if (handlers.setImageRef)
-      handlers.setImageRef(ref)
-  }
+  const setSelectedRef = (ref: Konva.Image | null) => {
+    if (handlers.setImageRef) handlers.setImageRef(ref);
+  };
 
-  return (
-  <Layer x={position.x} y={position.y} scaleX={zoom} scaleY={zoom}>
-    {/* 0. Background Layers */}
-    <GridRect
-      x={cardX}
-      y={cardY}
-      width={card.width}
-      height={card.height}
-      cols={cols}
-      rows={rows}
-      gridColors={card.gridColors ?? []}
-      mode={mode}
-      brushColor={brushColor}
-      onPaint={mode === 'painting' ? handlers.onPaint : undefined}
-      showDynamicBackground={showBackground}
-      dynamicColor={dynamicBackground}
-    />
-
-    {/* 1. Background Image */}
-    {bgImage && (
-      <KonvaImage
-        image={bgImage}
-        x={cardX}
-        y={cardY}
-        width={card.width}
-        height={card.height}
-      />
-    )}
+  // Layout offsets
+  const SIDEBAR_WIDTH = 280;
+  const RULER_THICKNESS = 24;
+  const TOP_BAR_HEIGHT = 64;
+  const FOOTER_HEIGHT = 48;
+  const RIGHT_MARGIN = 280;
+  const EXTRA_MARGIN = 120;      // bottom footer
 
   
 
-   
-    {/* 5. Legacy Image + Shape Elements */}
-{elements
-  .filter(
-    (el): el is TemplateElement & { type: 'image' | 'shape' } =>
-      el.type === 'image' || el.type === 'shape'
-  )
-  .map(el => (
-    <ImageElement
-      key={el.id}
-      element={el}
-      id={el.id}
-      templateId={templateId}
-      src={'src' in el ? el.src : ''} // fallback for shapes
-      position={{
-        x: cardX + el.position.x,
-        y: cardY + el.position.y
-      }}
-      size={el.size}
-      zoom={zoom}
-      tone={tone as tone}
-      isSelected={selectedImageId === el.id}
-      showTransformer={transformModeActive}
-      containerRef={containerRef}
-      stageRef={stageRef}
-      canvasBounds={cardBounds}
-      setGhostLines={handlers.setGhostLines}
-      onSelect={() => {
-        handlers.setSelectedImageId(el.id);
-        setElementId(el.id);
-      }}
-      handleImageUpdate={(e) => handlers.onImageUpdate(e, el.id)}
-      setSelectedRef={setSelectedRef}
-    />
-  ))}
+  const maskX = SIDEBAR_WIDTH + RULER_THICKNESS;
+  const maskY = TOP_BAR_HEIGHT + RULER_THICKNESS;
+  
+  const maskWidth = window.innerWidth - maskX - RIGHT_MARGIN;
+  const maskHeight = window.innerHeight - maskY - FOOTER_HEIGHT;
+
+  const availableWidth = window.innerWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
+  const availableHeight = window.innerHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
 
 
-   {/* 6. Legacy and Styled Text Elements */}
-{elements
-  .filter(isTextElementForTextComponent)
-  .map(el => (
-    <TextElement
-      key={el.id}
-      id={el.id}
-      index={Number(el.id)}
-      el={el}
-      text={el.label}
-      position={{
-        x: cardX + el.position.x,
-        y: cardY + el.position.y
-      }}
-      textAlign={textAlign}
-      isMultiline={isMultiline}
-      isUnderline={isUnderline}
-      fontFamily={el.font}
-      fontStyle={resolveFontStyle(el.isBold, el.isItalic)}
-      fontWeight={el.isBold ? 'bold' : 'normal'}
-      size={el.size}
-      selected={el.id === selectedTextId}
-      color={el.color}
-      cardBounds={cardBounds}
-      templateId={templateId}
-      setGhostLines={handlers.setGhostLines}
-      onUpdate={({ id, text, position }) => {
-        const original = elements.find(el => el.id === id);
-        if (!original || !isTextElementForTextComponent(original)) return;
+  const cardWidth = template?.[side]?.card?.width ?? 0;
+  const cardHeight = template?.[side]?.card?.height ?? 0;
 
-        const updated: TemplateElement = {
-          ...original,
-          label: text,
-          text,
-          position: {
-            x: position.x - cardX,
-            y: position.y - cardY
-          }
-        };
+  const zoomX = availableWidth / cardWidth;
+  const zoomY = availableHeight / cardHeight;
 
-        handlers.onTextUpdate(updated);
-      }}
-      onClick={(e) => {
-        const stage = e.target.getStage();
-        const pointerPos = stage?.getPointerPosition();
-        if (pointerPos) {
-          handlers.onFontSizeChange(el.size);
-          handlers.setSelectedFont(el.font);
-          handlers.setSelectedColor(el.color);
-          handlers.onTextClick(el.label, pointerPos, el.id);
-          setElementId(el.id);
-        }
-      }}
-      onEdit={(text, pos, align) => {
-        handlers.onTextEdit(text, pos, el);
-        handlers.setSelectedFont(el.font || '--font-inter');
-        handlers.setSelectedColor(el.color || '#000000');
-        handlers.setInputPosition(pos);
+  const initialZoom = Math.min(zoomX, zoomY);
 
-      }}
-    />
-  ))}
 
-  </Layer>
-);
+  const offsetX = (availableWidth - cardWidth * initialZoom) / 2 + SIDEBAR_WIDTH + RULER_THICKNESS;
+  const offsetY = (availableHeight - cardHeight * initialZoom) / 2 + TOP_BAR_HEIGHT + RULER_THICKNESS;
 
+  
+
+
+  return (
+    <Layer>
+      {/* Outer group: viewport mask */}
+      <Group
+        clipFunc={(ctx) => {
+          ctx.rect(maskX, maskY, maskWidth, maskHeight);
+        }}
+      >
+
+<Rect
+  x={maskX}
+  y={maskY}
+  width={maskWidth}
+  height={maskHeight}
+  fill="#1E1E1E" // studio-like dark neutral
+  stroke="#ffffff"
+  strokeWidth={10}
+  shadowForStrokeEnabled={true}
+  opacity={0.08}
+  listening={false}
+/>
+        {/* Inner group: scaled canvas */}
+        <Group
+          ref={cardGridGroupRef}
+          x={position.x}
+          y={position.y}
+          scaleX={zoom}
+          scaleY={zoom}
+
+         draggable
+          onDragMove={(e) => {
+          const newX = e.target.x();
+          const newY = e.target.y();
+       // Optionally clamp or store position
+       }}
+        >
+          <GridRect
+            x={cardX}
+            y={cardY}
+            width={card.width}
+            height={card.height}
+            cols={cols}
+            rows={rows}
+            gridColors={card.gridColors ?? []}
+            mode={mode}
+            brushColor={brushColor}
+            onPaint={mode === 'painting' ? handlers.onPaint : undefined}
+            showDynamicBackground={showBackground}
+            dynamicColor={dynamicBackground}
+          />
+
+          {bgImage && (
+            <KonvaImage
+              image={bgImage}
+              x={cardX}
+              y={cardY}
+              width={card.width}
+              height={card.height}
+            />
+          )}
+
+          {elements
+            .filter(el => el.type === 'image' || el.type === 'shape')
+            .map(el => (
+              <ImageElement
+                key={el.id}
+                element={el}
+                id={el.id}
+                templateId={templateId}
+                src={'src' in el ? el.src : ''}
+                position={{
+                  x: cardX + el.position.x,
+                  y: cardY + el.position.y
+                }}
+                size={el.size}
+                zoom={zoom}
+                tone={tone}
+                isSelected={selectedImageId === el.id}
+                showTransformer={transformModeActive}
+                containerRef={containerRef}
+                stageRef={stageRef}
+                canvasBounds={cardBounds}
+                setGhostLines={handlers.setGhostLines}
+                onSelect={() => {
+                  handlers.setSelectedImageId(el.id);
+                  setElementId(el.id);
+                }}
+                handleImageUpdate={(e) => handlers.onImageUpdate(e, el.id)}
+                setSelectedRef={setSelectedRef}
+              />
+            ))}
+
+          {elements
+            .filter(isTextElementForTextComponent)
+            .map(el => (
+              <TextElement
+                zoom={zoom}
+                key={el.id}
+                id={el.id}
+                index={Number(el.id)}
+                el={el}
+                text={el.label}
+                position={{
+                  x: cardX + el.position.x,
+                  y: cardY + el.position.y
+                }}
+                textAlign={textAlign}
+                isMultiline={isMultiline}
+                isUnderline={isUnderline}
+                fontFamily={el.font}
+                fontStyle={resolveFontStyle(el.isBold, el.isItalic)}
+                fontWeight={el.isBold ? 'bold' : 'normal'}
+                size={el.size}
+                selected={el.id === selectedTextId}
+                color={el.color}
+                cardBounds={cardBounds}
+                templateId={templateId}
+                setGhostLines={handlers.setGhostLines}
+                onUpdate={({ id, text, position }) => {
+                  const original = elements.find(el => el.id === id);
+                  if (!original || !isTextElementForTextComponent(original)) return;
+                  const updated: TemplateElement = {
+                    ...original,
+                    label: text,
+                    text,
+                    position: {
+                      x: position.x - cardX,
+                      y: position.y - cardY
+                    }
+                  };
+                  handlers.onTextUpdate(updated);
+                }}
+                onClick={(e) => {
+                  const stage = e.target.getStage();
+                  const pointerPos = stage?.getPointerPosition();
+                  if (pointerPos) {
+                    handlers.onFontSizeChange(el.size);
+                    handlers.setSelectedFont(el.font);
+                    handlers.setSelectedColor(el.color);
+                    handlers.onTextClick(el.label, pointerPos, el.id);
+                    setElementId(el.id);
+                  }
+                }}
+                onEdit={(text, pos, align) => {
+                  handlers.onTextEdit(text, pos, el);
+                  handlers.setSelectedFont(el.font || '--font-inter');
+                  handlers.setSelectedColor(el.color || '#000000');
+                  handlers.setInputPosition(pos);
+                }}
+              />
+            ))}
+        </Group>
+      </Group>
+    </Layer>
+  );
 };

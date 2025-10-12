@@ -86,6 +86,7 @@ export default function CanvasStage({
     isMultiline,
     isUnderline,
     setElementId,
+    cardGridGroupRef,
     
 
   } = state;
@@ -113,20 +114,30 @@ export default function CanvasStage({
   //const card = face?.card;
 
   return (
-    <div className="canvas-stage bg-neutral-100">
+    <div className="canvas-stage bg-neutral-100"
+    style={{
+      width: '100vw',
+      height: '100vh',
+      zIndex: mode === 'card'  ? 2 : 0,
+      opacity: mode === 'card' ? 1 : 0,
+      transition: 'opacity 0.3s ease-in-out',
+     
+    }}>
       <Stage 
            
                   ref={stageRef}
                   onWheel={handleWheel}
                   width={stageSize.width}
                   height={stageSize.height}
+
                   style={{
-                    width: '100vw',
-                    height: '100vh',
-                    zIndex: mode === 'card'  ? 2 : 0,
+                    width: '100%', // Use % or let it inherit from parent
+                    height: '100%',
+                    zIndex: mode === 'card' ? 2 : 0,
                     opacity: mode === 'card' ? 1 : 0,
                     transition: 'opacity 0.3s ease-in-out'
                   }}
+                  
                   onClick={(e) => {
                       const toolbarEl = document.getElementById('text-toolbar');
                       const { clientX, clientY } = e.evt;
@@ -197,6 +208,9 @@ export default function CanvasStage({
                     
      
       {template && template[side] && (
+        
+       
+
         <CardSideLayer
           card={template[side].card}
           elements={template[side].elements}
@@ -215,6 +229,7 @@ export default function CanvasStage({
           canvasBounds={canvasBounds}
           containerRef={containerRef}
           stageRef={stageRef}
+          cardGridGroupRef={cardGridGroupRef}
           zoom={zoom}
           mode={mode}
           rows={rows}
@@ -247,6 +262,11 @@ export default function CanvasStage({
             
           }}
         />
+
+      
+        
+       
+        
       )}
 
 

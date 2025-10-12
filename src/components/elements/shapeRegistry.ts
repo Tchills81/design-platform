@@ -37,7 +37,7 @@ export type ShapeMeta = {
     rectangle: {
       render: (element, props) =>
         React.createElement(Rect, {
-          id:element.id,
+           id:element.id,
           x: element.x,
           y: element.y,
           width: element.width ?? 100,
@@ -45,7 +45,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable:true,
           name: 'Shape',
           ...props
         }),
@@ -62,7 +62,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -87,7 +87,7 @@ export type ShapeMeta = {
           stroke: props.isSelected ? '#00f0ff' : element.stroke ?? '#000',
           fill: props.fillColor ?? element.fill,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth ?? 1,
-          draggable: props.zoom === 1,
+          draggable: true,
           hitStrokeWidth: 12,
           name: 'Shape',
           ...props
@@ -107,7 +107,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -130,7 +130,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -154,7 +154,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -179,7 +179,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -197,7 +197,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),
@@ -217,7 +217,7 @@ export type ShapeMeta = {
           fill: props.fillColor ?? element.fill,
           stroke: props.isSelected ? '#00f0ff' : element.stroke,
           strokeWidth: props.isSelected ? 2 : element.strokeWidth,
-          draggable: props.zoom === 1,
+          draggable: true,
           name: 'Shape',
           ...props
         }),

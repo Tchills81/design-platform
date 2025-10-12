@@ -27,6 +27,7 @@ export interface TextToolbarOverlayProps {
   onToggleItalic: () => void;
   onTextChange: (text: string) => void;
   onTextBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
   onAddText: () => void;
   onRemoveText: () => void;
   exitEditingMode: () => void;
@@ -44,6 +45,8 @@ export default function TextToolbarOverlay({
   isItalic,
   editingText,
   tone,
+
+  setShowCommentModal,
   onFontChange,
   onColorChange,
   onFontSizeChange,
@@ -74,6 +77,7 @@ export default function TextToolbarOverlay({
           isItalic={isItalic}
           editingText={editingText}
           tone={tone}
+          toggleCommentModal={()=>{setShowCommentModal(true);}}
           onFontChange={onFontChange}
           onColorChange={onColorChange}
           onFontSizeChange={onFontSizeChange}
@@ -88,7 +92,7 @@ export default function TextToolbarOverlay({
           onToggleMultiline={()=>{setIsMultline(prev=>!prev)}}
           onToggleUnderline={()=>{ setIsUnderline(prev=>!prev)}}
           onLineHeightChange={()=>{}}
-          onWidthChange={()=>{}}
+          onWidthChange={()=>{ }}
           isMultiline={isMultiline}
           isUnderlined={isUnderline}
           textAlign={textAlign}

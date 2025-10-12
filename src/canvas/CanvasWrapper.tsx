@@ -20,7 +20,7 @@ import GridBackground from "../components/GridBackground";
 import ShareModal from "../modals/ShareModal";
 import ReflectionModal from "../modals/ReflectionModal";
 import CommentModal from "../modals/CommentModal";
-import { useEffect } from "react";
+import { DOMViewport } from "../components/DOMViewport";
 
 export default function CanvasWrapper() {
   const state = useCanvasState();
@@ -93,7 +93,12 @@ export default function CanvasWrapper() {
     isMultiline,
     isUnderline,
     textAlign,
-    stageRef
+    stageRef,
+    accessLevel,
+    zoom,
+    position,
+    gridPosition,
+    overlayStyle,
     
   } = state;
 
@@ -143,12 +148,16 @@ export default function CanvasWrapper() {
     setReflections,
     setShowShareModal,
     setDesignElement,
+    setAccessLevel,
+    handleInvite,
     setDualFaces,
     resetDesign,
+    setZoom,
     
   } = actions;
 
   if (!template) {
+    
     return (
       <div className="fade-in relative pt-20 pl-6">
         <TabNavigator
@@ -199,6 +208,8 @@ export default function CanvasWrapper() {
         bleedToggleDisabled={bleedToggleDisabled}
         selectedTextId={selectedTextId}
         selectedImageId={selectedImageId}
+        zoom={zoom}
+        setZoom={setZoom}
         setMode={setMode}
         setSide={setSide}
         setTemplate={setTemplate}
@@ -255,36 +266,35 @@ export default function CanvasWrapper() {
 <CanvasMetadata template={template} />
 
 
+
+
+{mode === 'painting' && (
+  
+    <CardGridBackground
+      width={template.width}
+      height={template.height}
+      zoom={zoom}
+      cellSize={cellSize}
+      stroke={template.tone === 'dark' ? '#444' : '#f0f0f0'}
+      cols={cols}
+      rows={rows}
+      side={side}
+      getCellColor={(col: number, row: number) => {
+        const index = row * cols + col;
+        return gridColors?.[index] || '#000000';
+      }}
+      previewColor={selectedColor}
+      onAverageColorChange={setDynamicBackground}
+      onCellPaint={handleCellPaint}
+      style={overlayStyle}
+    />
+  
+)}
+
   
 
-{mode=="painting" &&(
-  <CardGridBackground
-  width={card.width}
-  height={card.height}
-  x={cardX}
-  y={cardY}
-  cellSize={cellSize}
-  stroke={template.tone === 'dark' ? '#444' : '#f0f0f0'}
-  cols={cols}
-  rows={rows}
-  side={side}
-  getCellColor={(col:number, row:number) => {
-  const index = row * cols + col;
-  return gridColors?.[index] || '#000000';
-  }}
-  previewColor={selectedColor}
-  onAverageColorChange={setDynamicBackground}
-  onCellPaint={handleCellPaint}
-  style={{
-    zIndex: mode === 'painting' ? 2 : 0,
-    opacity: mode === 'painting' ? 1 : 0,
-    transition: 'opacity 0.3s ease-in-out',
-    pointerEvents: 'auto',
-    cursor: 'crosshair'
-    }}
-  />
 
-)}
+
 
        <CanvasStage
         template={state.template}
@@ -332,6 +342,7 @@ export default function CanvasWrapper() {
       selectedFontSize={selectedFontSize}
       isBold={isBold}
       isItalic={isItalic}
+      setShowCommentModal={setShowCommentModal}
       onToggleBold={handleToggleBold}
       onToggleItalic={handleToggleItalic}
       editingText={editingText}
@@ -359,12 +370,13 @@ export default function CanvasWrapper() {
 
 {showShareModal && (
   <ShareModal
-  isOpen={true}
-  shareLink=""
-  onClose={()=>{setShowShareModal(false)}}
-  onInvite={()=>{}}
-  onAccessChange={()=>{}}
-  accessLevel="view"/>
+  isOpen={showShareModal}
+  onClose={() => setShowShareModal(false)}
+  shareLink={"www.giftcraft.com/generatedLink/userId/templateId/designId/"}
+  accessLevel={accessLevel}
+  onAccessChange={setAccessLevel}
+  onInvite={handleInvite}
+  />
 )}
 
 {showReflectionModal && (
@@ -409,6 +421,7 @@ export default function CanvasWrapper() {
       setTransformModeActive={setTransformModeActive}
       setCropMode={setModeActive}
       onToggleCropMode={setModeActive}
+      setShowCommentModal={setShowCommentModal}
       imageRef={imageRef}
       cropRegion={cropRegion}
       canvasBounds={canvasBounds}

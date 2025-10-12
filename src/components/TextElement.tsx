@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Text } from 'react-konva';
+import React, { useRef, useMemo } from 'react';
+import { Text, Group } from 'react-konva';
 import Konva from 'konva';
-import { Group, Rect } from 'react-konva';
 import SelectionFrame from './SelectionFrame';
 import { TemplateElement } from '../types/template';
+import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
 
 interface TextElementProps {
   id: string;
@@ -14,9 +14,9 @@ interface TextElementProps {
   text: string;
   position: { x: number; y: number };
   fontFamily: string;
-  textAlign:'left'|'center'|'right';
-  isMultiline:boolean;
-  isUnderline:boolean;
+  textAlign: 'left' | 'center' | 'right';
+  isMultiline: boolean;
+  isUnderline: boolean;
   textWidth?: number;
   lineHeight?: number;
   fontStyle?: 'normal' | 'bold' | 'italic' | 'italic bold';
@@ -27,12 +27,11 @@ interface TextElementProps {
   transformModeActive?: boolean;
   cardBounds: { x: number; y: number; width: number; height: number };
   onUpdate: (updated: { id: string; text: string; position: { x: number; y: number } }) => void;
-  onEdit: (text: string, position: { x: number; y: number }, align:'left'|'center'|'right') => void;
+  onEdit: (text: string, position: { x: number; y: number }, align: 'left' | 'center' | 'right') => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
   index: number;
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
- 
-
+  zoom: number;
 }
 
 const TextElement: React.FC<TextElementProps> = ({
@@ -56,56 +55,29 @@ const TextElement: React.FC<TextElementProps> = ({
   isMultiline,
   isUnderline,
   textWidth,
-  lineHeight
+  lineHeight,
+  zoom
 }) => {
   const textRef = useRef<Konva.Text>(null);
   const padding = 2;
 
-  const dragBoundFunc = (pos: { x: number; y: number }) => {
-    const node = textRef.current;
-    if (!node) return pos;
-
-    const textWidth = node.width();
-    const textHeight = node.height();
-    const safeMargin = 24;
-
-    const minX = cardBounds.x + safeMargin;
-    const maxX = cardBounds.x + cardBounds.width - safeMargin - textWidth;
-    const minY = cardBounds.y + safeMargin;
-    const maxY = cardBounds.y + cardBounds.height - safeMargin - textHeight;
-
-    const clampedX = Math.max(minX, Math.min(pos.x, maxX));
-    const clampedY = Math.max(minY, Math.min(pos.y, maxY));
-
-    if (setGhostLines) {
-      setGhostLines({ x: clampedX, y: clampedY });
-    }
-
-    return { x: clampedX, y: clampedY };
-  };
-
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
-      console.log('Editing:', text, absPos);
       onEdit(text, position, textAlign);
     }
-
-    if (onClick) {
-      console.log('Calling external onClick');
-      onClick(e);
-    }
+    if (onClick) onClick(e);
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
-    const textWidth = node.width();
-    const textHeight = node.height();
+    const width = node.width();
+    const height = node.height();
 
     const minX = cardBounds.x + padding;
-    const maxX = cardBounds.x + cardBounds.width - textWidth - padding;
+    const maxX = cardBounds.x + cardBounds.width - width - padding;
     const minY = cardBounds.y + padding;
-    const maxY = cardBounds.y + cardBounds.height - textHeight - padding;
+    const maxY = cardBounds.y + cardBounds.height - height - padding;
 
     const clampedX = Math.max(minX, Math.min(node.x(), maxX));
     const clampedY = Math.max(minY, Math.min(node.y(), maxY));
@@ -120,6 +92,17 @@ const TextElement: React.FC<TextElementProps> = ({
     }
   };
 
+  const dragBoundFunc = useMemo(() => {
+    const width = textRef.current?.width() ?? 0;
+    const height = textRef.current?.height() ?? 0;
+
+    return getZoomAwareDragBoundFunc(
+      cardBounds,
+      { width, height },
+      zoom
+    );
+  }, [cardBounds, zoom, textRef.current?.width(), textRef.current?.height()]);
+
   return (
     <Group>
       <SelectionFrame
@@ -129,29 +112,27 @@ const TextElement: React.FC<TextElementProps> = ({
         height={textRef.current?.height() ?? 0}
         selected={!!selected}
       />
-
-<Text
-  id={id}
-  ref={textRef}
-  text={text}
-  x={position.x}
-  y={position.y}
-  fontSize={size}
-  fontFamily={fontFamily}
-  align={textAlign}
-  fontStyle={fontStyle}
-  fill={color}
-  draggable
-  onClick={handleClick}
-  dragBoundFunc={dragBoundFunc}
-  onDragEnd={handleDragEnd}
-  cursor={selected ? 'move' : 'default'}
-  wrap={isMultiline ? 'word' : undefined}
-  width={isMultiline ? textWidth ?? 240 : undefined}
-  lineHeight={isMultiline ? lineHeight ?? 1.4 : undefined}
-  textDecoration={isUnderline ? 'underline' : undefined}
-/>
-
+      <Text
+        id={id}
+        ref={textRef}
+        text={text}
+        x={position.x}
+        y={position.y}
+        fontSize={size}
+        fontFamily={fontFamily}
+        align={textAlign}
+        fontStyle={fontStyle}
+        fill={color}
+        draggable
+        onClick={handleClick}
+        dragBoundFunc={dragBoundFunc}
+        onDragEnd={handleDragEnd}
+        cursor={selected ? 'move' : 'default'}
+        wrap={isMultiline ? 'word' : undefined}
+        width={isMultiline ? textWidth ?? 240 : undefined}
+        lineHeight={isMultiline ? lineHeight ?? 1.4 : undefined}
+        textDecoration={isUnderline ? 'underline' : undefined}
+      />
     </Group>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ToggleCheckbox } from './ToggleCheckbox';
 import { ToneButton } from './ToneButton';
 import { AddImageButton } from './AddImageButton';
-import { Crop, XIcon, Type, Check } from 'lucide-react';
+import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon} from 'lucide-react';
 import { ImageTools, TemplateSideKey } from '../utils/imageTools';
 import { DualTemplate } from '../types/template';
 import Konva from 'konva';
@@ -16,6 +16,7 @@ type ImageToolbarProps = {
   tone: string;
   side: TemplateSideKey;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
+  toggleCommentModal:()=>void;
   recordSnapshot: () => void;
   onToggleCropMode?: (enabled: boolean) => void;
   setCropMode: (enabled: boolean) => void;
@@ -33,6 +34,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   recordSnapshot,
   onToggleCropMode,
   setTransformModeActive,
+  toggleCommentModal,
   setCropMode,
   imageRef,
   cropRegion,
@@ -185,6 +187,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
         disabled={!isElementSelected}
       />
 
+      
+
       {onToggleCropMode && (
         <ToggleCheckbox
           tone={tone}
@@ -198,6 +202,16 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
           }}
         />
       )}
+
+       <ToneButton
+        label="Add Reflection"
+        icon={<ListPlusIcon size={18} />}
+        tone={tone}
+        fontSize="text-sm"
+        isActive={false}
+        onClick={toggleCommentModal}
+        disabled={!isElementSelected}
+      />
 
       {showColorPicker && (
         <div className="flex items-center gap-2">

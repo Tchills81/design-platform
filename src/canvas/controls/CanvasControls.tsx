@@ -13,7 +13,7 @@ import SidebarModule from '@/src/components/SidebarModule';
 import SidebarSection from '@/src/components/SidebarSection';
 import CanvasActionCluster from '@/src/components/CanvasActionCluster';
 import PaintingCluster from '@/src/components/PaintingCluster';
-
+import FooterControlCluster from '@/src/components/FooterControlCluster';
 import PaintingToolbar from '@/src/components/PaintingToolbar';
 import { AddImageButton } from '@/src/components/AddImageButton';
 import { DualTemplate } from '@/src/types/template';
@@ -33,6 +33,7 @@ import { DesignElement } from '@/src/types/DesignElement';
 
 
 export interface CanvasControlsProps {
+
     canvasWidth:number;
     canvasHeight:number;
     cardX:number;
@@ -51,6 +52,7 @@ export interface CanvasControlsProps {
     bleedToggleDisabled: boolean;
     selectedTextId: string | null;
     selectedImageId: string | null;
+    zoom:number;
     setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
     setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
     setMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
@@ -69,6 +71,7 @@ export interface CanvasControlsProps {
     setShowReflectionModal: React.Dispatch<React.SetStateAction<boolean>>;
     setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
     setShowShareModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setZoom: React.Dispatch<React.SetStateAction<number>>;
     setElementId?: React.Dispatch<React.SetStateAction<string>>;
     setDesignElement:(el:DesignElement)=>void;
     setBrushSize: (size: number) => void;
@@ -106,6 +109,8 @@ export default function CanvasControls({
     bleedToggleDisabled,
     selectedTextId,
     selectedImageId,
+    zoom,
+    setZoom,
     setMode,
     setSide,
     setTemplate,
@@ -171,6 +176,7 @@ export default function CanvasControls({
     resetDesign();
     setTemplate(null);
     setLastSavedTemplate(template);
+    //setZoom(1);
   }}
 />
 
@@ -178,9 +184,7 @@ export default function CanvasControls({
 
 <SidebarSection label="Elements" >
   <ElementPanel tone={template.tone as tone}  onSelect={(el:DesignElement)=>{
-    
     handleDesignSelected(el);
-
   }}/>
 
   </SidebarSection>
@@ -195,6 +199,8 @@ export default function CanvasControls({
   onToggleMode={() =>{
     setShowBackground(false);
     setMode(prev => (prev === 'card' ? 'painting' : 'card'));
+
+    
 
    
     }
@@ -232,47 +238,56 @@ export default function CanvasControls({
  
 </SidebarModule>
 
+  { mode=='card' &&(
 
-      <TopControlBar
-        template={template}
-        tone={template.tone as tone}
-        zoomIn={() => handleZoom(1.1)}
-        zoomOut={() => handleZoom(0.9)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        history={history}
-        future={future}
-        showRulers={showRulers}
-        toggleRulers={() => setShowRulers(prev => !prev)}
-        showBleeds={showBleeds}
-        toggleBleeds={() => setShowBleeds(prev => !prev)}
-        showGrids={showGrids}
-        toggleGrids={() => setShowGrids(prev => !prev)}
-        toggleReflectionsModal={() => {
-          
-          setShowReflectionModal(true);
-          console.log('showReflectionModal...')
-        }}
-
-
-
-        toggleShareModal={() => {
-          
-          setShowShareModal(true);
-          console.log('showReflectionModal...')
-        }}
+<TopControlBar
+template={template}
+tone={template.tone as tone}
+zoom={zoom}
+setZoom={(newZoom:number)=>{
+  const scaleBy = newZoom / zoom;
+  handleZoom(scaleBy);
+}}
+zoomIn={() => handleZoom(1.1)}
+zoomOut={() => handleZoom(0.9)}
+onUndo={handleUndo}
+onRedo={handleRedo}
+history={history}
+future={future}
+showRulers={showRulers}
+toggleRulers={() => setShowRulers(prev => !prev)}
+showBleeds={showBleeds}
+toggleBleeds={() => setShowBleeds(prev => !prev)}
+showGrids={showGrids}
+toggleGrids={() => setShowGrids(prev => !prev)}
+toggleReflectionsModal={() => {
+  
+  setShowReflectionModal(true);
+  console.log('showReflectionModal...')
+}}
 
 
 
-        toggleCommentModal={() => {
-          
-          setShowCommentModal(true);
-          console.log('showModal...', setShowCommentModal)
-        }}
-        onPreview={()=>{captureBothSides();}}
-        bleedToggleDisabled={bleedToggleDisabled}
-        activeMode={faceMode}
-      />
+toggleShareModal={() => {
+  
+  setShowShareModal(true);
+  console.log('showReflectionModal...')
+}}
+
+
+
+toggleCommentModal={() => {
+  
+  setShowCommentModal(true);
+  console.log('showModal...', setShowCommentModal)
+}}
+onPreview={()=>{captureBothSides();}}
+bleedToggleDisabled={bleedToggleDisabled}
+activeMode={faceMode}
+/>
+
+  )}
+      
 
 
 {mode === 'painting' && (
@@ -321,6 +336,9 @@ export default function CanvasControls({
     setTemplate(null);
   }}
 />
+
+
+
 
   </>
 )}
@@ -404,7 +422,29 @@ export default function CanvasControls({
      
       />
     </div>
-      
+
+
+     <FooterControlCluster
+        mode={mode}
+        zoom={zoom}
+        setZoom={(newZoom:number)=>{
+          const scaleBy = newZoom / zoom;
+          handleZoom(scaleBy);
+        }}
+
+        setMode={()=>{setMode('card')}}
+        
+        tone={template.tone as tone}
+        zoomIn={() => handleZoom(1.1)}
+        zoomOut={() => handleZoom(1.9)}
+        showRulers={showRulers}
+        toggleRulers={() => setShowRulers(prev => !prev)}
+        showBleeds={showBleeds}
+        toggleBleeds={() => setShowBleeds(prev => !prev)}
+        showGrids={showGrids}
+        toggleGrids={() => setShowGrids(prev => !prev)}
+        bleedToggleDisabled={bleedToggleDisabled}
+    />
     </>
   );
 }

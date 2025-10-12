@@ -9,6 +9,7 @@ import { TemplateElement } from '../types/template';
 import { supportedShapes } from './elements/shapeRegistry';
 import { tone } from '../types/tone';
 import { toneColorMap } from '../types/tone';
+import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
 
 interface ImageElementProps {
   id: string;
@@ -24,15 +25,22 @@ interface ImageElementProps {
   selectedImageId?: string;
   containerRef: React.RefObject<HTMLDivElement | null>;
   stageRef: React.RefObject<any>;
-  element:TemplateElement;
-  
+  element: TemplateElement;
+
   canvasBounds: { x: number; y: number; width: number; height: number };
   handleImageUpdate: (e: KonvaEventObject<Event>, id: string) => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
   onSelect: () => void;
   forwardedRef?: React.RefObject<Konva.Image | null>;
   setSelectedRef?: (ref: Konva.Image | null) => void;
+
+  // ✅ NEW: shape drag support
+  dragBoundFunc?: (pos: { x: number; y: number }) => { x: number; y: number };
+  onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onTransformEnd?: () => void;
 }
+
 
 const ImageElement: React.FC<ImageElementProps> = ({
   id,
@@ -61,6 +69,9 @@ const ImageElement: React.FC<ImageElementProps> = ({
   const padding = 2;
   const gridSpacing = 50;
 
+  // ✅ Track last snapped ghost line values
+  const lastSnapped = useRef<{ x?: number; y?: number }>({});
+
   useEffect(() => {
     if (isSelected && forwardedRef) {
       forwardedRef.current = internalRef.current;
@@ -76,8 +87,6 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
   const handleOnSelect = () => {
     if (setSelectedRef) setSelectedRef(internalRef.current);
-
-    console.log('setSelectedRef', setSelectedRef);
     onSelect();
   };
 
@@ -118,7 +127,14 @@ const ImageElement: React.FC<ImageElementProps> = ({
     const snappedX = Math.round(newX / gridSpacing) * gridSpacing;
     const snappedY = Math.round(newY / gridSpacing) * gridSpacing;
 
-    if (setGhostLines) setGhostLines({ x: snappedX, y: snappedY });
+    // ✅ Only update ghost lines if snapped values changed
+    if (
+      setGhostLines &&
+      (snappedX !== lastSnapped.current.x || snappedY !== lastSnapped.current.y)
+    ) {
+      lastSnapped.current = { x: snappedX, y: snappedY };
+      setGhostLines({ x: snappedX, y: snappedY });
+    }
   };
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
@@ -157,18 +173,39 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
 
 
+  const dragBoundFunc = getZoomAwareDragBoundFunc(canvasBounds, size, zoom);
+
   const sharedProps = {
     ref: internalRef,
     onClick: handleOnSelect,
-    onDragMove: handleDragMove,
-    onDragEnd: handleDragEnd,
+    onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      const x = node.x();
+      const y = node.y();
+  
+      if (setGhostLines) {
+        const snapThreshold = 10;
+        const snapX = Math.abs(x % 100) < snapThreshold ? x : undefined;
+        const snapY = Math.abs(y % 100) < snapThreshold ? y : undefined;
+        setGhostLines({ x: snapX, y: snapY });
+      }
+  
+      handleDragMove?.(e); // preserve any existing logic
+    },
+    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+      handleDragEnd?.(e); // preserve any existing logic
+      if (setGhostLines) setGhostLines({});
+    },
     onTransformEnd: handleTransformEnd,
     cursor: isSelected ? 'move' : 'default',
     isSelected,
     zoom,
-    fillColor: element.type=='shape'? element.fill:"#ffffff", // or from color picker state
-    showTransformer
+    fillColor: element.type === 'shape' ? element.fill : '#ffffff', // or from color picker state
+    showTransformer,
+    dragBoundFunc,
+    setGhostLines
   };
+  
 
 
   const shapeMeta = element.type === 'shape' ? supportedShapes[element.shapeType] : null;
@@ -182,16 +219,16 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
   return (
     <>
-    <SelectionFrame
-  x={position.x}
-  y={position.y}
-  width={size.width}
-  height={size.height}
-  selected={isSelected}
-  shapeType={element.type === 'shape' ? element.shapeType : undefined}
-  refNode={internalRef.current}
-  tone={tone}
-/>
+      <SelectionFrame
+        x={position.x}
+        y={position.y}
+        width={size.width}
+        height={size.height}
+        selected={isSelected}
+        shapeType={element.type === 'shape' ? element.shapeType : undefined}
+        refNode={internalRef.current}
+        tone={tone}
+      />
 
       {element.type === 'shape' &&
       element.shapeType &&
@@ -216,7 +253,8 @@ const ImageElement: React.FC<ImageElementProps> = ({
           width={size.width}
           height={size.height}
           onClick={handleOnSelect}
-          draggable={zoom === 1}
+          draggable={true}
+          dragBoundFunc={getZoomAwareDragBoundFunc(canvasBounds, size, zoom)}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}
@@ -227,11 +265,10 @@ const ImageElement: React.FC<ImageElementProps> = ({
           shadowBlur={showTransformer ? 10 : 0}
         />
       )}
-  
+
       {isSelected && showTransformer && <Transformer ref={transformerRef} />}
     </>
   );
-  
 };
 
 export default ImageElement;

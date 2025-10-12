@@ -10,6 +10,7 @@ import Konva from "konva";
 import { useTransformMode } from "@/src/utils/useTransformMode";
 import { DesignElement } from "@/src/types/DesignElement";
 import { ELEMENT_LIBRARY } from "@/lib/elements";
+import { AccessLevel } from "@/src/types/access";
 export function useCanvasState() {
   // 🎨 Core template and history
   const [template, setTemplate] = useState<DualTemplate | null>(null);
@@ -72,13 +73,15 @@ export function useCanvasState() {
 
   // 📐 Layout and guides
   const [showRulers, setShowRulers] = useState<boolean>(false);
-  const [showBleeds, setShowBleeds] = useState<boolean>(true);
+  const [showBleeds, setShowBleeds] = useState<boolean>(false);
   const [showGrids, setShowGrids] = useState<boolean>(false);
   const [bleedToggleDisabled, setBleedToggleDisabled] = useState<boolean>(false);
   const [showGuides, setShowGuides] = useState<boolean>(true);
 
   // 🧭 Zoom and stage
   const [zoom, setZoom] = useState<number>(1);
+  const [initialZoomedOutValue, setInitialZoomedOutValue] = useState(1);
+
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -91,6 +94,7 @@ export function useCanvasState() {
   const [ghostOpacity, setGhostOpacity] = useState<number>(0);
   const [dynamicBackground, setDynamicBackground] = useState<string>("#ffffff");
   const [showBackground, setShowBackground] = useState<boolean>(false);
+  
 
   // 📸 Snapshots and export
   const [snapshots, setSnapshots] = useState<{ front: string | null; back: string | null }>({
@@ -101,6 +105,8 @@ export function useCanvasState() {
   const [showGallery, setShowGallery] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [insideMessage, setInsideMessage] = useState<string | null>(null);
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
+
 
   // 🧠 Refs
   const imageRef = useRef<Konva.Image>(null);
@@ -108,7 +114,11 @@ export function useCanvasState() {
   const imagebarRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cardGridGroupRef = useRef<Konva.Group>(null);
 
+  // State to store the calculated style for the DOM overlay
+  const [overlayStyle, setOverlayStyle] = useState({});
+ 
   // 🧠 Derived values
   const activeFace = template?.[side];
   const card = activeFace?.card;
@@ -136,6 +146,14 @@ export function useCanvasState() {
   const canvasWidth = stageSize.width;
   const canvasHeight = stageSize.height;
   const [modes, setModes] = useState<CanvasMode[]>(['front','back'])
+
+  const [gridPosition, setGridPosition] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  
 
   const canvasBounds = useMemo(() => ({
     x: cardX ?? 0,
@@ -301,6 +319,8 @@ export function useCanvasState() {
   setShowGuides,
   zoom,
   setZoom,
+  initialZoomedOutValue, 
+  setInitialZoomedOutValue,
   stageSize,
   setStageSize,
   canvasBounds,
@@ -314,6 +334,8 @@ export function useCanvasState() {
   setGhostOpacity,
   dynamicBackground,
   setDynamicBackground,
+  gridPosition, 
+  setGridPosition,
 
   // 🧠 Text styling
   isBold,
@@ -340,14 +362,19 @@ export function useCanvasState() {
   setShowExportModal,
   insideMessage,
   setInsideMessage,
+  accessLevel, 
+  setAccessLevel,
 
   // 🧠 Refs and transform logic
   imageRef,
   imagebarRef,
   stageRef,
   containerRef,
+  cardGridGroupRef,
 
   updateImageRef,
+  overlayStyle, 
+  setOverlayStyle,
 
   // 🧠 Derived tone
   tone,

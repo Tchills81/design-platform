@@ -1,0 +1,1 @@
+export type AccessLevel = 'view' | 'comment' | 'edit';

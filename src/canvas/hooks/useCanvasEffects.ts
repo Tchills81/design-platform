@@ -1,6 +1,6 @@
 // src/canvas/hooks/useCanvasEffects.ts
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCanvasState } from "./useCanvasState";
 import { useCanvasActions } from "./useCanvasActions";
 import { SnapshotEntry } from "@/src/types/SnapshotEntry";
@@ -10,6 +10,7 @@ import { DualTemplate, isTextElement } from "@/src/types/template";
 import { computeAverageColor } from "@/src/utils/colorUtils";
 import getDynamicBackgroundFromTemplate from "@/src/utils/computeDynamicBackground";
 import { tone } from "@/src/types/tone";
+import Draggable from "react-draggable";
 
 export function useCanvasEffects(
   state: ReturnType<typeof useCanvasState>,
@@ -48,6 +49,13 @@ export function useCanvasEffects(
     designElement,
     setDesignElements,
     imageRef,
+    containerRef,
+    cardGridGroupRef,
+    stageRef,
+    zoom,
+    setInitialZoomedOutValue,
+    position
+    
   } = state;
 
   const {
@@ -69,7 +77,105 @@ export function useCanvasEffects(
     handleTemplateSelect,
     setDualFaces,
     setReflections,
+    handleZoom,
+    setDesignGridPosition,
+    setOverlayStyle,
   } = actions;
+
+
+
+  const hasInitializedZoom = useRef(false);
+
+useEffect(() => {
+  if (!template || !containerRef.current || mode=="painting") return;
+
+  const container = containerRef.current;
+
+  // Layout constants
+  const SIDEBAR_WIDTH = 280;
+  const RULER_THICKNESS = 24;
+  const TOP_BAR_HEIGHT = 64;
+  const FOOTER_HEIGHT = 48;
+  const RIGHT_MARGIN = 280;
+  const EXTRA_MARGIN = 120;
+
+  // Masked viewport dimensions
+  const viewportWidth = container.offsetWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
+  const viewportHeight = container.offsetHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
+
+  // Desired zoom to fit template
+  const zoomX = (viewportWidth - EXTRA_MARGIN) / template.width;
+  const zoomY = (viewportHeight - EXTRA_MARGIN) / template.height;
+  const targetZoom = Math.min(zoomX, zoomY, 1);
+
+  const scaleBy = targetZoom / zoom;
+  setInitialZoomedOutValue(targetZoom);
+
+  handleZoom(scaleBy, true);
+  hasInitializedZoom.current = true;
+}, [template,  mode]);
+
+
+
+
+/*useEffect(() => {
+  if (mode === 'painting') {
+    const gridPos = setDesignGridPosition();
+    //setGridOverlayPosition(gridPos); // or pass directly to CardGridBackground
+  }
+}, [mode]);*/
+
+
+
+
+
+
+
+// This effect synchronizes the DOM overlay with the Konva group's state.
+useEffect(() => {
+  const konvaGroup = cardGridGroupRef.current;
+    
+  const stage = stageRef.current;
+  
+  if (konvaGroup && stage && template && mode === "painting" ) {
+    
+    const absoluteGroupScale = konvaGroup.getAbsoluteScale();
+
+    
+      const finalWidth = template.width * absoluteGroupScale.x;
+      const finalHeight = template.height * absoluteGroupScale.y;
+
+     const finalLeft=(stageSize.width -finalWidth)/2;
+     const finalTop=(stageSize.height-finalHeight)/2
+
+
+       // Update the state with the new style properties
+    setOverlayStyle({
+      position: 'absolute',
+      top: finalTop,
+      left: finalLeft ,
+      transform: `scale(${absoluteGroupScale.x})`,
+      transformOrigin: 'top left',
+      zIndex: 2,
+      opacity: 1,
+      transition: 'opacity 0.3s ease-in-out',
+      pointerEvents: 'auto',
+      cursor: 'crosshair',
+      Draggable:true
+    });
+  }
+}, [position, template, mode, zoom, stageSize]); // Add `template` to dependencies
+
+
+
+
+
+  
+  
+  
+  
+  
+  
 
  
 

@@ -23,6 +23,7 @@ import {
   StretchHorizontal,
   Bold,
   Italic,
+  ListPlus
 } from 'lucide-react';
 import { tone } from '../types/tone';
 
@@ -63,6 +64,7 @@ interface TextToolbarProps {
   tone: string;
   onAddText?: () => void;
   onRemoveText?: () => void;
+  toggleCommentModal:()=>void;
   selectedTextId?: string | null;
 }
 
@@ -84,6 +86,7 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   tone,
   onAddText,
   onRemoveText,
+  toggleCommentModal,
   selectedTextId,
   isMultiline,
   isUnderlined,
@@ -102,7 +105,12 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
     <SidebarModule tone={tone as tone}>
       {/* Close Button */}
       
-      <div className="flex justify-end mb-2 align-middle">
+      <div className="flex  gap-4 justify-end mb-2 align-middle">
+      <ToneButton 
+       icon={<ListPlus size={16} />} 
+       label="Add Reflection" isActive={isItalic}
+       onClick={toggleCommentModal}
+       tone={tone} />
       <ToneButton icon={<XIcon size={16} />} label="" isActive={isItalic} onClick={exitEditingMode} tone={tone} />
       </div>
 

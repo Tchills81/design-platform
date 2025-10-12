@@ -16,7 +16,11 @@ interface CardGridBackgroundProps {
   cols?: number;
   rows?: number;
   previewColor?: string;
-  side?:string;
+  side?: string;
+  zoom?: number;
+  draggable?: boolean;
+  onDrag?: (delta: { x: number; y: number }) => void;
+  mode?: string;
 }
 
 const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
@@ -33,69 +37,67 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
   cols = 10,
   rows = 6,
   side,
-  previewColor = 'rgba(0, 0, 0, 0.1)'
+  previewColor = 'rgba(0, 0, 0, 0.1)',
+  zoom = 1,
+  draggable = false,
+  onDrag,
+  mode = 'painting'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDraggingRef = useRef(false);
   const paintedCellsRef = useRef(new Set<string>());
   const [hoveredCell, setHoveredCell] = useState<{ col: number; row: number } | null>(null);
-  const [animatedCells, setAnimatedCells] = React.useState<Set<string>>(new Set());
-  const [pulseMap, setPulseMap] = React.useState<Map<string, number>>(new Map());
-  const [brushTrail, setBrushTrail] = React.useState<string[]>([]);
+  const [animatedCells, setAnimatedCells] = useState<Set<string>>(new Set());
+  const [pulseMap, setPulseMap] = useState<Map<string, number>>(new Map());
+  const [brushTrail, setBrushTrail] = useState<string[]>([]);
 
-
-
-
-  // 🎨 Interaction: Click + Drag to Paint
+  // 🎨 Painting Interaction
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !onCellPaint) return;
+    if (!canvas || mode !== 'painting') return;
 
     const cellSizeX = width / cols;
     const cellSizeY = height / rows;
 
     const getCellFromEvent = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const xClick = e.clientX - rect.left;
-      const yClick = e.clientY - rect.top;
+      const xClick = (e.clientX - rect.left) / zoom;
+      const yClick = (e.clientY - rect.top) / zoom;
       const col = Math.floor(xClick / cellSizeX);
       const row = Math.floor(yClick / cellSizeY);
       return { col, row };
     };
 
     const paintCell = (col: number, row: number) => {
-          const now = Date.now();
-          setPulseMap((prev) => {
-          const next = new Map(prev);
-          next.set(`${col},${row}`, now);
-          return next;
-          });
-
       const key = `${col},${row}`;
       if (!paintedCellsRef.current.has(key)) {
         paintedCellsRef.current.add(key);
-        onCellPaint(col, row);
-      
-  // 🎉 Trigger animation
-          setAnimatedCells((prev) => new Set(prev).add(key));
-          setTimeout(() => {
+        onCellPaint?.(col, row);
+
+        const now = Date.now();
+        setPulseMap((prev) => {
+          const next = new Map(prev);
+          next.set(key, now);
+          return next;
+        });
+
+        setAnimatedCells((prev) => new Set(prev).add(key));
+        setTimeout(() => {
           setAnimatedCells((prev) => {
-         const next = new Set(prev);
-         next.delete(key);
-         return next;
-         });
-          }, 300); // duration of pulse
-    }
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+        }, 300);
 
-    setBrushTrail((prev) => [...prev.slice(-9), key]); // keep last 10
-
+        setBrushTrail((prev) => [...prev.slice(-9), key]);
+      }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
       isDraggingRef.current = true;
       paintedCellsRef.current.clear();
       const { col, row } = getCellFromEvent(e);
-      console.log("painting", col, row);
       paintCell(col, row);
     };
 
@@ -105,21 +107,12 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-        const { col, row } = getCellFromEvent(e);
-      
-        // 🎨 Hover preview (always active)
-        setHoveredCell({ col, row });
-      
-        // 🖌️ Drag painting (only when mouse is down)
-        if (isDraggingRef.current) {
-          paintCell(col, row);
-        }
-      };
-      
+      const { col, row } = getCellFromEvent(e);
+      setHoveredCell({ col, row });
+      if (isDraggingRef.current) paintCell(col, row);
+    };
 
-    const handleMouseLeave = () => {
-        setHoveredCell(null);
-      }
+    const handleMouseLeave = () => setHoveredCell(null);
 
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mouseup', handleMouseUp);
@@ -130,8 +123,50 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mouseup', handleMouseUp);
       canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [onCellPaint, width, height, cols, rows]);
+  }, [onCellPaint, width, height, cols, rows, zoom, mode]);
+
+  // 🖱️ Dragging Interaction (only when not painting)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || mode === 'painting' || !draggable) return;
+
+    let lastX = 0;
+    let lastY = 0;
+    let isDragging = false;
+
+    const handleDown = (e: MouseEvent) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    const handleMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      onDrag?.({ x: dx, y: dy });
+    };
+
+    const handleUp = () => {
+      isDragging = false;
+    };
+
+    canvas.addEventListener('mousedown', handleDown);
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('mouseup', handleUp);
+    canvas.addEventListener('mouseleave', handleUp);
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleDown);
+      canvas.removeEventListener('mousemove', handleMove);
+      canvas.removeEventListener('mouseup', handleUp);
+      canvas.removeEventListener('mouseleave', handleUp);
+    };
+  }, [draggable, onDrag, mode]);
 
   // 🧱 Drawing Logic
   useEffect(() => {
@@ -146,19 +181,15 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
 
     const cellSizeX = width / cols;
     const cellSizeY = height / rows;
-
     const allColors: string[] = [];
 
     for (let col = 0; col < cols; col++) {
       for (let row = 0; row < rows; row++) {
-
-        
-
         const px = col * cellSizeX;
         const py = row * cellSizeY;
-
+        const key = `${col},${row}`;
         const isHovered = hoveredCell?.col === col && hoveredCell?.row === row;
-        const fill = isHovered ? previewColor : getCellColor?.(col, row) ?? '#f0f0f0';
+        const fill = isHovered ? previewColor : getCellColor(col, row);
         allColors.push(fill);
 
         ctx.fillStyle = fill;
@@ -168,61 +199,62 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
         ctx.lineWidth = 0.5;
         ctx.strokeRect(px, py, cellSizeX, cellSizeY);
 
-
-        const key = `${col},${row}`;
-        const isAnimated = animatedCells.has(key);
-
-        // Animation: Simple Highlight
-
-        if (isAnimated) {
-           ctx.globalAlpha = 0.6;
-          ctx.fillStyle = getCellColor?.(col, row) ?? '#f0f0f0';
-          ctx.fillRect(px - 2, py - 2, cellSizeX + 4, cellSizeY + 4); // slight expansion
+        if (animatedCells.has(key)) {
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = fill;
+          ctx.fillRect(px - 2, py - 2, cellSizeX + 4, cellSizeY + 4);
           ctx.globalAlpha = 1;
         }
 
-
-        //Easing Curves (Smooth Pulse Transitions)
-          const pulseStart = pulseMap.get(key);
-          const elapsed = pulseStart ? Date.now() - pulseStart : Infinity;
+        const pulseStart = pulseMap.get(key);
+        const elapsed = pulseStart ? Date.now() - pulseStart : Infinity;
 
         if (elapsed < 300) {
-           const t = elapsed / 300;
-           const eased = 1 - Math.pow(1 - t, 2); // ease-out
-           const scale = 1 + 0.1 * eased;
-           const offsetX = (cellSizeX * (scale - 1)) / 2;
-           const offsetY = (cellSizeY * (scale - 1)) / 2;
+          const t = elapsed / 300;
+          const eased = 1 - Math.pow(1 - t, 2);
+          const scale = 1 + 0.1 * eased;
+          const offsetX = (cellSizeX * (scale - 1)) / 2;
+          const offsetY = (cellSizeY * (scale - 1)) / 2;
 
-           ctx.save();
-           ctx.globalAlpha = 0.6 * (1 - t);
-           ctx.fillStyle = getCellColor?.(col, row) ?? '#f0f0f0';
-           ctx.fillRect(px - offsetX, py - offsetY, cellSizeX * scale, cellSizeY * scale);
-           ctx.restore();
+          ctx.save();
+          ctx.globalAlpha = 0.6 * (1 - t);
+          ctx.fillStyle = fill;
+          ctx.fillRect(px - offsetX, py - offsetY, cellSizeX * scale, cellSizeY * scale);
+          ctx.restore();
         }
-
       }
-
-
-      brushTrail.forEach((key, i) => {
-        const [col, row] = key.split(',').map(Number);
-        const px = col * cellSizeX;
-        const py = row * cellSizeY;
-        const alpha = 0.1 + (i / brushTrail.length) * 0.3;
-      
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = getCellColor?.(col, row) ?? '#f0f0f0';
-        ctx.fillRect(px, py, cellSizeX, cellSizeY);
-        ctx.restore();
-      });
-      
     }
+
+    brushTrail.forEach((key, i) => {
+      const [col, row] = key.split(',').map(Number);
+      const px = col * cellSizeX;
+      const py = row * cellSizeY;
+      const alpha = 0.1 + (i / brushTrail.length) * 0.3;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = getCellColor(col, row);
+      ctx.fillRect(px, py, cellSizeX, cellSizeY);
+      ctx.restore();
+    });
 
     if (onAverageColorChange) {
       const avg = computeAverageColor(allColors);
       onAverageColorChange(avg);
     }
-  }, [width, height, cellSize, getCellColor, stroke, onAverageColorChange, cols, rows]);
+  }, [
+    width,
+    height,
+    cols,
+    rows,
+    hoveredCell,
+    getCellColor,
+    stroke,
+    animatedCells,
+    pulseMap,
+    brushTrail,
+    onAverageColorChange
+  ]);
 
   return (
     <canvas
@@ -232,12 +264,12 @@ const CardGridBackground: React.FC<CardGridBackgroundProps> = ({
         top: y,
         left: x,
         pointerEvents: 'auto',
-        cursor: 'crosshair',
+        cursor: mode === 'painting' ? 'crosshair' : 'grab',
         ...style
       }}
     />
   );
-};
+}
 
 // 🎨 Utility: Average Color
 function computeAverageColor(colors: string[]): string {
@@ -251,11 +283,7 @@ function computeAverageColor(colors: string[]): string {
   });
 
   const count = colors.length;
-  r = Math.floor(r / count);
-  g = Math.floor(g / count);
-  b = Math.floor(b / count);
-
-  return `rgb(${r}, ${g}, ${b})`;
+  return `rgb(${Math.floor(r / count)}, ${Math.floor(g / count)}, ${Math.floor(b / count)})`;
 }
 
 // 🎨 Utility: Hex to RGB
