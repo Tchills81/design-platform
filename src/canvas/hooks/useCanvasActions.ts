@@ -25,6 +25,8 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
     template,
     setTemplate,
+    setActivePageId,
+    setDocumentTemplates,
     setLastSavedTemplate,
     setMode,
     setSide,
@@ -110,6 +112,17 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     initialZoomedOutValue,
     setGridPosition,
     setOverlayStyle,
+    setScrollOffset,
+    containerRef,
+    setInitialZoomedOutValue,
+    setCanvasReady,
+    snapshotArchive,
+    setActiveTimestamp,
+    activeTimestamp,
+    setPageAdded,
+    setHasChanged,
+    setMaxPageCount,
+    pageAdded,
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -796,6 +809,75 @@ const setDesignElement = useCallback(
     }*/
   }, [cropModeActive]);
 
+
+  const duplicatePage = useCallback(() => {
+    if (!template || !template[side]) return;
+
+    const clonedTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
+
+    if(!clonedTemplate[side] || !clonedTemplate[side].elements) return;
+
+    const newElementIds = clonedTemplate[side].elements.map(el => {
+      const newId = `${el.id}-dup-${Date.now()}`;
+      return { oldId: el.id, newId };
+    });
+
+    const duplicatedElements = clonedTemplate[side].elements.map(el => {
+      const newIdEntry = newElementIds.find(entry => entry.oldId === el.id);
+      return {
+        ...el,
+        id: newIdEntry ? newIdEntry.newId : el.id,
+        position: {
+          x: el.position.x + 20,
+          y: el.position.y + 20,
+        },
+      };
+    });
+
+    setTemplate(clonedTemplate)
+
+    /*setTemplate(prev => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: [...(prev && prev[side]?.elements || []), ...duplicatedElements],
+      },
+    }));*/
+  }, [])
+
+  const captureFrontAndBack = useCallback(async (): Promise<{ front: string; back: string }> => {
+    if (!stageRef.current || !template || !canvasBounds) return { front: '', back: '' };
+  
+    setShowBleeds(false);
+    setShowRulers(false);
+    setMode('insideFace');
+
+  
+    setSide('front');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const front = captureCardFaceSnapshot({
+      stageRef,
+      bounds: canvasBounds,
+      pixelRatio: 2
+    });
+  
+    setSide('back');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const back = captureCardFaceSnapshot({
+      stageRef,
+      bounds: canvasBounds,
+      pixelRatio: 2
+    });
+  
+    setSnapshots({ front, back }); // still update state for UI
+    
+    //handleTemplateSelect(clonedTemplate || undefined);
+    
+  
+    return { front: front ?? '', back: back ?? '' }; // ✅ ensure non-null values
+  }, [stageRef, canvasBounds, template, showBleeds, showRulers, setSide]);
+  
+  
   const captureBothSides = useCallback(async () => {
     if (!stageRef.current) return;
 
@@ -838,6 +920,33 @@ const setDesignElement = useCallback(
     //handleTemplateSelect(clonedTemplate || undefined);
   
   }, [stageRef, canvasBounds, template, showRulers, showBleeds]);
+
+
+  async function captureThumbnails(
+    faceIds: string[],
+    setSide: (id: string) => void,
+    stageRef: React.RefObject<any>,
+    canvasBounds: DOMRect,
+    delay = 500
+  ): Promise<Record<string, string>> {
+    const snapshots: Record<string,string> = {};
+  
+    for (const faceId of faceIds) {
+      setSide(side); // 🔁 Render face in Konva
+      await new Promise(resolve => setTimeout(resolve, delay)); // ⏳ Wait for render
+  
+      const snapshot = captureCardFaceSnapshot({
+        stageRef,
+        bounds: canvasBounds,
+        pixelRatio: 2
+      });
+  
+     
+    }
+  
+    return snapshots;
+  }
+  
 
 
   const handleSaveCard = useCallback(async () => {
@@ -915,36 +1024,86 @@ const setDesignElement = useCallback(
   }, [snapshots]);
 
 
+
+
+
+  function deepFreeze<T>(obj: T): T {
+    Object.freeze(obj);
+    Object.getOwnPropertyNames(obj).forEach(prop => {
+      const value = (obj as any)[prop];
+      if (
+        value !== null &&
+        (typeof value === 'object' || typeof value === 'function') &&
+        !Object.isFrozen(value)
+      ) {
+        deepFreeze(value);
+      }
+    });
+    return obj;
+  }
+  
+
+
+
+
+
+  const archiveSnapshots = useCallback(
+    (
+      mode: CanvasMode = 'front',
+      images?: { front: string; back: string },
+      sourceTemplate?: DualTemplate
+    ) => {
+      if (!images?.front || !images?.back || !sourceTemplate) return;
+  
+      const timestamp = new Date().toISOString();
+      const clonedTemplate = deepFreeze(JSON.parse(JSON.stringify(sourceTemplate)));
+  
+      const entryFront: SnapshotEntry = {
+        image: images.front,
+        side: 'front',
+        width: card?.width,
+        height: card?.height,
+        timestamp,
+        templateId: sourceTemplate.id,
+        tone: sourceTemplate.tone as tone,
+        type: mode === 'insideFace' ? 'insideFront' : 'front',
+        template: sourceTemplate
+      };
+  
+      const entryBack: SnapshotEntry = {
+        image: images.back,
+        side: 'back',
+        width: card?.width,
+        height: card?.height,
+        timestamp,
+        templateId: sourceTemplate.id,
+        tone: sourceTemplate.tone as tone,
+        type: mode === 'insideFace' ? 'insideBack' : 'back',
+        template: sourceTemplate
+      };
+  
+      // 🧩 Always append—no deduplication or conditional update
+      setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+  
+      // 🧠 Update active timestamp only if triggered by page creation
+      if (pageAdded) {
+        setActiveTimestamp(timestamp);
+        setPageAdded(false);
+      }
+    },
+    [card, setSnapshotArchive, pageAdded]
+  );
+  
+  
+  
+  
+
+
+
+
   const handleSaveToArchive = useCallback((mode: CanvasMode = "front") => {
     if (!snapshots.front || !snapshots.back || !template) return;
-  
-    const timestamp = new Date().toISOString();
-  
-    const entryFront: SnapshotEntry = {
-      image: snapshots.front,
-      side: "front",
-      width: card?.width,
-      height: card?.height,
-      timestamp,
-      templateId: template.id,
-      tone: template.tone as tone,
-      type: mode === "insideFace" ? "insideFront" : "front",
-      template,
-    };
-  
-    const entryBack: SnapshotEntry = {
-      image: snapshots.back,
-      side: "back",
-      width: card?.width,
-      height: card?.height,
-      timestamp,
-      templateId: template.id,
-      tone: template.tone as tone,
-      type: mode === "insideFace" ? "insideBack" : "back",
-      template,
-    };
-  
-    setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+    archiveSnapshots(mode);
     console.log("Design saved to archive ✨");
     setLastSavedTemplate(template);
     setTemplate(null);
@@ -976,11 +1135,21 @@ const setDesignElement = useCallback(
       setFuture([]);
       setCellSize(normalized.front?.card.cellSize ?? cellSize);
       setMode("card");
-  
-      renderToCanvas(normalized, setTemplate, setMode);
-      //setShowBleeds(true);
-      //setShowRulers(true);
-      setShowGallery(false);
+      renderToCanvas(normalized, setTemplate, setMode, 'front', () => {
+        setPageAdded(true)
+        setCanvasReady(true); // ✅ signal readiness
+      });
+      
+      
+      
+      
+
+     // captureFrontAndBack();
+      //archiveSnapshots('front');
+      //setShowGallery(false);
+
+
+    
 
      
     } catch (err) {
@@ -989,6 +1158,45 @@ const setDesignElement = useCallback(
   }, [setTemplate, setSide, setSelectedTextId, setSelectedImageId, setShowToolbar, setInputPosition, setHistory, setFuture, setCellSize, setMode, setShowBleeds, setShowRulers, setShowGallery, cellSize]);
   
 
+
+  const createPageTemplate = useCallback(
+    (page: number) => {
+      if (!template) return;
+  
+      // 🧼 Clone and reset template
+      const blankTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
+      const gridLength = template.front?.card?.gridColors?.length ?? 60;
+  
+      if (blankTemplate.front?.card && blankTemplate.back?.card) {
+        blankTemplate.front.card.gridColors = Array(gridLength).fill("#ffffff");
+        blankTemplate.back.card.gridColors = Array(gridLength).fill("#ffffff");
+  
+        blankTemplate.front.card.backgroundImage = "";
+        blankTemplate.back.card.backgroundImage = "";
+  
+        blankTemplate.front.elements = [];
+        blankTemplate.back.elements = [];
+        
+
+
+          // 🧩 Normalize and render
+      const normalized = normalizeDualTemplate(blankTemplate);
+      renderToCanvas(normalized, setTemplate, setMode, 'front', () => {
+        setTemplate(normalized);
+        setPageAdded(true);
+        setCanvasReady(true); // ✅ triggers useEffect → snapshot → archive
+      });
+      
+  
+      console.log(`🧼 createPageTemplate → initialized Page ${page}`, normalized);
+      }
+  
+    
+    },
+    [template, lastSavedTemplate, setTemplate, setMode, setCanvasReady]
+  );
+  
+  
   
   const handleRenderBlankTemplate = useCallback(() => {
     if (!lastSavedTemplate) return;
@@ -1103,6 +1311,7 @@ const setDesignElement = useCallback(
     setCropModeActive(false);
     setIsMultline(false);
     setIsUnderline(false);
+    setSnapshotArchive([]);
     
   }, []);
 
@@ -1144,6 +1353,38 @@ const setDesignElement = useCallback(
 
 
 
+  const fitTemplateInViewPort = useCallback(() => {
+    if (!template || !containerRef.current || mode=="painting" ) return;
+
+  const container = containerRef.current;
+
+  // Layout constants
+  const SIDEBAR_WIDTH = 280;
+  const RULER_THICKNESS = 24;
+  const TOP_BAR_HEIGHT = 64;
+  const FOOTER_HEIGHT = 48;
+  const RIGHT_MARGIN = 280;
+  const EXTRA_MARGIN = 120;
+
+  // Masked viewport dimensions
+  const viewportWidth = container.offsetWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
+  const viewportHeight = container.offsetHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
+
+  // Desired zoom to fit template
+  const zoomX = (viewportWidth - EXTRA_MARGIN) / template.width;
+  const zoomY = (viewportHeight - EXTRA_MARGIN) / template.height;
+  const targetZoom = Math.min(zoomX, zoomY, 1);
+
+  const scaleBy = targetZoom / zoom;
+  setInitialZoomedOutValue(targetZoom);
+
+  handleZoom(scaleBy, true);
+  
+    
+  }, [template, mode, zoom, handleZoom]);
+
+
+
   /*const setDesignElement = useCallback((el:DesignElement) => {
     //add selected element from elementPanel ..do this by updating template designElements.map(el)
     
@@ -1171,6 +1412,8 @@ const setDesignElement = useCallback(
     setDesignElement,
     setDesignElements,
     setTemplate,
+    setActivePageId,
+    setDocumentTemplates,
     setLastSavedTemplate,
     setMode,
     setFaceMode,
@@ -1265,8 +1508,15 @@ const setDesignElement = useCallback(
     resetDesign,
     handleInvite,
     setOverlayStyle,
-    
-    //handleAddElement,
-    
+    setScrollOffset,
+    captureFrontAndBack,
+    archiveSnapshots,
+    createPageTemplate,
+    setActiveTimestamp,
+    setCanvasReady,
+    duplicatePage,
+    setHasChanged,
+    setMaxPageCount,
+    setPageAdded,
   };
 }

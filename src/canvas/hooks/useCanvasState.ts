@@ -1,7 +1,7 @@
 // src/canvas/hooks/useCanvasState.ts
 
 import { useState, useRef, useMemo } from "react";
-import { DualTemplate, Template } from "../../types/template";
+import { DualTemplate, Template, TemplateDocument } from "../../types/template";
 import { HistoryEntry } from "../../types/HistoryEntry";
 import { SnapshotEntry } from "../../types/SnapshotEntry";
 import { CanvasMode } from "@/src/types/CanvasMode";
@@ -11,14 +11,29 @@ import { useTransformMode } from "@/src/utils/useTransformMode";
 import { DesignElement } from "@/src/types/DesignElement";
 import { ELEMENT_LIBRARY } from "@/lib/elements";
 import { AccessLevel } from "@/src/types/access";
+import { usePageLimiter } from "@/src/utils/usePageLimiter";
+import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
 export function useCanvasState() {
+
+//
+  const [width, setWidth] = useState(window.innerWidth);
   // 🎨 Core template and history
   const [template, setTemplate] = useState<DualTemplate | null>(null);
+  const [templateDocuments, setDocumentTemplates] = useState<TemplateDocument[]>([]);
   const [dualFaces, setDualFaces]=useState<DualTemplate[]>([])
+  
+  const [activePageId, setActivePageId] = useState<string>('front');
+  const [pageAdded, setPageAdded]=useState<boolean>(false);
+
   const [lastSavedTemplate, setLastSavedTemplate] = useState<DualTemplate | null>(null);
   
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [future, setFuture] = useState<HistoryEntry[]>([]);
+
+  const [lastFaceHash, setLastFaceHash] = useState<string | null>(null);
+  const [hasChanged, setHasChanged] = useState(false);
+  const [maxPageCount, setMaxPageCount]=useState<number>(2);
+
 
 
   //refelections...
@@ -33,6 +48,7 @@ export function useCanvasState() {
   // 🧭 Mode and navigation
   const [mode, setMode] = useState<CanvasMode>("card");
   const [side, setSide] = useState<"front" | "back">("front");
+  const [activeTimestamp, setActiveTimestamp] = useState<string | null>(null);
   const [faceMode, setFaceMode] = useState<CanvasMode>("front");
   const [viewMode, setViewMode] = useState<"default" | "spread">("default");
   const [designInside, setDesignInside] = useState<boolean>(false);
@@ -77,6 +93,9 @@ export function useCanvasState() {
   const [showGrids, setShowGrids] = useState<boolean>(false);
   const [bleedToggleDisabled, setBleedToggleDisabled] = useState<boolean>(false);
   const [showGuides, setShowGuides] = useState<boolean>(true);
+  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
+  const hasInitializedZoom = useRef(false);
+
 
   // 🧭 Zoom and stage
   const [zoom, setZoom] = useState<number>(1);
@@ -101,6 +120,7 @@ export function useCanvasState() {
     front: null,
     back: null,
   });
+  const [canvasReady, setCanvasReady] = useState(false);
   const [snapshotArchive, setSnapshotArchive] = useState<SnapshotEntry[]>([]);
   const [showGallery, setShowGallery] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
@@ -142,6 +162,23 @@ export function useCanvasState() {
 
   const cols = Math.floor((card?.width ?? 0) / (cellSize ?? 1));
   const rows = Math.floor((card?.height ?? 0) / (cellSize ?? 1));
+
+  const {
+    maxCount,
+    currentPageCount,
+    canAddPage,
+    isMaxReached,
+    limitStatus // 'available' | 'full' | 'blocked'
+  } = usePageLimiter(template, snapshotArchive);
+
+
+  const layoutMode = useMemo(() => {
+    if (stageSize.width < 600) return 'compact';
+    if (stageSize.width < 1024) return 'scroll';
+    return 'grid';
+  }, [stageSize.width]);
+  
+  
 
   const canvasWidth = stageSize.width;
   const canvasHeight = stageSize.height;
@@ -195,6 +232,10 @@ export function useCanvasState() {
   };
 
   return {
+
+    width, 
+    setWidth,
+    layoutMode,
     // 🖼️ Images
     frontImage,
     backImage,
@@ -204,8 +245,14 @@ export function useCanvasState() {
     // 🎨 Template and history
     template,
     setTemplate,
+    templateDocuments,
+    setDocumentTemplates,
     dualFaces, 
     setDualFaces,
+    activePageId, 
+    setActivePageId,
+    pageAdded, 
+    setPageAdded,
     elements,
     lastSavedTemplate,
     setLastSavedTemplate,
@@ -241,6 +288,8 @@ export function useCanvasState() {
     setShowShareModal,
     designElement,
     setDesignElement,
+    activeTimestamp, 
+    setActiveTimestamp,
 
     // 🧭 Modes and navigation
     mode,
@@ -317,6 +366,8 @@ export function useCanvasState() {
   setBleedToggleDisabled,
   showGuides,
   setShowGuides,
+  scrollOffset, 
+  setScrollOffset,
   zoom,
   setZoom,
   initialZoomedOutValue, 
@@ -356,6 +407,8 @@ export function useCanvasState() {
   setSnapshots,
   snapshotArchive,
   setSnapshotArchive,
+  canvasReady, 
+  setCanvasReady,
   showGallery,
   setShowGallery,
   showExportModal,
@@ -371,10 +424,20 @@ export function useCanvasState() {
   stageRef,
   containerRef,
   cardGridGroupRef,
+  hasInitializedZoom,
 
   updateImageRef,
   overlayStyle, 
   setOverlayStyle,
+
+  lastFaceHash, 
+  setLastFaceHash,
+
+  hasChanged, 
+  setHasChanged,
+
+  maxPageCount, 
+  setMaxPageCount,
 
   // 🧠 Derived tone
   tone,

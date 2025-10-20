@@ -2,7 +2,8 @@ export const renderToCanvas = (
   design: any, // expected to be DualTemplate
   setTemplate: (updater: (prev: any) => any) => void,
   setMode: (mode: 'card' | 'painting') => void,
-  side: 'front' | 'back' = 'front'
+  side: 'front' | 'back' = 'front',
+  onRendered?: () => void // ✅ optional callback after render
 ) => {
   const face = design?.[side];
 
@@ -25,7 +26,8 @@ export const renderToCanvas = (
           height: card.height,
           background: card.background,
           backgroundImage: card.backgroundImage,
-          gridColors: card.gridColors ?? []
+          gridColors: card.gridColors ?? [],
+          cellSize: card.cellSize ?? 20 // ✅ include cellSize
         },
         elements: elements.map((el: any) => {
           const base = {
@@ -62,7 +64,7 @@ export const renderToCanvas = (
           if (el.type === 'shape') {
             return {
               ...base,
-              shapeType: el.shapeType, // ✅ required, no fallback
+              shapeType: el.shapeType,
               fill: el.fill,
               stroke: el.stroke,
               strokeWidth: el.strokeWidth,
@@ -77,4 +79,13 @@ export const renderToCanvas = (
       }
     };
   });
+
+  setMode(mode ?? 'card');
+
+  // ✅ Signal render completion after frame flush
+  if (onRendered) {
+    requestAnimationFrame(() => {
+      setTimeout(onRendered, 500); // allow Konva to settle
+    });
+  }
 };

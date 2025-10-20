@@ -34,6 +34,7 @@ interface CardSideLayerProps {
   canvasBounds: { x: number; y: number; width: number; height: number };
   containerRef?: any;
   cardGridGroupRef?:any;
+  scrollOffset?:any;
   stageRef: React.RefObject<any>;
   zoom: number;
   mode: CanvasMode;
@@ -50,6 +51,7 @@ interface CardSideLayerProps {
   isUnderline: boolean;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   setElementId: React.Dispatch<React.SetStateAction<string>>;
+  
   designElements: DesignElement[];
   handlers: {
     setImageRef?: (ref: Konva.Image | null) => void;
@@ -96,6 +98,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   containerRef,
   stageRef,
   cardGridGroupRef,
+  scrollOffset,
   zoom,
   mode,
   selectedElement,
@@ -158,7 +161,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
 
   const offsetX = (availableWidth - cardWidth * initialZoom) / 2 + SIDEBAR_WIDTH + RULER_THICKNESS;
   const offsetY = (availableHeight - cardHeight * initialZoom) / 2 + TOP_BAR_HEIGHT + RULER_THICKNESS;
-
+  
   
 
 
@@ -176,9 +179,9 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   y={maskY}
   width={maskWidth}
   height={maskHeight}
-  fill="#1E1E1E" // studio-like dark neutral
-  stroke="#ffffff"
-  strokeWidth={10}
+  //fill="#1E1E1E" // studio-like dark neutral
+  stroke={tone}
+  strokeWidth={3}
   shadowForStrokeEnabled={true}
   opacity={0.08}
   listening={false}
@@ -186,8 +189,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
         {/* Inner group: scaled canvas */}
         <Group
           ref={cardGridGroupRef}
-          x={position.x}
-          y={position.y}
+          x={position.x + scrollOffset.x}
+          y={position.y + scrollOffset.y}
           scaleX={zoom}
           scaleY={zoom}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import TemplateGallery from './TemplateGallery';
 import SavedDesignGallery from './SavedDesignGallery';
 import SnapshotArchiveGallery from './SnapshotArchiveGallery';
-import { type DualTemplate } from '../types/template';
+import { TemplateDocument, type DualTemplate } from '../types/template';
 import { type SnapshotEntry } from '../types/SnapshotEntry';
 import { Brush, Save, Archive, Brain, Package } from 'lucide-react';
 import { type Tab } from '../types/Tab';
@@ -11,6 +11,7 @@ import { groupSnapshotsByTemplate } from '../utils/groupSnapshotsByTemplate';
 import Tile from './Tile';
 import ImportFlow from './ImportFlow';
 import { AddImageButton } from './AddImageButton';
+import TemplateGalleryV2 from './TemplateGallery-v1';
 
 
 interface TabNavigatorProps {
@@ -18,6 +19,7 @@ interface TabNavigatorProps {
   onSelect: (tpl: DualTemplate) => void;
   snapshotArchive: SnapshotEntry[];
   setDualFaces:(dualFaces:DualTemplate[])=>void;
+  //setTemplateDocuments:(docs:TemplateDocument[])=>void;
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
   showDesigns?: boolean;
 }
@@ -28,6 +30,7 @@ export default function TabNavigator({
   snapshotArchive,
   setSnapshotArchive,
   setDualFaces,
+ 
   showDesigns,
 }: TabNavigatorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('templates');
@@ -116,7 +119,7 @@ export default function TabNavigator({
             className="bg-white rounded-xl p-6 shadow-soft"
           >
             {activeTab === 'templates' && 
-            <TemplateGallery 
+            <TemplateGalleryV2 
               onSelect={onSelect}  
               importedAsset={importedAsset ?? undefined}
               setDualFaces={setDualFaces}

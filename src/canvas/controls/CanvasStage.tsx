@@ -11,6 +11,7 @@ import { PrintGuidesOverlay } from '@/src/components/PrintGuidesOverlay';
 import GhostLines from "@/src/components/GhostLines";
 import { useCanvasState } from '../hooks/useCanvasState';
 import { useCanvasActions } from '../hooks/useCanvasActions';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 import { Line } from 'react-konva';
 import { Text } from 'react-konva';
@@ -38,6 +39,8 @@ export default function CanvasStage({
   actions
 }: CanvasStageProps) {
   if (!template) return null;
+
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
   const {
     zoom,
@@ -87,6 +90,7 @@ export default function CanvasStage({
     isUnderline,
     setElementId,
     cardGridGroupRef,
+    scrollOffset,
     
 
   } = state;
@@ -105,6 +109,7 @@ export default function CanvasStage({
     onPrimitiveSelect,
     resetDesign,
     setModeActive,
+  
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -112,9 +117,10 @@ export default function CanvasStage({
 
   //const face = template[side];
   //const card = face?.card;
+  
 
   return (
-    <div className="canvas-stage bg-neutral-100"
+    <div className={`canvas-stage bg-neutral-100 ${backgroundClass}`}
     style={{
       width: '100vw',
       height: '100vh',
@@ -212,6 +218,7 @@ export default function CanvasStage({
        
 
         <CardSideLayer
+          scrollOffset={scrollOffset}
           card={template[side].card}
           elements={template[side].elements}
           designElements={designElements}

@@ -54,6 +54,7 @@ export type TemplateElement =
         background: string;
         backgroundImage?: string;
         gridColors?: string[];
+        cellSize?: number;
       };
       elements: TemplateElement[];
     }
@@ -65,7 +66,7 @@ export type TemplateElement =
       name: string;
       author: string;
       tone: string;
-      size: number;
+      size: string;
       sizeLabel: string;
       width: number;
       height: number;
@@ -137,6 +138,62 @@ export type TemplateElement =
         elements: TemplateElement[];
       };
     }
+
+// Individual Face Page within a Template
+
+
+    export interface FacePage {
+      id: string; // e.g. 'front', 'back', 'insideFront'
+      label: string; // e.g. 'Front', 'Back', 'Inside Left'
+      card: Template['card'];
+      elements: TemplateElement[];
+      role?: 'front' | 'back' | 'inside' | 'folded' | 'panel';
+    }
+
+    // Full Template Document with Metadata and Pages
+
+    export interface TemplateDocument {
+      id: string;
+      name: string;
+      author: string;
+      tone: string;
+      size: string;
+      sizeLabel: string;
+      width: number;
+      height: number;
+      thumbnailUrl: string;
+      type?: string;
+      theme?: string;
+      tokens?: DualTemplate['tokens'];
+      previewMode?: DualTemplate['previewMode'];
+      meta?: DualTemplate['meta'];
+      pages: FacePage[];
+    }
+
+
+    export type TemplateKind = 'dual' | 'document';
+    export type UnifiedTemplate = {
+      kind: TemplateKind;
+      dual?: DualTemplate;
+      document?: TemplateDocument;
+    };
+
+
+    export interface TemplateFace {
+      card: {
+        width: number;
+        height: number;
+        background: string;
+        backgroundImage?: string;
+        gridColors?: string[];
+        cellSize?: number;
+      };
+      elements: TemplateElement[];
+    }
+    
+
+    // Type Guards    
+    
     
 
 
@@ -193,6 +250,16 @@ export function isTextElementForTextComponent(
   el: TemplateElement
 ): el is Extract<TemplateElement, { type: 'text' }> {
   return el.type === 'text' && (isLegacyTextElement(el) || isStyledTextPrimitive(el));
+}
+
+
+export function getElementsByRole(page: FacePage, role: string): TemplateElement[] {
+  return page.elements.filter(el => el.role === role);
+}
+
+
+export function getElementsByType(page: FacePage, type: string): TemplateElement[] {
+  return page.elements.filter(el => el.type === type);
 }
 
 

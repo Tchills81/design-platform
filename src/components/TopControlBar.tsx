@@ -102,9 +102,9 @@ export default function TopControlBar({
 
 <div className="flex items-center gap-3 pr-3 border-r border-neutral-300 font-inter min-w-[180px]">
   <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-white via-neutral-100 to-white shadow-sm w-full">
-    <span className="text-xs uppercase tracking-wide text-neutral-500">Face</span>
+    <span className={`text-xs uppercase tracking-wide text-neutral-500 ${toneTextClass}`}>{template?.name} {template?.sizeLabel} ({template?.width}×{template?.height})</span>
     <span className={`text-sm font-semibold ${toneTextClass}`}>
-      {template?.name + '->'+ currentFaceLabel}
+      
     </span>
   </div>
 </div>

@@ -24,21 +24,25 @@ import AddFaceButton from '@/src/components/AddFaceButton';
 import FaceSectionSwitcher from '@/src/components/FaceSectionSwitcher';
 import { map } from 'framer-motion/client';
 import regenerateGrid from '@/src/utils/regenerateGrid';
-import { useState } from 'react';
+import { RefObject, useState } from 'react';
 import TonePalette from '@/src/components/TonePalette';
 import { HistoryEntry } from '@/src/types/HistoryEntry';
 import ProfileCard from '@/src/components/ProfileCard';
 import ElementPanel from '@/src/components/ElementPanel';
 import { DesignElement } from '@/src/types/DesignElement';
+import { SnapshotEntry } from '@/src/types/SnapshotEntry';
 
 
 export interface CanvasControlsProps {
 
+    stageSize:{ width: number; height: number };
     canvasWidth:number;
     canvasHeight:number;
     cardX:number;
     cardY:number;
     template: DualTemplate | null;
+    snapshots: { front: string | null; back: string | null };
+    snapshotArchive:SnapshotEntry[]
     mode: CanvasMode;
     faceMode: CanvasMode;
     modes:CanvasMode[]
@@ -53,10 +57,13 @@ export interface CanvasControlsProps {
     selectedTextId: string | null;
     selectedImageId: string | null;
     zoom:number;
+    hasInitializedZoom:RefObject<boolean>;
     setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
     setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
+    setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
     setMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
-    setTemplate: (tpl: DualTemplate | null) => void;
+    setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
+    setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
     setLastSavedTemplate:(template:DualTemplate | null)=>void;
     lastSavedTemplate:DualTemplate | null;
     setDualFaces: React.Dispatch<React.SetStateAction<DualTemplate[]>>;
@@ -64,6 +71,12 @@ export interface CanvasControlsProps {
     future: HistoryEntry[];
     dualFaces:DualTemplate[];
     designElements:DesignElement[];
+    activeTimestamp:string | null; 
+    hasChanged:boolean;
+    captureFrontAndBack(): Promise<{ front: string; back: string }>;
+    setActiveTimestamp:React.Dispatch<React.SetStateAction<string | null>>;
+    setCanvasReady:React.Dispatch<React.SetStateAction<boolean>>;
+    setHasChanged:React.Dispatch<React.SetStateAction<boolean>>;
     setShowRulers: React.Dispatch<React.SetStateAction<boolean>>;
     setShowBleeds: React.Dispatch<React.SetStateAction<boolean>>;
     setShowGrids: React.Dispatch<React.SetStateAction<boolean>>;
@@ -83,7 +96,8 @@ export interface CanvasControlsProps {
     captureBothSides: () => void;
     handleAddText: () => void;
     resetDesign:()=>void;
-    
+    duplicatePage:()=>void;
+    createPageTemplate:(page:number)=>void;
     handleRemoveText: () => void;
     activateTransformMode: (id: string, type: 'image' | 'text') => void;
     handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
@@ -93,12 +107,10 @@ export interface CanvasControlsProps {
 
 export default function CanvasControls({
     template,
-    canvasWidth,
-    canvasHeight,
-    cardX,
-    cardY,
+    snapshots,
+    snapshotArchive,
     mode,
-    modes,
+    stageSize,
     setModes,
     side,
     brushSize,
@@ -110,7 +122,12 @@ export default function CanvasControls({
     selectedTextId,
     selectedImageId,
     zoom,
-    setZoom,
+    hasInitializedZoom,
+    activeTimestamp,
+    setActiveTimestamp,
+    setCanvasReady,
+    duplicatePage,
+
     setMode,
     setSide,
     setTemplate,
@@ -146,7 +163,13 @@ export default function CanvasControls({
     history,
     future,
     designElements,
-    resetDesign
+    hasChanged,
+    setHasChanged,
+    resetDesign,
+    createPageTemplate,
+    setSnapshotArchive,
+    captureFrontAndBack,
+    setPageAdded,
   }: CanvasControlsProps) {
     // ...render logic
   if (!template) return null;
@@ -176,6 +199,7 @@ export default function CanvasControls({
     resetDesign();
     setTemplate(null);
     setLastSavedTemplate(template);
+    hasInitializedZoom.current = false;
     //setZoom(1);
   }}
 />
@@ -211,9 +235,12 @@ export default function CanvasControls({
     } else if (faceMode === 'insideBack') {
       setFaceMode('insideFront');
     } else {
-      setSide(prev => (prev === 'front' ? 'back' : 'front'));
+      
+      
       setFaceMode(prev => (prev === 'front' ? 'back' : 'front'));
     }
+
+    setSide(prev => (prev === 'front' ? 'back' : 'front'));
   }}
   onUndo={handleUndo}
   onRedo={handleRedo}
@@ -355,77 +382,22 @@ activeMode={faceMode}
 
 
 
-<div className="absolute bottom-4 left-40 -translate-x-1/2 z-10">
-      
-      <FaceSectionSwitcher
-      tone={template.tone as tone}
-      activeMode={faceMode}
-      availableModes={modes}
-      onAddInsideFace={()=>{ 
 
-
-        if (!template || dualFaces.length === 0 ) return;
-
-        console.log('mode...', mode, template);
-
-        /* Save current canvas state into front–back slot
-        setDualFaces((prev: DualTemplate[]) => {
-          const updated = [...prev];
-          updated[0] = { ...template };
-          return updated;
-        });*/
-
-
-        if(dualFaces){
-          
-          if(dualFaces.length==1){
-            setLastSavedTemplate(template);
-            
-            setModes(['front', 'back', 'insideFront', 'insideBack']);
-
-          }
-
-          setMode('insideFront'); 
-          setFaceMode('insideFront'); 
-          
-           
-        }
-        
-        //console.log("dualFaces...pushed",dualFaces);
-        
-      }}
-
-
-
-      onSelectMode={(newMode:CanvasMode)=>{
-
-        console.log('mode...', mode, template);
-
-        if (!template || dualFaces.length === 0 ) return;
-        
-
-        if(dualFaces)
-          {
-            if(dualFaces.length>=1){
-              setMode(newMode);
-              setFaceMode(newMode); 
-            }
-          }
-         
-        }}
-
-        
-      template={template}
-      setLastSavedTemplate={setLastSavedTemplate}
-      handleTemplateSelect={handleTemplateSelect}
-      lastSavedTemplate={lastSavedTemplate}
-     
-      />
-    </div>
 
 
      <FooterControlCluster
+        stageSize={stageSize}
+        template={template}
+        setTemplate={setTemplate}
+        setSnapshotArchive={setSnapshotArchive}
+        setCavansReady={setCanvasReady}
+        duplicatePage={duplicatePage}
+        snapshots={snapshots}
+        snapshotArchive={snapshotArchive}
         mode={mode}
+        side={side}
+        activeTimestamp={activeTimestamp}
+        setActiveTimestamp={setActiveTimestamp}
         zoom={zoom}
         setZoom={(newZoom:number)=>{
           const scaleBy = newZoom / zoom;
@@ -433,7 +405,8 @@ activeMode={faceMode}
         }}
 
         setMode={()=>{setMode('card')}}
-        
+        setSide={setSide}
+
         tone={template.tone as tone}
         zoomIn={() => handleZoom(1.1)}
         zoomOut={() => handleZoom(1.9)}
@@ -444,6 +417,11 @@ activeMode={faceMode}
         showGrids={showGrids}
         toggleGrids={() => setShowGrids(prev => !prev)}
         bleedToggleDisabled={bleedToggleDisabled}
+        createPageTemplate={createPageTemplate}
+        captureFrontAndBack={captureFrontAndBack}
+        setHasChanged={setHasChanged}
+        hasChanged={hasChanged}
+        setPageAdded={setPageAdded}
     />
     </>
   );

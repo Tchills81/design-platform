@@ -12,12 +12,19 @@ import getDynamicBackgroundFromTemplate from "@/src/utils/computeDynamicBackgrou
 import { tone } from "@/src/types/tone";
 import Draggable from "react-draggable";
 
+import { transformDualTemplateToDocument } from "@/src/utils/transformDualTemplate";
+import { normalizeDualTemplate } from "@/src/utils/normalizeDualTemplate";
+import { renderToCanvas } from "@/src/utils/renderToCanvas";
+import { hashTemplateFace } from "@/src/utils/hashTemplateFace";
+import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
+import { TemplateSize } from "@/src/enumarations/TemplateSize";
 export function useCanvasEffects(
   state: ReturnType<typeof useCanvasState>,
   actions: ReturnType<typeof useCanvasActions>
 ) {
   const {
     template,
+    templateDocuments,
     side,
     mode,
     faceMode,
@@ -41,6 +48,8 @@ export function useCanvasEffects(
     setTemplate,
     inputPosition,
     setShowGuides,
+    canvasReady,
+    setCanvasReady,
     lastSavedTemplate,
     dualFaces,
     showBackground,
@@ -53,8 +62,18 @@ export function useCanvasEffects(
     cardGridGroupRef,
     stageRef,
     zoom,
+    hasInitializedZoom,
     setInitialZoomedOutValue,
-    position
+    setShowGallery,
+    position,
+    lastFaceHash, 
+    setLastFaceHash,
+    hasChanged, 
+    setHasChanged,
+    maxPageCount,
+    activeTimestamp,
+    snapshotArchive,
+    pageAdded,
     
   } = state;
 
@@ -63,6 +82,7 @@ export function useCanvasEffects(
     //setPreviewImage,
     setSnapshotArchive,
     setLastSavedTemplate,
+    setDocumentTemplates,
     setMode,
     setStageSize,
     setGhostOpacity,
@@ -78,16 +98,21 @@ export function useCanvasEffects(
     setDualFaces,
     setReflections,
     handleZoom,
-    setDesignGridPosition,
     setOverlayStyle,
+    setScrollOffset,
+    setActivePageId,
+    captureFrontAndBack,
+    archiveSnapshots,
+    setMaxPageCount
+
   } = actions;
 
 
 
-  const hasInitializedZoom = useRef(false);
+// 🧠 Initial zoom to fit template
 
 useEffect(() => {
-  if (!template || !containerRef.current || mode=="painting") return;
+  if (!template || !containerRef.current || mode=="painting" || hasInitializedZoom.current) return;
 
   const container = containerRef.current;
 
@@ -113,21 +138,21 @@ useEffect(() => {
 
   handleZoom(scaleBy, true);
   hasInitializedZoom.current = true;
+  
 }, [template,  mode]);
 
 
 
 
-/*useEffect(() => {
-  if (mode === 'painting') {
-    const gridPos = setDesignGridPosition();
-    //setGridOverlayPosition(gridPos); // or pass directly to CardGridBackground
+useEffect(() => {
+  if (template) {
+    const doc = transformDualTemplateToDocument(template);
+    setDocumentTemplates([doc]);
+    setActivePageId(doc.pages[0]?.id ?? 'front');
+
+    console.log('documentTemplate updated from template:', doc);
   }
-}, [mode]);*/
-
-
-
-
+}, [template]);
 
 
 
@@ -167,17 +192,6 @@ useEffect(() => {
 }, [position, template, mode, zoom, stageSize]); // Add `template` to dependencies
 
 
-
-
-
-  
-  
-  
-  
-  
-  
-
- 
 
   // 🧠 Update preview image
   useEffect(() => {
@@ -310,60 +324,71 @@ useEffect(() => {
 
 
 
-  useEffect(() => {
-    if (mode === 'insideFront' && dualFaces && template) {
-      if (dualFaces.length === 1) {
-        const temp: DualTemplate | undefined = handleRenderBlankTemplate();
-  
-        if (temp) {
-          setDualFaces((prev: DualTemplate[]) => {
-            const updated = [...prev];
-            updated[0] = { ...template };
-            updated.push(temp);
-            return updated;
-          });
-  
-          setTemplate(temp);
-          handleTemplateSelect(temp);
-          console.log('Blank inside face injected and selected');
-        }
-      } else if (dualFaces.length > 1) {
-        setDualFaces((prev: DualTemplate[]) => {
-          const updated = [...prev];
-          updated[0] = { ...template };
-          return updated;
-        });
-  
-        // Use a local copy to avoid stale reads
-        const insideTemplate = { ...dualFaces[1] };
-        setTemplate(insideTemplate);
-        handleTemplateSelect(insideTemplate);
-        console.log('Inside face being rendered');
-      }
-    }
-  }, [mode, dualFaces.length]);
-  
-  
-
+ 
+  // 🧠 Capture front and back when canvasReady
 
   useEffect(() => {
-    if (mode === 'front' && dualFaces.length >= 1 && template) {
-      setDualFaces((prev: DualTemplate[]) => {
-        const updated = [...prev];
-        updated[1] = { ...template };
-        return updated;
-      });
+    // 🧩 Step 1: Calculate max page count early
+    const maxPageCount = getMaxPageCount(template?.size ?? TemplateSize.PRESENTATION);
+    const currentPageCount = snapshotArchive.length;
   
-      const frontTemplate = { ...dualFaces[0] };
-      setTemplate(frontTemplate);
-      handleTemplateSelect(frontTemplate);
-
-      
-      console.log('Front–Back face being rendered');
+    // 🛡️ Step 2: Guard clause with full context
+    if (
+      !canvasReady ||
+      !template ||
+      !canvasBounds ||
+      !stageRef.current ||
+      currentPageCount >= maxPageCount
+    ) {
+      console.log("🛑 useCanvasEffects: canvasReady effect early return");
+      return;
     }
-  }, [mode, dualFaces.length]);
+  
+    // 🧠 Step 3: Proceed with capture
+    const runCapture = async () => {
+      const images = await captureFrontAndBack();
+      archiveSnapshots('front', images, template);
+  
+      const clonedTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
+      const normalized = normalizeDualTemplate(clonedTemplate);
+      renderToCanvas(normalized, setTemplate, setMode, 'front');
+      setTemplate(prev => normalizeDualTemplate(normalized || prev));
+  
+      setShowGallery(false);
+      setCanvasReady(false);
+    };
+  
+    runCapture();
+  }, [
+    canvasReady,
+    template,
+    canvasBounds,
+    stageRef,
+    snapshotArchive.length
+  ]);
+  
 
 
+  useEffect(() => {
+
+    if(!template) return;
+
+    const currentFace = template[side]; // 'front', 'back', etc.
+    const currentHash = hashTemplateFace(currentFace ?? { elements: [], card: { width: 0, height: 0, background: '' } });
+  
+    if (currentHash !== lastFaceHash) {
+      setHasChanged(true);
+      setLastFaceHash(currentHash);
+    } else {
+      setHasChanged(false);
+    }
+  }, [template, side]);
+  
+  
+  
+
+
+  // 🧠 Fetch reflections when modal is shown
 
   useEffect(() => {
     async function fetchReflections() {
@@ -377,6 +402,7 @@ useEffect(() => {
   }, [template, showReflectionModal]);
 
 
+  // 🧠 Fetch reflections when modal is shown
   useEffect(() => {
     async function fetchReflections() {
       if (!template?.id || !showReflectionModal) return;
@@ -387,7 +413,18 @@ useEffect(() => {
   
     fetchReflections();
   }, [template?.id, showReflectionModal]);
+
+
+
+  
 }
+
+
+
+
+
+
+
 
 
 

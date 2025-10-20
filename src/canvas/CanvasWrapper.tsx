@@ -21,6 +21,9 @@ import ShareModal from "../modals/ShareModal";
 import ReflectionModal from "../modals/ReflectionModal";
 import CommentModal from "../modals/CommentModal";
 import { DOMViewport } from "../components/DOMViewport";
+import { ThumbnailStrip } from "../components/ThumbnailStrip";
+import { CanvasMode } from "../types/CanvasMode";
+
 
 export default function CanvasWrapper() {
   const state = useCanvasState();
@@ -96,9 +99,14 @@ export default function CanvasWrapper() {
     stageRef,
     accessLevel,
     zoom,
+    hasInitializedZoom,
     position,
     gridPosition,
     overlayStyle,
+    activeTimestamp,
+    hasChanged,
+    
+  
     
   } = state;
 
@@ -153,10 +161,18 @@ export default function CanvasWrapper() {
     setDualFaces,
     resetDesign,
     setZoom,
+    createPageTemplate,
+    setActiveTimestamp,
+    setCanvasReady,
+    duplicatePage,
+    captureFrontAndBack,
+    setHasChanged,
+    setPageAdded,
     
   } = actions;
 
   if (!template) {
+
     
     return (
       <div className="fade-in relative pt-20 pl-6">
@@ -188,6 +204,8 @@ export default function CanvasWrapper() {
     }}>
       
       <CanvasControls
+        snapshots={snapshots}
+        snapshotArchive={snapshotArchive}
         designElements={designElements}
         template={template}
         canvasWidth={canvasBounds.width}
@@ -200,6 +218,8 @@ export default function CanvasWrapper() {
         setFaceMode={setFaceMode}
         setModes={setModes}
         side={side}
+        activeTimestamp={activeTimestamp}
+        setActiveTimestamp={setActiveTimestamp}
         brushSize={brushSize}
         selectedColor={selectedColor}
         showRulers={showRulers}
@@ -208,11 +228,14 @@ export default function CanvasWrapper() {
         bleedToggleDisabled={bleedToggleDisabled}
         selectedTextId={selectedTextId}
         selectedImageId={selectedImageId}
+        stageSize={stageSize}
         zoom={zoom}
+        hasInitializedZoom={hasInitializedZoom}
         setZoom={setZoom}
         setMode={setMode}
         setSide={setSide}
-        setTemplate={setTemplate}
+        setTemplate={actions.setTemplate}
+        setSnapshotArchive={setSnapshotArchive}
         setShowRulers={setShowRulers}
         setShowBleeds={setShowBleeds}
         setShowGrids={setShowGrids}
@@ -241,6 +264,13 @@ export default function CanvasWrapper() {
         history={history}
         future={future}
         resetDesign={resetDesign}
+        createPageTemplate={createPageTemplate}
+        setCanvasReady={setCanvasReady}
+        duplicatePage={duplicatePage}
+        captureFrontAndBack={captureFrontAndBack}
+        setHasChanged={setHasChanged}
+        hasChanged={hasChanged}
+        setPageAdded={setPageAdded}
         
       />
 
@@ -307,6 +337,10 @@ export default function CanvasWrapper() {
         actions={actions}
 
       />
+
+
+
+     
       <SnapshotGalleryOverlay
         snapshots={snapshots}
         showGallery={showGallery}
@@ -435,6 +469,9 @@ export default function CanvasWrapper() {
           onClose={() => setShowExportModal(false)}
         />
       )}
+
+
+      
     </div>
   );
 }
