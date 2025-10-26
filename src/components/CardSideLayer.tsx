@@ -178,16 +178,16 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
         {/* Inner group: scaled canvas */}
         <Group
           ref={cardGridGroupRef}
-          x={scrollPos?scrollPos.x: position.x}
-          y={scrollPos?scrollPos.y:position.y}
+          x={position.x}
+          y={position.y}
           scaleX={zoom}
           scaleY={zoom}
-          draggable
+          /*draggable
           onDragMove={(e) => {
             const { x, y } = e.target.position();
-            setScrollPosition({ x, y });
+            //setScrollPosition({ x, y });
           }}
-       // Optionally clamp or store position
+       // Optionally clamp or store position*/
       
         >
           <GridRect

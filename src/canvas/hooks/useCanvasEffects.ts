@@ -118,7 +118,8 @@ export function useCanvasEffects(
     setScrollPosition,
     setLargeContainerSize,
     setZoom,
-    setCanvasSize
+    setCanvasSize,
+    scrollByWheel
     
 
   } = actions;
@@ -233,7 +234,7 @@ useEffect(() => {
   const scaledWidth = template.width * scale.x;
   const scaledHeight = template.height * scale.y;
 
-  setCanvasSize({width:scaledWidth, height:scaledHeight})
+  setCanvasSize({scaleX:scale.x, scaleY:scale.y, width:scaledWidth, height:scaledHeight})
 
 
 
@@ -259,15 +260,16 @@ useEffect(() => {
 
 
 
-useEffect(() => {
-  const group = cardGridGroupRef.current;
-  if (group) {
-    //setScrollPosition(position);
-    //group.position({ x: position.x, y: position.y });
-    //group.getLayer()?.batchDraw();
-  }
-}, [scrollPosition]);
 
+/*useEffect(() => {
+  const handleWheel = (e: WheelEvent) => {
+    scrollByWheel(e.deltaX, e.deltaY);
+    e.preventDefault();
+  };
+
+  window.addEventListener('wheel', handleWheel, { passive: false });
+  return () => window.removeEventListener('wheel', handleWheel);
+}, [scrollByWheel]);*/
 
 
 

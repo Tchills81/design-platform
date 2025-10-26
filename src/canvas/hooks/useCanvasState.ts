@@ -117,9 +117,13 @@ export function useCanvasState() {
   const largeContainerRef =  useRef<HTMLDivElement>(null)
   const [largeContainerSize, setLargeContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
-  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [canvasSize, setCanvasSize] = useState<{scaleX:number; scaleY:number; width: number; height: number }>({scaleX:0, scaleY:0, width: 0, height: 0 });
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const [visible, setVisible] = useState(true);
+
+
+  const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
   
 
   // 📸 Snapshots and export
@@ -411,6 +415,9 @@ export function useCanvasState() {
   setGridPosition,
   viewportSize, 
   setViewportSize,
+  visible, 
+  setVisible,
+  fadeTimeout,
 
   // 🧠 Text styling
   isBold,

@@ -125,6 +125,8 @@ export default function CanvasStage({
     setModeActive,
     handleScroll,
     setScrollPosition,
+    handleHorizontalScroll,
+    handleVerticalScroll,
   
   
     
@@ -139,7 +141,7 @@ export default function CanvasStage({
 
   const konvaGroup = cardGridGroupRef.current;
 
-  console.log('scrollPos....', scrollPosition, 'position', position)
+  //console.log('scrollPos....', scrollPosition, 'position', position)
 
   return (
 
@@ -193,6 +195,8 @@ export default function CanvasStage({
     onTextEdit: handleTextEdit,
     onTextUpdate: handleTextUpdate,
     onPrimitiveSelect: onPrimitiveSelect,
+    handleHorizontalScroll:handleHorizontalScroll,
+    handleVerticalScroll:handleVerticalScroll,
     setGhostLines,
     setSelectedFont,
     setSelectedColor,

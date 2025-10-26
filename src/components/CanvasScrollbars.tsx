@@ -5,6 +5,8 @@ import React, { useEffect, useState, useRef } from 'react';
 interface CanvasScrollbarsProps {
   scrollPosition: { x: number; y: number };
   setScrollPosition: (pos: { x: number; y: number }) => void;
+  handleHorizontalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
+  handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
   canvasSize: { width: number; height: number };
   viewportSize: { width: number; height: number };
   tone: string;
@@ -13,6 +15,8 @@ interface CanvasScrollbarsProps {
 export default function CanvasScrollbars({
   scrollPosition,
   setScrollPosition,
+  handleHorizontalScroll,
+  handleVerticalScroll,
   canvasSize,
   viewportSize,
   tone,
@@ -32,42 +36,46 @@ export default function CanvasScrollbars({
     fadeTimeout.current = setTimeout(() => setVisible(false), 2000);
   };
 
-  const handleHorizontalScroll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = parseInt(e.target.value);
-    const ratio = rawValue / maxX;
-    const scaledX = ratio * (canvasSize.width - viewportSize.width);
-    const x = clamp(scaledX, 0, maxX);
-    setScrollPosition({ x, y: scrollPosition.y });
-    triggerFade();
-  };
-
-  const handleVerticalScroll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = parseInt(e.target.value);
-    const ratio = rawValue / maxY;
-    const scaledY = ratio * (canvasSize.height - viewportSize.height);
-    const y = clamp(scaledY, 0, maxY);
-    setScrollPosition({ x: scrollPosition.x, y });
-    triggerFade();
-  };
+  
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      const newX = clamp(scrollPosition.x + e.deltaX, 0, maxX);
-      const newY = clamp(scrollPosition.y + e.deltaY, 0, maxY);
+      const deltaX = e.deltaX;
+      const deltaY = e.deltaY;
+  
+      const nextX = clamp(scrollPosition.x + deltaX, 0, maxX);
+      const nextY = clamp(scrollPosition.y + deltaY, 0, maxY);
 
-      // Only update scroll if it actually changes
-      if (newX !== scrollPosition.x || newY !== scrollPosition.y) {
-        setScrollPosition({ x: newX, y: newY });
+
+     
+  
+      // Lock horizontal scroll if already at edge
+      const lockedX =
+        (scrollPosition.x === 0 && deltaX < 0) ||
+        (scrollPosition.x === maxX && deltaX > 0);
+  
+      // Lock vertical scroll if already at edge
+      const lockedY =
+        (scrollPosition.y === 0 && deltaY < 0) ||
+        (scrollPosition.y === maxY && deltaY > 0);
+
+        console.log('handleWheel->lockedY...', lockedY)
+  
+      if (!lockedX || !lockedY) {
+        setScrollPosition({
+          x: lockedX ? scrollPosition.x : nextX,
+          y: lockedY ? scrollPosition.y : nextY,
+        });
         triggerFade();
       }
-
-      // Prevent default horizontal scroll from affecting layout
+  
       e.preventDefault();
     };
-
+  
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
   }, [scrollPosition, maxX, maxY]);
+  
 
   return (
     <div

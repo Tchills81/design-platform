@@ -131,7 +131,11 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     cardGridGroupRef,
     setLargeContainerSize,
     setScrollPosition,
-    setCanvasSize
+    setCanvasSize,
+    canvasSize,
+    scrollPosition,
+    setVisible,
+    fadeTimeout
     
   } = state;
 
@@ -266,41 +270,130 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     // Remove applied entry from future
     setFuture(prev => prev.slice(1));
   }, [future, template, card, elements, mode, side]);
+
+
+  const triggerFade = () => {
+    setVisible(true);
+    if (fadeTimeout.current) clearTimeout(fadeTimeout.current);
+    fadeTimeout.current = setTimeout(() => setVisible(false), 2000);
+  };
+
+
+
+
+  const handleHorizontalScroll = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const rawValue = parseInt(e.target.value);
+      const x = clamp(rawValue, 0, canvasSize.width - stageSize.width);
+      setScrollPosition((prev) => ({ x, y: prev.y }));
+      
+     
+      triggerFade?.();
+    },
+    [canvasSize, stageSize, setScrollPosition, triggerFade]
+  );
+  
+  const handleVerticalScroll = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const rawValue = parseInt(e.target.value);
+      const y = clamp(rawValue, 0, canvasSize.height - stageSize.height);
+      setScrollPosition((prev) => ({ x: prev.x, y }));
+      setPosition((prev) => ({ x: prev.x, y:-y }));
+
+      //console.log('handleVerticalScroll', position)
+      triggerFade?.();
+    },
+    [canvasSize, stageSize, setScrollPosition, triggerFade]
+  );
+  
+  
+
+
+  const clamp = (value: number, min: number, max: number): number =>
+    Math.max(min, Math.min(value, max));
+  
   
   const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
     const oldZoom = zoom;
-    const rawZoom = oldZoom * (scaleBy);
-  
+    const rawZoom = oldZoom * scaleBy;
     const newZoom = allowBelowOne ? rawZoom : Math.max(initialZoomedOutValue, rawZoom);
-
-    // 🧩 Apply zoom and position
     setZoom(newZoom);
-
-
-    //🧭 Center of the stage
+  
+    // 🧭 Center of the stage
     const center = {
       x: stageSize.width / 2,
-      y: stageSize.height / 2
+      y: stageSize.height / 2,
     };
   
     // 🎯 Recalculate position to keep canvas centered
     const newPosition = {
       x: center.x - ((center.x - position.x) / oldZoom) * newZoom,
-      y: center.y - ((center.y - position.y) / oldZoom) * newZoom
+      y: center.y - ((center.y - position.y) / oldZoom) * newZoom,
     };
+  
+    const konvaGroup = cardGridGroupRef.current;
+    if (!konvaGroup || !template) return;
+  
+    // 🧮 Scaled canvas dimensions
+    const scaledCanvasWidth = template.width * newZoom;
+    const scaledCanvasHeight = template.height * newZoom;
+  
+    const scrollableWidth = Math.max(0, scaledCanvasWidth - stageSize.width);
+    const scrollableHeight = Math.max(0, scaledCanvasHeight - stageSize.height);
+  
+    // 🧩 Apply canvas transform
+    setPosition(newPosition);
+  
+    // 🧭 Get global canvas position
+    const globalPosition = konvaGroup.getAbsolutePosition();
+  
+    // 🎯 Compute scroll offset from centered origin
+    const centeredOffsetY = (stageSize.height - scaledCanvasHeight) / 2;
+    const scrollOffsetY = globalPosition.y-centeredOffsetY;
+    const clampedScrollY = clamp(scrollOffsetY, 0, scrollableHeight);
+  
+    // 🧭 Same for horizontal scroll if needed
+    const centeredOffsetX = (stageSize.width - scaledCanvasWidth) / 2;
+    const scrollOffsetX = globalPosition.x-centeredOffsetX;
+    const clampedScrollX = clamp(scrollOffsetX, 0, scrollableWidth);
+  
+    // 🧩 Update scroll position state
+    setScrollPosition(newPosition);
+  
+    // 🧪 Dispatch synthetic scroll events to sync thumb
+    const verticalInput = document.querySelector('.canvas-scrollbar.vertical') as HTMLInputElement;
+    const horizontalInput = document.querySelector('.canvas-scrollbar.horizontal') as HTMLInputElement;
 
-    
-
-      setPosition(newPosition);
-
-      setScrollPosition(newPosition);
-
-      console.log('Zoomed to', newZoom, 'Position set to', newPosition);
+    console.log('centeredOffsetY', centeredOffsetY, 'scrollOffsetY', scrollOffsetY, 'Scroll offsets:', { x: clampedScrollX, y: clampedScrollY })
+  
+    if (verticalInput) {
+      verticalInput.value = String(clampedScrollY);
+      const event = { target: verticalInput } as React.ChangeEvent<HTMLInputElement>;
+      handleVerticalScroll(event);
+    }
+  
+    if (horizontalInput) {
+      horizontalInput.value = String(clampedScrollX);
+      const event = { target: horizontalInput } as React.ChangeEvent<HTMLInputElement>;
+      handleHorizontalScroll(event);
+    }
+  
+    //console.log('Zoomed to', newZoom, 'Position set to', newPosition, 'Global position', globalPosition);
+    console.log('Scroll offsets:', { x: clampedScrollX, y: clampedScrollY });
   
     // 🎨 Bleed logic
-    //setShowBleeds(newZoom <= 1);
     setBleedToggleDisabled(newZoom > 1);
-  }, [zoom, position, stageSize, initialZoomedOutValue, template, cardGridGroupRef, stageRef]);
+  }, [
+    zoom,
+    position,
+    stageSize,
+    initialZoomedOutValue,
+    template,
+    cardGridGroupRef,
+    handleVerticalScroll,
+    handleHorizontalScroll,
+  ]);
+  
 
 
 
@@ -1443,6 +1536,30 @@ const setDesignElement = useCallback(
 
 
   
+
+  const scrollByWheel = useCallback(
+    (deltaX: number, deltaY: number) => {
+      const maxX = Math.max(0, canvasSize.width - stageSize.width);
+      const maxY = Math.max(0, canvasSize.height - stageSize.height);
+  
+      const nextX = scrollPosition.x - deltaX;
+      const nextY = scrollPosition.y - deltaY;
+  
+      const clampedX = Math.max(0, Math.min(nextX, maxX));
+      const clampedY = Math.max(0, Math.min(nextY, maxY));
+  
+      setScrollPosition({ x: clampedX, y: clampedY });
+      triggerFade(); // if defined here or passed in
+    },
+    [canvasSize, stageSize, scrollPosition, setScrollPosition]
+  );
+
+
+
+
+
+
+  
   
   
   
@@ -1566,6 +1683,9 @@ const setDesignElement = useCallback(
     setLargeContainerSize,
     setScrollPosition,
     handleScroll,
-    setCanvasSize
+    setCanvasSize,
+    scrollByWheel,
+    handleVerticalScroll,
+    handleHorizontalScroll
   };
 }

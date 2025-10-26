@@ -37,7 +37,7 @@ interface CanvasViewportProps {
   setScrollPosition:React.Dispatch<React.SetStateAction<{ x: number; y: number; }>>;
   
   setCropRegion: (region: { x: number; y: number; width: number; height: number }) => void;
-  canvasSize:{width:number; height:number};
+  canvasSize:{scaleX:number; scaleY:number; width:number; height:number};
   cardX: number;
   cardY: number;
   position: { x: number; y: number };
@@ -73,6 +73,8 @@ interface CanvasViewportProps {
     setSelectedImageId: (id: string) => void;
     onFontSizeChange: (size: number) => void;
     onPrimitiveSelect: () => void;
+    handleHorizontalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
+    handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
   };
 }
 
@@ -123,9 +125,7 @@ export default function CanvasViewport(props: CanvasViewportProps) {
 
   const face = template[side];
   const card = face?.card;
-  if (!card) return null;
-
-  //console.log('scrollPos', scrollPos, 'position', position)
+  if (!card) return null;  
 
   return (
     <div
@@ -141,7 +141,7 @@ export default function CanvasViewport(props: CanvasViewportProps) {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        style={{ backgroundColor: '#f0f0f0' }}
+        style={{ backgroundColor: '#1e1e1e' }}
       >
         {/* Canvas layer */}
         <CardSideLayer
@@ -278,6 +278,8 @@ export default function CanvasViewport(props: CanvasViewportProps) {
       <CanvasScrollbars
   scrollPosition={scrollPos}
   setScrollPosition={setScrollPosition}
+  handleHorizontalScroll={handlers.handleHorizontalScroll}
+  handleVerticalScroll={handlers.handleVerticalScroll}
   canvasSize={canvasSize}
   viewportSize={stageSize}
   tone={template.tone}
