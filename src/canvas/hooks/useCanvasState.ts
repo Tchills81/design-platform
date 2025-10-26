@@ -113,6 +113,13 @@ export function useCanvasState() {
   const [ghostOpacity, setGhostOpacity] = useState<number>(0);
   const [dynamicBackground, setDynamicBackground] = useState<string>("#ffffff");
   const [showBackground, setShowBackground] = useState<boolean>(false);
+  const scrollContainerRef =  useRef<HTMLDivElement>(null)
+  const largeContainerRef =  useRef<HTMLDivElement>(null)
+  const [largeContainerSize, setLargeContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   
 
   // 📸 Snapshots and export
@@ -124,8 +131,13 @@ export function useCanvasState() {
   const [snapshotArchive, setSnapshotArchive] = useState<SnapshotEntry[]>([]);
   const [showGallery, setShowGallery] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [showPages , setShowPages]=useState<boolean>(false);
   const [insideMessage, setInsideMessage] = useState<string | null>(null);
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [stripHeight, setStripHeight] = useState(0);
+  const [verticalOffset, setVerticalOffset] = useState(0);
+
 
 
   // 🧠 Refs
@@ -138,6 +150,7 @@ export function useCanvasState() {
 
   // State to store the calculated style for the DOM overlay
   const [overlayStyle, setOverlayStyle] = useState({});
+  const [stageStyle, setStageStyle] = useState({});
  
   // 🧠 Derived values
   const activeFace = template?.[side];
@@ -232,6 +245,15 @@ export function useCanvasState() {
   };
 
   return {
+
+    scrollContainerRef, 
+    largeContainerRef, 
+    largeContainerSize, 
+    setLargeContainerSize,
+    scrollPosition, 
+    setScrollPosition,
+    canvasSize, 
+    setCanvasSize,
 
     width, 
     setWidth,
@@ -387,6 +409,8 @@ export function useCanvasState() {
   setDynamicBackground,
   gridPosition, 
   setGridPosition,
+  viewportSize, 
+  setViewportSize,
 
   // 🧠 Text styling
   isBold,
@@ -429,6 +453,8 @@ export function useCanvasState() {
   updateImageRef,
   overlayStyle, 
   setOverlayStyle,
+  stageStyle, 
+  setStageStyle,
 
   lastFaceHash, 
   setLastFaceHash,
@@ -438,6 +464,13 @@ export function useCanvasState() {
 
   maxPageCount, 
   setMaxPageCount,
+  showPages , 
+  setShowPages,
+  stripRef,
+  stripHeight, 
+  setStripHeight,
+  verticalOffset, 
+  setVerticalOffset,
 
   // 🧠 Derived tone
   tone,

@@ -8,7 +8,34 @@ export default async function createTables(req, res) {
   try {
     const db = await openDb();
 
-    // Shared designs
+  // 🔥 Drop and recreate template_registry
+await db.exec(`DROP TABLE IF EXISTS template_registry`);
+console.log('🧹 Dropped existing template_registry table');
+
+await db.exec(`
+  CREATE TABLE template_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    author TEXT,
+    templateId TEXT UNIQUE,
+    tone TEXT,
+    size TEXT,
+    type TEXT CHECK(type IN (
+      'social', 'print', 'presentation', 'video', 'card', 'announcement', 'promo',
+      'greeting', 'invite', 'flyer', 'poster'
+    )),
+    subtype TEXT,
+    theme TEXT,
+    previewMode TEXT CHECK(previewMode IN ('grid', 'carousel', 'fullscreen', 'thumbnail', 'card')),
+    savedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    data TEXT
+  )
+`);
+
+console.log('✅ Recreated template_registry table with expanded type support');
+
+
+    // Optional: recreate other tables if needed
     await db.run(`
       CREATE TABLE IF NOT EXISTS shared_designs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +47,6 @@ export default async function createTables(req, res) {
       )
     `);
 
-    // Reflections
     await db.run(`
       CREATE TABLE IF NOT EXISTS reflections (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +60,6 @@ export default async function createTables(req, res) {
       )
     `);
 
-    // Share design invites
     await db.run(`
       CREATE TABLE IF NOT EXISTS shareDesign (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +71,6 @@ export default async function createTables(req, res) {
       )
     `);
 
-    // Christmas templates (example category)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS christmas_templates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,24 +87,7 @@ export default async function createTables(req, res) {
       )
     `);
 
-    // General templates registry
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS template_registry (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        author TEXT,
-        templateId TEXT,
-        tone TEXT,
-        size TEXT,
-        type TEXT CHECK(type IN ('social', 'print', 'presentation', 'video', 'card')),
-        theme TEXT,
-        previewMode TEXT CHECK(previewMode IN ('grid', 'carousel', 'fullscreen', 'thumbnail')),
-        savedAt TEXT DEFAULT CURRENT_TIMESTAMP,
-        data TEXT
-      )
-    `);
-
-    res.status(200).json({ message: '✅ Tables created successfully.' });
+    res.status(200).json({ message: '✅ Tables dropped and recreated successfully.' });
   } catch (err) {
     console.error('🚨 Migration error:', err);
     res.status(500).json({ message: 'Internal Server Error' });

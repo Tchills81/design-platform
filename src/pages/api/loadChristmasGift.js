@@ -3,7 +3,7 @@ import { openDb } from '../../../lib/db';
 export default async function handler(req, res) {
   try {
     const db = await openDb();
-    const rows = await db.all(`SELECT * FROM christmas_templates ORDER BY savedAt DESC`);
+    const rows = await db.all(`SELECT * FROM template_registry`);
 
     res.status(200).json(rows);
   } catch (err) {

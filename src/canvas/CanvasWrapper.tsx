@@ -23,6 +23,9 @@ import CommentModal from "../modals/CommentModal";
 import { DOMViewport } from "../components/DOMViewport";
 import { ThumbnailStrip } from "../components/ThumbnailStrip";
 import { CanvasMode } from "../types/CanvasMode";
+import { SnapshotEntry } from "../types/SnapshotEntry";
+import { normalizeDualTemplate } from "../utils/normalizeDualTemplate";
+import { renderToCanvas } from "../utils/renderToCanvas";
 
 
 export default function CanvasWrapper() {
@@ -105,7 +108,8 @@ export default function CanvasWrapper() {
     overlayStyle,
     activeTimestamp,
     hasChanged,
-    
+    showPages,
+    stripRef,
   
     
   } = state;
@@ -168,6 +172,9 @@ export default function CanvasWrapper() {
     captureFrontAndBack,
     setHasChanged,
     setPageAdded,
+    setShowPages,
+    
+  
     
   } = actions;
 
@@ -271,6 +278,8 @@ export default function CanvasWrapper() {
         setHasChanged={setHasChanged}
         hasChanged={hasChanged}
         setPageAdded={setPageAdded}
+        setShowPages={setShowPages}
+        showPages={showPages}
         
       />
 
@@ -337,6 +346,58 @@ export default function CanvasWrapper() {
         actions={actions}
 
       />
+
+
+
+      {template && snapshots.back !== null && snapshots.front !== null &&  showPages==true &&(
+                  <ThumbnailStrip
+                    stripRef={stripRef}
+                    activeSide={side}
+                    showPages={showPages}
+                    activeTimestamp={activeTimestamp}
+                    template={template}
+                    snapshots={snapshotArchive}
+                    onSelect={async (entry:SnapshotEntry) => {
+                      const { side: page, timestamp, template: snapshotTemplate } = entry;
+      
+                      if (hasChanged) {
+                        const updatedTemplate = { ...template };
+                        updatedTemplate[page] = template[page];
+      
+                        const captured = await captureFrontAndBack();
+                        const updatedImage = side === 'front' ? captured.front : captured.back;
+      
+                        setSnapshotArchive(prev =>
+                          prev.map(e =>
+                            e.timestamp === activeTimestamp && e.side === side
+                              ? {
+                                  ...e,
+                                  image: updatedImage,
+                                  template: updatedTemplate
+                                }
+                              : e
+                          )
+                        );
+                      }
+      
+                      const normalized = normalizeDualTemplate(snapshotTemplate);
+                      setTemplate(normalized);
+                      setSide(page);
+                      setActiveTimestamp(timestamp);
+      
+                      if (timestamp !== activeTimestamp || page !== side) {
+                        renderToCanvas(normalized, setTemplate, setMode, page, () => {
+                          console.log('Rendered updated template with selected face');
+                        });
+                      }
+                    }}
+                    onAddPage={() => createPageTemplate(1)}
+                    onDuplicatePage={() => {
+                      setPageAdded(true);
+                      setCanvasReady(true);
+                    }}
+                  />
+                )}
 
 
 

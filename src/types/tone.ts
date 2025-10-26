@@ -33,6 +33,7 @@ export const palettes: Record<tone, string[]> = {
   };
   
   export const toneClasses: Record<string, string> = {
+    // 🌤️ Core tones
     warm: 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200 shadow-yellow-300',
     reflective: 'text-blue-600 bg-blue-100 hover:bg-blue-200 shadow-blue-300',
     minimal: 'text-gray-500 bg-gray-100 hover:bg-gray-200 shadow-gray-300',
@@ -42,12 +43,23 @@ export const palettes: Record<tone, string[]> = {
     calm: 'bg-teal-500 text-white shadow-md',
     bold: 'bg-purple-600 text-white shadow-md',
   
-    // 🎄 Newly added tones
+    // 🎄 Seasonal and expressive tones
     festive: 'text-red-700 bg-red-100 hover:bg-red-200 shadow-red-300',
     soft: 'text-pink-600 bg-pink-100 hover:bg-pink-200 shadow-pink-300',
     elegant: 'text-indigo-700 bg-indigo-100 hover:bg-indigo-200 shadow-indigo-300',
-    playful: 'text-orange-600 bg-orange-100 hover:bg-orange-200 shadow-orange-300'
+    playful: 'text-orange-600 bg-orange-100 hover:bg-orange-200 shadow-orange-300',
+  
+    // 🧩 Data-derived tones
+    announcement: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 shadow-indigo-300',
+    promo: 'bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-orange-300',
+    card: 'bg-red-100 text-red-700 hover:bg-red-200 shadow-red-300',
+    print: 'bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-blue-300',
+    social: 'bg-pink-100 text-pink-700 hover:bg-pink-200 shadow-pink-300',
+  
+    // 🧯 Fallback tone
+    accent: 'bg-gray-200 text-gray-700 shadow-md'
   };
+  
 
 
 export const toneActiveClasses: Record<string, string> = {

@@ -15,28 +15,28 @@ export const seasonalPresets: Record<Season, SeasonalPreset> = {
   spring: {
     season: 'spring',
     heroText: 'Welcome to Your Blooming Design Sanctuary',
-    logo: '/logo/giftcraft-spring.svg',
+    logo: '/assets/tonva-spring.png',
     cta: 'Plant your first design seed',
     backgroundClass: 'bg-spring'
   },
   summer: {
     season: 'summer',
     heroText: 'Welcome to Your Radiant Design Sanctuary',
-    logo: '/logo/giftcraft-summer.svg',
+    logo: '/assets/tonva-spring.png',
     cta: 'Ignite your creative fire',
     backgroundClass: 'bg-summer'
   },
   autumn: {
     season: 'autumn',
     heroText: 'Welcome to Your Reflective Design Sanctuary',
-    logo: '/logo/giftcraft-autumn.svg',
+    logo: '/assets/tonva-spring.png',
     cta: 'Craft your legacy with intention',
     backgroundClass: 'bg-autumn'
   },
   winter: {
     season: 'winter',
     heroText: 'Welcome to Your Quiet Design Sanctuary',
-    logo: '/logo/giftcraft-winter.svg',
+    logo: '/assets/tonva-winter.png',
     cta: 'Design with calm, create with clarity',
     backgroundClass: 'bg-winter'
   }

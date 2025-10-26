@@ -50,10 +50,12 @@ export async function injectAssetIntoTemplate(
     enrichedTemplate?.front?.elements.push(newElement);
   }
 
+  console.log('Enriched Template:', enrichedTemplate);
+
   return enrichedTemplate;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.src = src;

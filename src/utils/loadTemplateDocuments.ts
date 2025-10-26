@@ -25,7 +25,8 @@ export async function loadUnifiedTemplates(path: string): Promise<UnifiedTemplat
             id: String(entry.id),
             name: entry.name,
             author: entry.author,
-            tone: parsed.tone ?? 'neutral',
+            tone: entry.tone ?? parsed.tone ?? 'neutral',
+            subtype: parsed.subtype ?? entry.subtype ?? null, // ✅ Add this line
             size: sizeKey,
             sizeLabel: sizeLabel ?? 'Custom',
             width: geometry?.width ?? 0,

@@ -71,6 +71,7 @@ export type TemplateElement =
       width: number;
       height: number;
       thumbnailUrl: string;
+      subtype?: string; // ✅ Add this optional subtype for expressive subcategorization
       faces: ['front', 'back', 'insideFront', 'insideBack'];
     
       // 🆕 Classification
@@ -163,6 +164,7 @@ export type TemplateElement =
       height: number;
       thumbnailUrl: string;
       type?: string;
+      subtype?: string; // ✅ New: optional subtype for expressive subcategorization
       theme?: string;
       tokens?: DualTemplate['tokens'];
       previewMode?: DualTemplate['previewMode'];

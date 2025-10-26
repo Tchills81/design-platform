@@ -3,55 +3,24 @@ import { DualTemplate, TemplateDocument, FacePage } from '../types/template';
 export function transformDualTemplateToDocument(dual: DualTemplate): TemplateDocument {
   const pages: FacePage[] = [];
 
-  if (dual.front) {
-    pages.push({
-      id: 'front',
-      label: 'Front',
-      role: 'front',
-      card: {
-        width: dual.front.card.width,
-        height: dual.front.card.height,
-        background: dual.front.card.background,
-        backgroundImage: dual.front.card.backgroundImage ?? '',
-        gridColors: dual.front.card.gridColors ?? [],
-        cellSize: dual.front.card.cellSize ?? 20
-        // ❌ cellSize excluded to match Template['card'] type
-      },
-      elements: dual.front.elements
-    });
-  }
+  const buildFace = (role: 'front' | 'back' | 'inside', faceData: any): FacePage => ({
+    id: role,
+    label: role.charAt(0).toUpperCase() + role.slice(1),
+    role,
+    card: {
+      width: faceData.card.width,
+      height: faceData.card.height,
+      background: faceData.card.background,
+      backgroundImage: faceData.card.backgroundImage ?? '',
+      gridColors: faceData.card.gridColors ?? [],
+      cellSize: faceData.card.cellSize ?? 20
+    },
+    elements: faceData.elements
+  });
 
-  if (dual.back) {
-    pages.push({
-      id: 'back',
-      label: 'Back',
-      role: 'back',
-      card: {
-        width: dual.back.card.width,
-        height: dual.back.card.height,
-        background: dual.back.card.background,
-        backgroundImage: dual.back.card.backgroundImage ?? '',
-        gridColors: dual.back.card.gridColors ?? []
-      },
-      elements: dual.back.elements
-    });
-  }
-
-  if (dual.inside) {
-    pages.push({
-      id: 'inside',
-      label: 'Inside',
-      role: 'inside',
-      card: {
-        width: dual.inside.card.width,
-        height: dual.inside.card.height,
-        background: dual.inside.card.background,
-        backgroundImage: dual.inside.card.backgroundImage ?? '',
-        gridColors: dual.inside.card.gridColors ?? []
-      },
-      elements: dual.inside.elements
-    });
-  }
+  if (dual.front) pages.push(buildFace('front', dual.front));
+  if (dual.back) pages.push(buildFace('back', dual.back));
+  if (dual.inside) pages.push(buildFace('inside', dual.inside));
 
   return {
     id: dual.id,
@@ -64,6 +33,7 @@ export function transformDualTemplateToDocument(dual: DualTemplate): TemplateDoc
     height: dual.height,
     thumbnailUrl: dual.thumbnailUrl ?? '',
     type: dual.type ?? 'generic',
+    subtype: dual.subtype ?? undefined, // ✅ Added subtype support
     theme: dual.theme ?? 'generic',
     tokens: {
       borderStyle: dual.tokens?.borderStyle ?? 'minimal',

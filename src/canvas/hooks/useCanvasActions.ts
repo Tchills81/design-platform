@@ -123,6 +123,16 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setHasChanged,
     setMaxPageCount,
     pageAdded,
+    setStageStyle,
+    setShowPages,
+    setStripHeight,
+    setVerticalOffset,
+    verticalOffset,
+    cardGridGroupRef,
+    setLargeContainerSize,
+    setScrollPosition,
+    setCanvasSize
+    
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -265,9 +275,9 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
     // 🧩 Apply zoom and position
     setZoom(newZoom);
-    
-  
-    // 🧭 Center of the stage
+
+
+    //🧭 Center of the stage
     const center = {
       x: stageSize.width / 2,
       y: stageSize.height / 2
@@ -278,14 +288,19 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
       x: center.x - ((center.x - position.x) / oldZoom) * newZoom,
       y: center.y - ((center.y - position.y) / oldZoom) * newZoom
     };
-  
+
     
-    setPosition(newPosition); // ✅ This ensures canvas and grid stay aligned
+
+      setPosition(newPosition);
+
+      setScrollPosition(newPosition);
+
+      console.log('Zoomed to', newZoom, 'Position set to', newPosition);
   
     // 🎨 Bleed logic
     //setShowBleeds(newZoom <= 1);
     setBleedToggleDisabled(newZoom > 1);
-  }, [zoom, position, stageSize, initialZoomedOutValue]);
+  }, [zoom, position, stageSize, initialZoomedOutValue, template, cardGridGroupRef, stageRef]);
 
 
 
@@ -789,6 +804,9 @@ const setDesignElement = useCallback(
     ]);
   
     const enriched = await injectAssetIntoTemplate(template, { src, role });
+
+
+    //.log('enriched template after image upload', template, src, enriched);
   
     setTemplate(prev => {
       if (!prev || !prev[side]) return prev;
@@ -1082,16 +1100,47 @@ const setDesignElement = useCallback(
         template: sourceTemplate
       };
   
-      // 🧩 Always append—no deduplication or conditional update
-      setSnapshotArchive(prev => [...prev, entryFront, entryBack]);
+      setSnapshotArchive(prev => {
+        const incoming = [entryFront, entryBack];
   
-      // 🧠 Update active timestamp only if triggered by page creation
+        const isPageAdded = !prev.some(entry => entry.timestamp === activeTimestamp);
+        const isDuplicate = incoming.every(newEntry =>
+          prev.some(existing =>
+            existing.templateId === newEntry.templateId &&
+            existing.side === newEntry.side &&
+            existing.timestamp !== newEntry.timestamp
+          )
+        );
+  
+        // 🧠 Append if new page or duplicate snapshot
+        if (isPageAdded || isDuplicate || pageAdded) {
+          return [...prev, ...incoming];
+        }
+  
+        // ✨ Otherwise, update the active entry
+        const updated = prev.map(entry => {
+          if (entry.timestamp === activeTimestamp) {
+            const match = incoming.find(e => e.side === entry.side);
+            return match
+              ? {
+                  ...entry,
+                  image: match.image,
+                  template: sourceTemplate
+                }
+              : entry;
+          }
+          return entry;
+        });
+  
+        return updated;
+      });
+  
       if (pageAdded) {
         setActiveTimestamp(timestamp);
         setPageAdded(false);
       }
     },
-    [card, setSnapshotArchive, pageAdded]
+    [card, setSnapshotArchive, pageAdded, activeTimestamp]
   );
   
   
@@ -1385,18 +1434,10 @@ const setDesignElement = useCallback(
 
 
 
-  /*const setDesignElement = useCallback((el:DesignElement) => {
-    //add selected element from elementPanel ..do this by updating template designElements.map(el)
-    
-   
-    //designElements.push(el);
-
-    //setDesignElements([]);
-    //console.log('design element being called....', el, designElements)
-
-
-    //handleAddElement(el.type);
-  }, []);*/
+  const handleScroll = useCallback((e:any) => {
+    const { scrollLeft, scrollTop } = e.currentTarget;
+    setScrollPosition({ x: scrollLeft, y: scrollTop });
+  }, [])
   
   
 
@@ -1518,5 +1559,13 @@ const setDesignElement = useCallback(
     setHasChanged,
     setMaxPageCount,
     setPageAdded,
+    setStageStyle,
+    setShowPages,
+    setStripHeight,
+    setVerticalOffset,
+    setLargeContainerSize,
+    setScrollPosition,
+    handleScroll,
+    setCanvasSize
   };
 }

@@ -2,14 +2,22 @@
 import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 import { onboardingRoles } from './roles';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import ToneAwareLogo from '@/src/components/ToneAwareLogo';
 import Link from 'next/link';
 
 export default function OnboardingRitual() {
-  const { heroText, backgroundClass, season, nextSeason } = useSeasonalTone();
+  const { heroText, backgroundClass, season, nextSeason, logo } = useSeasonalTone();
+  
   const { ref, visible } = useScrollReveal();
 
   return (
+    
     <div className={`min-h-screen px-6 py-12 ${backgroundClass} fade-in`}>
+       {/* Top Bar */}
+            <div className="absolute top-4 left-6 fade-in">
+              <ToneAwareLogo size={64} />
+            </div>
+      
       {/* Header */}
       <header className="text-center">
         <h1 className="text-4xl font-serif text-ceremonial mb-4">🧭 Your {season} Design Ritual</h1>

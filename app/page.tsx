@@ -10,7 +10,7 @@ export default function FrontPage() {
   return (
     <main className={`relative min-h-screen px-6 py-8 ${backgroundClass}`}>
       {/* Top Bar */}
-      <div className="absolute top-6 left-6 fade-in">
+      <div className="absolute top-4 left-6 fade-in">
         <ToneAwareLogo size={64} />
       </div>
 

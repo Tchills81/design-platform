@@ -1,26 +1,23 @@
-import { useState, useEffect } from 'react';
-import TemplateGallery from './TemplateGallery';
+import { useState, useEffect, useRef } from 'react';
+import { Brush, Save, Archive, Brain, Package } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import TemplateGalleryV2 from './TemplateGallery-v1';
 import SavedDesignGallery from './SavedDesignGallery';
 import SnapshotArchiveGallery from './SnapshotArchiveGallery';
-import { TemplateDocument, type DualTemplate } from '../types/template';
-import { type SnapshotEntry } from '../types/SnapshotEntry';
-import { Brush, Save, Archive, Brain, Package } from 'lucide-react';
-import { type Tab } from '../types/Tab';
-import { motion, AnimatePresence } from 'framer-motion';
-import { groupSnapshotsByTemplate } from '../utils/groupSnapshotsByTemplate';
-import Tile from './Tile';
 import ImportFlow from './ImportFlow';
 import { AddImageButton } from './AddImageButton';
-import TemplateGalleryV2 from './TemplateGallery-v1';
-
+import { groupSnapshotsByTemplate } from '../utils/groupSnapshotsByTemplate';
+import { type Tab } from '../types/Tab';
+import { type SnapshotEntry } from '../types/SnapshotEntry';
+import { type DualTemplate } from '../types/template';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 interface TabNavigatorProps {
   userId: string;
   onSelect: (tpl: DualTemplate) => void;
   snapshotArchive: SnapshotEntry[];
-  setDualFaces:(dualFaces:DualTemplate[])=>void;
-  //setTemplateDocuments:(docs:TemplateDocument[])=>void;
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
+  setDualFaces: (dualFaces: DualTemplate[]) => void;
   showDesigns?: boolean;
 }
 
@@ -30,150 +27,128 @@ export default function TabNavigator({
   snapshotArchive,
   setSnapshotArchive,
   setDualFaces,
- 
-  showDesigns,
+  showDesigns
 }: TabNavigatorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('templates');
   const [importedAsset, setImportedAsset] = useState<{
     src: string;
     role: 'background' | 'element';
   } | null>(null);
-  
 
-  const grouped = groupSnapshotsByTemplate(snapshotArchive);
-  if (grouped) console.log('grouped....', grouped);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
   useEffect(() => {
     if (showDesigns) setActiveTab('archive');
   }, [showDesigns]);
 
-  const tiles = [
-    {
-      icon: <Brush size={24} />,
-      title: 'Templates',
-      tab: 'templates',
-      tooltip: 'Start fresh with tone-aware layouts',
-    },
-    {
-      icon: <Save size={24} />,
-      title: 'My Designs',
-      tab: 'saved',
-      tooltip: 'Resume or refine your saved creations',
-    },
-    {
-      icon: <Archive size={24} />,
-      title: 'Archive',
-      tab: 'archive',
-      tooltip: 'Celebrate completed designs and restore with ceremony',
-    },
-    {
-      icon: <Package size={24} />,
-      title: 'Import',
-      tab: 'import',
-      tooltip: 'Upload external designs or snapshots',
-    },
-    {
-      icon: <Brain size={24} />,
-      title: 'Guided Mode',
-      tab: 'guided',
-      tooltip: 'Let the system guide your design journey',
-    },
+  useEffect(() => {
+    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [activeTab]);
+
+  const tabs = [
+    { icon: <Brush size={18} />, title: 'Templates', tab: 'templates' },
+    { icon: <Save size={18} />, title: 'My Designs', tab: 'saved' },
+    { icon: <Archive size={18} />, title: 'Archive', tab: 'archive' },
+    { icon: <Package size={18} />, title: 'Import', tab: 'import' },
+    { icon: <Brain size={18} />, title: 'Guided', tab: 'guided' }
   ];
+
+  const grouped = groupSnapshotsByTemplate(snapshotArchive);
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-6">
-      <div className="bg-whisper rounded-2xl shadow-soft px-6 sm:px-8 py-8">
-        {/* Hero */}
-        <header className="text-center mb-8">
-          <h1 className="text-5xl font-serif text-ceremonial tracking-wide">
-            🪄 Welcome to Your Design Sanctuary
-          </h1>
-          <p className="text-lg text-muted font-inter mt-2">
-            Every design is a legacy. Every click, a ceremony.
-          </p>
-          <div className="w-12 h-1 mx-auto bg-ceremonial rounded-full mt-4 animate-pulse" />
-        </header>
-
-        {/* Tile Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
-          {tiles.map(({ icon, title, tab, tooltip }) => (
-            <Tile
-              key={tab}
-              icon={icon}
-              title={title}
-              description={tooltip}
-              onClick={() => setActiveTab(tab as Tab)}
-              isActive={activeTab === tab}
-            />
-          ))}
-        </div>
+      <div className={`${backgroundClass} rounded-2xl shadow-soft px-6 sm:px-8 py-8`} >
+        {/* Tab Bar */}
+        <div className="flex justify-center gap-12 mb-8 overflow-x-auto scrollbar-hide">
+  {tabs.map(({ icon, title, tab }) => (
+   <button
+   key={tab}
+   onClick={() => setActiveTab(tab as Tab)}
+   className={`flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap border-2 ${
+     activeTab === tab
+       ? 'bg-gradient-to-r from-ceremonial to-accent text-gray border-b-blue-500 shadow-lg hover:from-ceremonial hover:to-accent'
+       : 'bg-bottom text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+   }`}
+ >
+   {icon}
+   <span>{title}</span>
+ </button>
+  ))}
+</div>
 
         {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="bg-white rounded-xl p-6 shadow-soft"
-          >
-            {activeTab === 'templates' && 
-            <TemplateGalleryV2 
-              onSelect={onSelect}  
-              importedAsset={importedAsset ?? undefined}
-              setDualFaces={setDualFaces}
-              />}
-              
-            {activeTab === 'saved' && <SavedDesignGallery 
-                                        userId={userId} 
-                                        onSelect={onSelect} 
-                                        setDualFaces={setDualFaces}
-                                        />}
-            {activeTab === 'archive' && (
-              <>
-                <h3 className="text-lg font-serif text-ceremonial mb-4">
-                  📸 Your All In One Complete Design
-                </h3>
-                <SnapshotArchiveGallery archive={snapshotArchive} onRestore={onSelect} />
-              </>
-            )}
-           {activeTab === 'import' && (
-  <div className="text-center">
-    <h2 className="text-2xl font-serif text-ceremonial mb-2">📦 Import Your Design Asset</h2>
-    <p className="text-muted font-inter mb-6">
-      Welcome your image into the sanctuary. Choose its role in your story.
-    </p>
+        <div ref={contentRef}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="bg-whisper rounded-xl p-6 shadow-soft"
+            >
+              {activeTab === 'templates' && (
+                <TemplateGalleryV2
+                  onSelect={onSelect}
+                  importedAsset={importedAsset ?? undefined}
+                  setDualFaces={setDualFaces}
+                />
+              )}
 
-    <AddImageButton
-      tone="ceremonial"
-      onUpload={(src, role) => setImportedAsset({ src, role })}
-    />
+              {activeTab === 'saved' && (
+                <SavedDesignGallery
+                  userId={userId}
+                  onSelect={onSelect}
+                  setDualFaces={setDualFaces}
+                />
+              )}
 
-    {importedAsset && (
-      <div className="mt-6">
-        <p className="text-muted font-inter mb-2">
-          Your image is ready. Let’s choose a template to begin your design journey.
-        </p>
-        <button
-          onClick={() => setActiveTab('templates')}
-          className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200 transition"
-        >
-          Select Template
-        </button>
-      </div>
-    )}
-  </div>
-)}
+              {activeTab === 'archive' && (
+                <>
+                  <h3 className="text-lg font-serif text-ceremonial mb-4">
+                    📸 Your Completed Designs
+                  </h3>
+                  <SnapshotArchiveGallery archive={snapshotArchive} onRestore={onSelect} />
+                </>
+              )}
 
+              {activeTab === 'import' && (
+                <div className="text-center">
+                  <h2 className="text-xl font-serif text-ceremonial mb-2">📦 Import Design Asset</h2>
+                  <p className="text-muted font-inter mb-6">
+                    Upload your image and choose its role in your story.
+                  </p>
 
-            {activeTab === 'guided' && (
-              <div className="text-center text-muted font-inter">
-                🧠 Guided Mode launching soon — a step-by-step journey through tone, layout, and decoration.
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+                  <AddImageButton
+                    tone="ceremonial"
+                    onUpload={(src, role) => setImportedAsset({ src, role })}
+                  />
+
+                  {importedAsset && (
+                    <div className="mt-6">
+                      <p className="text-muted font-inter mb-2">
+                        Your image is ready. Let’s choose a template to begin your design journey.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab('templates')}
+                        className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200 transition"
+                      >
+                        Select Template
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'guided' && (
+                <div className="text-center text-muted font-inter">
+                  🧠 Guided Mode launching soon — a step-by-step journey through tone, layout, and decoration.
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </section>
   );

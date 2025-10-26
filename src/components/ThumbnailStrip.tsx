@@ -10,23 +10,27 @@ import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
 import { getDefaultPageType } from '../utils/getDefaultPageType';
 import { getMaxPageCount } from '../utils/getMaxPageCount';
 type ThumbnailStripProps = {
+  stripRef: React.RefObject<HTMLDivElement | null>;
   snapshots: SnapshotEntry[];
   onSelect: (entry: SnapshotEntry) => void;
   template?: DualTemplate | null;
   onAddPage: () => void;
   onDuplicatePage: () => void;
+  showPages: boolean;
   activeSide?: 'front' | 'back' | null;
   activeTimestamp: string | null;
 };
 
 export function ThumbnailStrip({
+  stripRef,
   snapshots,
   onSelect,
   onAddPage,
   onDuplicatePage,
   template,
   activeSide,
-  activeTimestamp
+  activeTimestamp, 
+  showPages,
 }: ThumbnailStripProps) {
   // 🧩 Group snapshots by timestamp
   const groupedByTimestamp: Record<string, SnapshotEntry[]> = {};
@@ -71,7 +75,7 @@ export function ThumbnailStrip({
   function getThumbnailLabel(index: number, entry: SnapshotEntry, defaultType: 'page' | 'inside'): string {
     if (defaultType === 'page') {
       // Each side is a separate page
-      return `Page ${index + 1}`;
+      return ` ${index + 1}`;
     }
   
     // Inside-aware labeling
@@ -103,17 +107,25 @@ export function ThumbnailStrip({
 
   return (
     <div
+    ref={stripRef}
     style={{
-      width: '100%', // 🧩 Full width of parent container
+      position: 'absolute',
+      bottom: 4, // 🧭 Adjust to sit just above the footer
+      left: 0,
+      width: 'inherit',
+      zIndex: 20,
       display: 'flex',
+      justifyContent: 'left',
+      alignItems: 'left',
       gap: '1rem',
       padding: '0.75rem 1rem',
       borderTop: '1px solid #e2e8f0',
       background: '#f8fafc',
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexWrap: 'wrap', // Optional: allows thumbnails to wrap on smaller screens
-      overflowX: 'auto' // Optional: enables horizontal scroll if needed
+      flexWrap: 'wrap',
+      overflowX: 'auto',
+      boxSizing: 'border-box',
+      transition: 'opacity 0.3s ease-in-out, transform 0.9s ease-in-out',
+      animation: 'fadeInUp 0.9s ease-out forwards' // ✅ ceremonial entrance
     }}
   >
       {/* ➕ Add Page Button */}
@@ -182,11 +194,7 @@ export function ThumbnailStrip({
             <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#334155', height: '1rem',  }}>
               {label}
             </div>
-            {time && (
-              <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 'bold' }}>
-                {time}
-              </div>
-            )}
+           
           </div>
         );
       })}

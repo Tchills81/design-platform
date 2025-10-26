@@ -1,6 +1,6 @@
 // src/canvas/hooks/useCanvasEffects.ts
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCanvasState } from "./useCanvasState";
 import { useCanvasActions } from "./useCanvasActions";
 import { SnapshotEntry } from "@/src/types/SnapshotEntry";
@@ -74,6 +74,14 @@ export function useCanvasEffects(
     activeTimestamp,
     snapshotArchive,
     pageAdded,
+    initialZoomedOutValue,
+    stripRef,
+    stripHeight,
+    showPages,
+    scrollContainerRef,
+    scrollPosition,
+    largeContainerSize,
+  
     
   } = state;
 
@@ -103,7 +111,15 @@ export function useCanvasEffects(
     setActivePageId,
     captureFrontAndBack,
     archiveSnapshots,
-    setMaxPageCount
+    setMaxPageCount,
+    setStageStyle,
+    setStripHeight,
+    setVerticalOffset,
+    setScrollPosition,
+    setLargeContainerSize,
+    setZoom,
+    setCanvasSize
+    
 
   } = actions;
 
@@ -173,6 +189,8 @@ useEffect(() => {
      const finalLeft=(stageSize.width -finalWidth)/2;
      const finalTop=(stageSize.height-finalHeight)/2
 
+    // setStageSize({width:finalWidth, height:finalHeight});
+
 
        // Update the state with the new style properties
     setOverlayStyle({
@@ -189,7 +207,115 @@ useEffect(() => {
       Draggable:true
     });
   }
-}, [position, template, mode, zoom, stageSize]); // Add `template` to dependencies
+}, [position, template, mode, zoom]); // Add `template` to dependencies
+
+
+/**
+ * This effect:
+
+Computes the scaled canvas size
+
+Updates the scrollable container size
+
+Centers the scroll position
+
+Sets vertical offset and stage style
+ */
+useEffect(() => {
+  const konvaGroup = cardGridGroupRef.current;
+  const stage = stageRef.current;
+  const container = scrollContainerRef.current;
+
+  if (!konvaGroup || !template ) return;
+
+  // 1. Compute scaled canvas dimensions
+  const scale = konvaGroup.getAbsoluteScale();
+  const scaledWidth = template.width * scale.x;
+  const scaledHeight = template.height * scale.y;
+
+  setCanvasSize({width:scaledWidth, height:scaledHeight})
+
+
+
+  // 5. Compute vertical offset for layout purposes (e.g. stripHeight)
+  const availableViewportHeight = window.innerHeight - (showPages ? stripHeight : 0);
+  const verticalOffset = (availableViewportHeight - scaledHeight) / 2;
+  setVerticalOffset(verticalOffset);
+
+ // setScrollPosition(position);
+
+  // 6. Apply stage styling
+  setStageStyle({
+    top: 0,
+    left: 0,
+    position: 'relative',
+    padding: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'opacity 0.3s ease-in-out',
+    bakgroundColor: template.tone=='ceremonial' ? '#f5f500' : '#1e1e1e',
+  });
+}, [template, zoom, stageSize, showPages, stripHeight]);
+
+
+
+useEffect(() => {
+  const group = cardGridGroupRef.current;
+  if (group) {
+    //setScrollPosition(position);
+    //group.position({ x: position.x, y: position.y });
+    //group.getLayer()?.batchDraw();
+  }
+}, [scrollPosition]);
+
+
+
+
+
+/**
+ * This effect:
+
+Centers the canvas group inside the scrollable container
+
+Responds to zoom and container size changes
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+const [allow, setAllow]=useState(true);
+useEffect(() => {
+  if (stripRef.current) {
+    setStripHeight(stripRef.current.offsetHeight);
+   
+    
+  } else {
+    setStripHeight(0);
+  }
+
+  if(showPages==true)
+    {
+      setZoom(0.8)
+      handleZoom(0.8, allow);
+      setAllow(false);
+    }else
+    {
+      if(!allow)
+      {
+       
+        handleZoom(zoom, false);
+        setAllow(true);
+      }
+    }
+}, [showPages])
 
 
 
@@ -238,14 +364,12 @@ useEffect(() => {
     }
   }, [prepareForPrint]);
 
-  // 🧠 Resize listener
-  useEffect(() => {
-    const handleResize = () => {
-      setStageSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+ 
+
+ 
+
+
+
 
   // 🧠 Ghost line opacity
   useEffect(() => {

@@ -103,6 +103,8 @@ export interface CanvasControlsProps {
     handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
     handleRenderBlankTemplate: () => void;
     handleTemplateSelect:(tpl:DualTemplate)=>void;
+    setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
+    showPages:boolean;
 }
 
 export default function CanvasControls({
@@ -170,6 +172,8 @@ export default function CanvasControls({
     setSnapshotArchive,
     captureFrontAndBack,
     setPageAdded,
+    setShowPages,
+    showPages,
   }: CanvasControlsProps) {
     // ...render logic
   if (!template) return null;
@@ -265,7 +269,7 @@ export default function CanvasControls({
  
 </SidebarModule>
 
-  { mode=='card' &&(
+  { mode=='card' && zoom<= 3.5 &&(
 
 <TopControlBar
 template={template}
@@ -422,6 +426,8 @@ activeMode={faceMode}
         setHasChanged={setHasChanged}
         hasChanged={hasChanged}
         setPageAdded={setPageAdded}
+        setShowPages={setShowPages}
+        showPages={showPages}
     />
     </>
   );

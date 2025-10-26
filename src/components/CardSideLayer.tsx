@@ -32,6 +32,8 @@ interface CardSideLayerProps {
   cardY: number;
   position: { x: number; y: number };
   canvasBounds: { x: number; y: number; width: number; height: number };
+  scrollPos: {x: number; y: number}
+  setScrollPosition: React.Dispatch<React.SetStateAction<{x: number, y: number}>>;
   containerRef?: any;
   cardGridGroupRef?:any;
   scrollOffset?:any;
@@ -98,6 +100,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   containerRef,
   stageRef,
   cardGridGroupRef,
+  scrollPos,
+  setScrollPosition,
   scrollOffset,
   zoom,
   mode,
@@ -140,11 +144,11 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
 
   
 
-  const maskX = SIDEBAR_WIDTH + RULER_THICKNESS;
-  const maskY = TOP_BAR_HEIGHT + RULER_THICKNESS;
+  const maskX = 0;
+  const maskY = 0;
   
-  const maskWidth = window.innerWidth - maskX - RIGHT_MARGIN;
-  const maskHeight = window.innerHeight - maskY - FOOTER_HEIGHT;
+  const maskWidth = window.innerWidth
+  const maskHeight = window.innerHeight;
 
   const availableWidth = window.innerWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
   const availableHeight = window.innerHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
@@ -163,43 +167,28 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   const offsetY = (availableHeight - cardHeight * initialZoom) / 2 + TOP_BAR_HEIGHT + RULER_THICKNESS;
   
   
+  //console.log('scrollPosition', scrollPos, 'position', position)
 
 
   return (
     <Layer>
-      {/* Outer group: viewport mask */}
-      <Group
-        clipFunc={(ctx) => {
-          ctx.rect(maskX, maskY, maskWidth, maskHeight);
-        }}
-      >
+     
 
-<Rect
-  x={maskX}
-  y={maskY}
-  width={maskWidth}
-  height={maskHeight}
-  //fill="#1E1E1E" // studio-like dark neutral
-  stroke={tone}
-  strokeWidth={3}
-  shadowForStrokeEnabled={true}
-  opacity={0.08}
-  listening={false}
-/>
+
         {/* Inner group: scaled canvas */}
         <Group
           ref={cardGridGroupRef}
-          x={position.x + scrollOffset.x}
-          y={position.y + scrollOffset.y}
+          x={scrollPos?scrollPos.x: position.x}
+          y={scrollPos?scrollPos.y:position.y}
           scaleX={zoom}
           scaleY={zoom}
-
-         draggable
+          draggable
           onDragMove={(e) => {
-          const newX = e.target.x();
-          const newY = e.target.y();
+            const { x, y } = e.target.position();
+            setScrollPosition({ x, y });
+          }}
        // Optionally clamp or store position
-       }}
+      
         >
           <GridRect
             x={cardX}
@@ -317,7 +306,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
               />
             ))}
         </Group>
-      </Group>
+      
     </Layer>
   );
 };
