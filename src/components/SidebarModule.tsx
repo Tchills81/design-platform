@@ -34,7 +34,7 @@ export default function SidebarModule({ tone, children }: SidebarModuleProps) {
   });
 
   return (
-    <aside className="absolute left-10 top-20 z-20 bg-white shadow-lg 
+    <aside className="absolute left-10 top-30 z-30 bg-white shadow-lg 
                      rounded-xl w-64 max-h-[calc(100vh-5rem)] overflow-y-auto p-4 flex flex-col gap-6">
       <div className="text-xs uppercase tracking-wide text-muted">{tone} Mode</div>
       {enhancedChildren}

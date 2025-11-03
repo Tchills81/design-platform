@@ -9,7 +9,9 @@ interface CanvasScrollbarsProps {
   handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
   canvasSize: { width: number; height: number };
   viewportSize: { width: number; height: number };
+  thumbValue:number;
   tone: string;
+  zoom:number;
 }
 
 export default function CanvasScrollbars({
@@ -19,7 +21,9 @@ export default function CanvasScrollbars({
   handleVerticalScroll,
   canvasSize,
   viewportSize,
+  thumbValue,
   tone,
+  zoom,
 }: CanvasScrollbarsProps) {
   const maxX = Math.max(0, canvasSize.width - viewportSize.width);
   const maxY = Math.max(0, canvasSize.height - viewportSize.height);
@@ -38,7 +42,7 @@ export default function CanvasScrollbars({
 
   
 
-  useEffect(() => {
+  /*useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       const deltaX = e.deltaX;
       const deltaY = e.deltaY;
@@ -74,7 +78,14 @@ export default function CanvasScrollbars({
   
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [scrollPosition, maxX, maxY]);
+  }, [scrollPosition, maxX, maxY]);*/
+
+
+  //console.log('CanvasScrollbar, scrollPosition', scrollPosition);
+
+
+  // Calculate the dynamic step value based on zoom
+  const step = Math.max(1, 5 / zoom);
   
 
   return (

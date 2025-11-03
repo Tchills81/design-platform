@@ -105,6 +105,8 @@ export default function CanvasStage({
     largeContainerSize,
     scrollPosition,
     canvasSize,
+    thumbValue,
+    isPreviewMode
   
 
   } = state;
@@ -151,6 +153,7 @@ export default function CanvasStage({
   side={side}
   mode={mode}
   zoom={zoom}
+  thumbValue={thumbValue}
   stageSize={stageSize}
   scrollPos={scrollPosition}
   setScrollPosition={setScrollPosition}
@@ -187,6 +190,11 @@ export default function CanvasStage({
   isUnderline={isUnderline}
   setTemplate={setTemplate}
   setElementId={setElementId}
+  setPendingStyle={setPendingStyle}
+  resetTransformMode={resetTransformMode}
+  setModeActive={setModeActive}
+  pendingStyle={pendingStyle}
+  isPreviewMode={isPreviewMode}
   handlers={{
     setImageRef: updateImageRef,
     onPaint: handleCellPaint,
@@ -197,6 +205,8 @@ export default function CanvasStage({
     onPrimitiveSelect: onPrimitiveSelect,
     handleHorizontalScroll:handleHorizontalScroll,
     handleVerticalScroll:handleVerticalScroll,
+    setSelectedTextId: setSelectedTextId,
+    
     setGhostLines,
     setSelectedFont,
     setSelectedColor,
@@ -204,6 +214,7 @@ export default function CanvasStage({
     setShowToolbar,
     setSelectedImageId,
     onFontSizeChange,
+   
   }}
 />
 

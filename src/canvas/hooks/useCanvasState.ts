@@ -33,6 +33,9 @@ export function useCanvasState() {
   const [lastFaceHash, setLastFaceHash] = useState<string | null>(null);
   const [hasChanged, setHasChanged] = useState(false);
   const [maxPageCount, setMaxPageCount]=useState<number>(2);
+  const [previewEntry, setPreviewEntry] = useState<SnapshotEntry | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
 
 
@@ -95,12 +98,13 @@ export function useCanvasState() {
   const [showGuides, setShowGuides] = useState<boolean>(true);
   const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
   const hasInitializedZoom = useRef(false);
+  const [initailPosition, setInitialPosition]=useState({x:0, y:0})
 
 
   // 🧭 Zoom and stage
   const [zoom, setZoom] = useState<number>(1);
   const [initialZoomedOutValue, setInitialZoomedOutValue] = useState(1);
-
+ 
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -121,7 +125,10 @@ export function useCanvasState() {
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [visible, setVisible] = useState(true);
+  const [thumbValue, setThumbValue]= useState<number>(0)
 
+
+  const hasInitialized = useRef(false);
 
   const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
   
@@ -141,6 +148,9 @@ export function useCanvasState() {
   const stripRef = useRef<HTMLDivElement>(null);
   const [stripHeight, setStripHeight] = useState(0);
   const [verticalOffset, setVerticalOffset] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
 
 
 
@@ -210,16 +220,17 @@ export function useCanvasState() {
   
 
   const canvasBounds = useMemo(() => ({
-    x: cardX ?? 0,
-    y: cardY ?? 0,
-    width: card?.width ?? 0,
-    height: card?.height ?? 0,
-  }), [cardX, cardY, card?.width]);
-
+    x: 0,
+    y: 0,
+    width: template ? template.width * zoom : card?.width ?? 0,
+    height: template ? template.height * zoom : card?.height ?? 0,
+  }), [template, zoom, card?.width, card?.height]);
+  
   const getCanvasOffset = (): { x: number; y: number } => ({
-    x: canvasBounds.x,
-    y: canvasBounds.y,
+    x: 0,
+    y: 0,
   });
+  
 
 
 
@@ -248,7 +259,19 @@ export function useCanvasState() {
     imageRef.current = ref;
   };
 
+
+  const positionRef = useRef(position);
+
+
   return {
+
+    previewEntry, 
+    setPreviewEntry,
+
+    isPreviewing, 
+    setIsPreviewing,
+    isPreviewMode, 
+    setIsPreviewMode,
 
     scrollContainerRef, 
     largeContainerRef, 
@@ -478,6 +501,16 @@ export function useCanvasState() {
   setStripHeight,
   verticalOffset, 
   setVerticalOffset,
+  thumbValue, 
+  setThumbValue,
+  hasInitialized,
+  initailPosition, 
+  setInitialPosition,
+  positionRef,
+  isCollapsed, 
+  setIsCollapsed,
+  activeIndex, 
+  setActiveIndex,
 
   // 🧠 Derived tone
   tone,

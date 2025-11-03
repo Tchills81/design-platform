@@ -11,9 +11,9 @@ export const getZoomAwareDragBoundFunc = (
       const scaledHeight = elementSize.height * zoom;
   
       const minX = canvasBounds.x + padding;
-      const maxX = canvasBounds.x + canvasBounds.width - scaledWidth - padding;
+      const maxX = canvasBounds.x + canvasBounds.width  - padding;
       const minY = canvasBounds.y + padding;
-      const maxY = canvasBounds.y + canvasBounds.height - scaledHeight - padding;
+      const maxY = canvasBounds.y + canvasBounds.height - padding;
   
       return {
         x: Math.max(minX, Math.min(pos.x, maxX)),

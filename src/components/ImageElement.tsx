@@ -156,15 +156,15 @@ const ImageElement: React.FC<ImageElementProps> = ({
     const clampedX = Math.max(minX, Math.min(rawX, maxX));
     const clampedY = Math.max(minY, Math.min(rawY, maxY));
 
-    node.position({ x: clampedX, y: clampedY });
+    node.position({ x: rawX, y: rawY });
     node.getLayer()?.batchDraw();
 
     if (setGhostLines) setGhostLines({});
 
     handleImageUpdate({
       target: {
-        x: () => clampedX,
-        y: () => clampedY,
+        x: () => rawX,
+        y: () => rawY,
         width: () => node.width(),
         height: () => node.height()
       }

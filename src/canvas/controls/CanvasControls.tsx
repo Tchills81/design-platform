@@ -58,6 +58,7 @@ export interface CanvasControlsProps {
     selectedImageId: string | null;
     zoom:number;
     hasInitializedZoom:RefObject<boolean>;
+    
     setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
     setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
     setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
@@ -104,7 +105,11 @@ export interface CanvasControlsProps {
     handleRenderBlankTemplate: () => void;
     handleTemplateSelect:(tpl:DualTemplate)=>void;
     setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsPreviewMode:(mode:boolean)=>void;
     showPages:boolean;
+    isPreviewMode:boolean;
+    isCollapsed:boolean;
 }
 
 export default function CanvasControls({
@@ -125,6 +130,7 @@ export default function CanvasControls({
     selectedImageId,
     zoom,
     hasInitializedZoom,
+   
     activeTimestamp,
     setActiveTimestamp,
     setCanvasReady,
@@ -174,6 +180,10 @@ export default function CanvasControls({
     setPageAdded,
     setShowPages,
     showPages,
+    isPreviewMode,
+    setIsPreviewMode,
+    setIsCollapsed,
+    isCollapsed
   }: CanvasControlsProps) {
     // ...render logic
   if (!template) return null;
@@ -191,85 +201,94 @@ export default function CanvasControls({
 
   
   return (
+
+    
     <>
-      <SidebarModule tone={template.tone as tone}>
-      <ToneButton
-  icon={<ArrowLeft />}
-  label="Back to Templates"
-  tone={template.tone}
-  onClick={() => {
-    setModes(['front', 'back']);
-    console.log('resetting design ....', resetDesign)
-    resetDesign();
-    setTemplate(null);
-    setLastSavedTemplate(template);
-    hasInitializedZoom.current = false;
-    //setZoom(1);
-  }}
+
+    {!isPreviewMode && (
+
+
+<SidebarModule tone={template.tone as tone}>
+<ToneButton
+icon={<ArrowLeft />}
+label="Back to Templates"
+tone={template.tone}
+onClick={() => {
+setModes(['front', 'back']);
+console.log('resetting design ....', resetDesign)
+resetDesign();
+setTemplate(null);
+setLastSavedTemplate(template);
+hasInitializedZoom.current = false;
+//setZoom(1);
+}}
 />
 
 
 
 <SidebarSection label="Elements" >
-  <ElementPanel tone={template.tone as tone}  onSelect={(el:DesignElement)=>{
-    handleDesignSelected(el);
-  }}/>
+<ElementPanel tone={template.tone as tone}  onSelect={(el:DesignElement)=>{
+handleDesignSelected(el);
+}}/>
 
-  </SidebarSection>
+</SidebarSection>
 
 
-      <SidebarSection label="Canvas Rituals">
-  <CanvasActionCluster
-  tone={template.tone as tone}
-  mode={mode === 'card' ? 'card' : 'painting'}
-  side={side}
-  faceMode={faceMode}
-  onToggleMode={() =>{
-    setShowBackground(false);
-    setMode(prev => (prev === 'card' ? 'painting' : 'card'));
+<SidebarSection label="Canvas Rituals">
+<CanvasActionCluster
+tone={template.tone as tone}
+mode={mode === 'card' ? 'card' : 'painting'}
+side={side}
+faceMode={faceMode}
+onToggleMode={() =>{
+setShowBackground(false);
+setMode(prev => (prev === 'card' ? 'painting' : 'card'));
 
-    
 
-   
-    }
-  }
-  onFlipSide={() => {
-    if (faceMode === 'insideFront') {
-      setFaceMode('insideBack');
-    } else if (faceMode === 'insideBack') {
-      setFaceMode('insideFront');
-    } else {
-      
-      
-      setFaceMode(prev => (prev === 'front' ? 'back' : 'front'));
-    }
 
-    setSide(prev => (prev === 'front' ? 'back' : 'front'));
-  }}
-  onUndo={handleUndo}
-  onRedo={handleRedo}
-  history={history}
-  future={future}
-  onSave={handleSaveCard}
-  onPreview={captureBothSides}
+
+}
+}
+onFlipSide={() => {
+if (faceMode === 'insideFront') {
+setFaceMode('insideBack');
+} else if (faceMode === 'insideBack') {
+setFaceMode('insideFront');
+} else {
+
+
+setFaceMode(prev => (prev === 'front' ? 'back' : 'front'));
+}
+
+setSide(prev => (prev === 'front' ? 'back' : 'front'));
+}}
+onUndo={handleUndo}
+onRedo={handleRedo}
+history={history}
+future={future}
+onSave={handleSaveCard}
+onPreview={captureBothSides}
 />
 
 </SidebarSection>
 
 
-  <SidebarSection label="Canvas Tools">
-    <ToneButton icon={<Text />} label="Add Text" onClick={handleAddText} tone={template.tone} />
-    
-    <ToneButton icon={<XIcon />} label="Remove Text" onClick={handleRemoveText} tone={template.tone} isActive={!!selectedTextId} />
-    <AddImageButton context="design" tone={template.tone} onUpload={handleOnUploadImage} />
-    <ToneButton icon={<Image />} label="Resize Image" onClick={() => activateTransformMode(selectedImageId ?? '', 'image')} tone={template.tone} />
-  </SidebarSection>
- 
-  
- 
+<SidebarSection label="Canvas Tools">
+<ToneButton icon={<Text />} label="Add Text" onClick={handleAddText} tone={template.tone} />
+
+<ToneButton icon={<XIcon />} label="Remove Text" onClick={handleRemoveText} tone={template.tone} isActive={!!selectedTextId} />
+<AddImageButton context="design" tone={template.tone} onUpload={handleOnUploadImage} />
+<ToneButton icon={<Image />} label="Resize Image" onClick={() => activateTransformMode(selectedImageId ?? '', 'image')} tone={template.tone} />
+</SidebarSection>
+
+
+
 </SidebarModule>
 
-  { mode=='card' && zoom<= 3.5 &&(
+
+  )}
+      
+  { mode=='card' && zoom<1 && !isPreviewMode &&(
 
 <TopControlBar
 template={template}
@@ -321,7 +340,7 @@ activeMode={faceMode}
       
 
 
-{mode === 'painting' && (
+{mode === 'painting' &&  !isPreviewMode &&  (
   <>
     <PaintingToolbar
       brushSize={brushSize}
@@ -376,7 +395,7 @@ activeMode={faceMode}
 
 
 
-{mode === 'painting' && showPalette && (
+{mode === 'painting' && showPalette &&  !isPreviewMode && (
   <TonePalette
     tone={template.tone as tone}
     selectedColor={selectedColor}
@@ -399,6 +418,9 @@ activeMode={faceMode}
         snapshots={snapshots}
         snapshotArchive={snapshotArchive}
         mode={mode}
+        isPreviewMode={isPreviewMode}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed = {isCollapsed}
         side={side}
         activeTimestamp={activeTimestamp}
         setActiveTimestamp={setActiveTimestamp}
@@ -410,6 +432,7 @@ activeMode={faceMode}
 
         setMode={()=>{setMode('card')}}
         setSide={setSide}
+        setIsPreviewMode={setIsPreviewMode}
 
         tone={template.tone as tone}
         zoomIn={() => handleZoom(1.1)}

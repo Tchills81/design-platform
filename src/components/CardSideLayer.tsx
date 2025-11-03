@@ -19,6 +19,8 @@ interface CardSideLayerProps {
     backgroundImage?: string;
     gridColors?: string[];
   };
+
+  isPreviewMode?: boolean;
   showBackground: boolean;
   dynamicBackground: string;
   elements: TemplateElement[];
@@ -121,13 +123,14 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   textAlign,
   isMultiline,
   isUnderline,
+  isPreviewMode,
 }) => {
   const imageRef = useRef<Konva.Image>(null);
   const cardBounds = {
-    x: cardX,
-    y: cardY,
-    width: card.width,
-    height: card.height
+    x: 0,
+    y: 0,
+    width: template? template.width * zoom :card.width,
+    height: template? template.height * zoom :card.height
   };
 
   const setSelectedRef = (ref: Konva.Image | null) => {
@@ -171,28 +174,22 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
 
 
   return (
-    <Layer>
-     
-
-
-        {/* Inner group: scaled canvas */}
-        <Group
-          ref={cardGridGroupRef}
+    <Layer
+         
+         ref={cardGridGroupRef}
           x={position.x}
           y={position.y}
           scaleX={zoom}
           scaleY={zoom}
-          /*draggable
-          onDragMove={(e) => {
-            const { x, y } = e.target.position();
-            //setScrollPosition({ x, y });
-          }}
-       // Optionally clamp or store position*/
-      
-        >
+          listening={!isPreviewMode}
+          >
+     
+
+
+        
           <GridRect
-            x={cardX}
-            y={cardY}
+            x={0}
+            y={0}
             width={card.width}
             height={card.height}
             cols={cols}
@@ -208,8 +205,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
           {bgImage && (
             <KonvaImage
               image={bgImage}
-              x={cardX}
-              y={cardY}
+              x={0}
+              y={0}
               width={card.width}
               height={card.height}
             />
@@ -225,8 +222,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 templateId={templateId}
                 src={'src' in el ? el.src : ''}
                 position={{
-                  x: cardX + el.position.x,
-                  y: cardY + el.position.y
+                  x: el.position.x,
+                  y: el.position.y
                 }}
                 size={el.size}
                 zoom={zoom}
@@ -257,8 +254,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 el={el}
                 text={el.label}
                 position={{
-                  x: cardX + el.position.x,
-                  y: cardY + el.position.y
+                  x: el.position.x,
+                  y: el.position.y
                 }}
                 textAlign={textAlign}
                 isMultiline={isMultiline}
@@ -280,8 +277,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                     label: text,
                     text,
                     position: {
-                      x: position.x - cardX,
-                      y: position.y - cardY
+                      x: position.x,
+                      y: position.y
                     }
                   };
                   handlers.onTextUpdate(updated);
@@ -305,7 +302,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 }}
               />
             ))}
-        </Group>
+        
       
     </Layer>
   );

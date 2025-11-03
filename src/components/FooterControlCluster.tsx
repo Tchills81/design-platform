@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, NotepadTextDashed, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, LogOutIcon, NotepadTextDashed, ZoomIn, ZoomOut } from 'lucide-react';
 import { ArrowRight } from 'react-feather';
 import { IconButton } from './IconButton';
 import { ToggleCheckbox } from './ToggleCheckbox';
@@ -22,6 +22,8 @@ interface FooterControlClusterProps {
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
   setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
   setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsPreviewMode:(mode:boolean)=>void;
+  setIsCollapsed:React.Dispatch<React.SetStateAction<boolean>>;
   showPages:boolean;
   side: 'front' | 'back';
   stageSize: { width: number; height: number };
@@ -43,6 +45,8 @@ interface FooterControlClusterProps {
   mode: CanvasMode;
   activeTimestamp: string | null;
   hasChanged: boolean;
+  isPreviewMode:boolean;
+  isCollapsed:boolean;
   setActiveTimestamp: React.Dispatch<React.SetStateAction<string | null>>;
   setCavansReady: React.Dispatch<React.SetStateAction<boolean>>;
   setHasChanged: React.Dispatch<React.SetStateAction<boolean>>;
@@ -83,9 +87,16 @@ export default function FooterControlCluster({
   setShowPages,
   showPages,
   mode,
+  isPreviewMode,
+  setIsPreviewMode,
+  setIsCollapsed,
+  isCollapsed,
   side
 }: FooterControlClusterProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  
+
+  
+  
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newZoom = parseFloat(e.target.value);
@@ -98,7 +109,10 @@ export default function FooterControlCluster({
       <button
         onClick={() => {
           setIsCollapsed(prev => !prev);
-          setShowPages(prev => !prev);
+
+         // isCollapsed?setShowPages(isCollapsed):setShowPages(false);
+          //setShowPages(prev => !prev);
+
         }
         }
         style={{
@@ -121,30 +135,41 @@ export default function FooterControlCluster({
       {/* Footer Cluster */}
       {!isCollapsed && (
         <div
-          className="fixed bottom-1  right-0 z-30 flex items-center gap-4 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm"
+          className="fixed bottom-1  right-0 z-30 flex items-center gap-4 bg-white/80 backdrop-blur-sm px-1 py-1 rounded-md shadow-sm"
           style={{
-            width: '50%',
+            width: 'auto',
             maxWidth: stageSize.width,
             justifyContent: 'space-between',
             overflowX: 'auto'
           }}
         >
-          <ToneButton
+
+             <ToneButton
               icon={<NotepadTextDashed/>}
               label={showPages ? "Hide Pages" : "Show Pages"}
               tone={tone}
               onClick={()=>setShowPages(prev => !prev)}
             />
-          
-          
+         
 
-          <IconButton icon={<ZoomOut size={20} />} tone={tone} onClick={zoomOut} />
+         {isPreviewMode &&(
 
+
+           <ToneButton
+              icon={<LogOutIcon/>}
+              label='Exit Preview'
+              tone={tone}
+              onClick={()=>setIsPreviewMode(false)}
+            />
+         )}
+          
+      
+        
           <div className="flex items-center gap-2">
             <input
               type="range"
               min={0.25}
-              max={1}
+              max={1.5}
               step={0.01}
               value={zoom}
               onChange={handleSliderChange}
@@ -155,38 +180,49 @@ export default function FooterControlCluster({
             </span>
           </div>
 
-          <IconButton icon={<ZoomIn size={20} />} tone={tone} onClick={zoomIn} />
+          {!isPreviewMode && (
 
-          <ToggleCheckbox
-            label="Show Rulers"
-            checked={showRulers}
-            onToggle={toggleRulers}
-            tone={tone}
-          />
-          <ToggleCheckbox
-            label="Show Bleeds"
-            checked={showBleeds}
-            onToggle={toggleBleeds}
-            tone={tone}
-            disabled={bleedToggleDisabled}
-          />
-          <ToggleCheckbox
-            label="Show Grid"
-            checked={showGrids}
-            onToggle={toggleGrids}
-            tone={tone}
-          />
+<>
 
-           
+             
 
-          {mode === 'painting' && (
-            <ToneButton
-              icon={<ArrowRight />}
-              label="Exit Paint Mode"
-              tone={tone}
-              onClick={setMode}
-            />
+<ToggleCheckbox
+  label="Show Rulers"
+  checked={showRulers}
+  onToggle={toggleRulers}
+  tone={tone}
+/>
+<ToggleCheckbox
+  label="Show Bleeds"
+  checked={showBleeds}
+  onToggle={toggleBleeds}
+  tone={tone}
+  disabled={bleedToggleDisabled}
+/>
+<ToggleCheckbox
+  label="Show Grid"
+  checked={showGrids}
+  onToggle={toggleGrids}
+  tone={tone}
+/>
+
+ 
+
+{mode === 'painting' && (
+  <ToneButton
+    icon={<ArrowRight />}
+    label="Exit Paint Mode"
+    tone={tone}
+    onClick={setMode}
+  />
+)}
+</>
+
           )}
+
+          
+
+         
         </div>
       )}
     </>

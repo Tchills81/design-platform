@@ -1,9 +1,9 @@
 import React from 'react';
 import { SnapshotEntry } from '../types/SnapshotEntry';
-import { DualTemplate } from '../types/template';
+import { DualTemplate, TemplateDocument } from '../types/template';
 import { transformDualTemplateToDocument } from '../utils/transformDualTemplate';
 import { ToneButton } from './ToneButton';
-import { Copy, NotepadText, PlusIcon, SquarePlus } from 'lucide-react';
+import { ArrowLeft, Copy, NotepadText, PlusIcon, SquarePlus } from 'lucide-react';
 import { tone } from '../types/tone';
 import { TemplateSize } from '../enumarations/TemplateSize';
 import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
@@ -19,6 +19,11 @@ type ThumbnailStripProps = {
   showPages: boolean;
   activeSide?: 'front' | 'back' | null;
   activeTimestamp: string | null;
+  activeIndex?: number | null;
+  setActiveIndex?: (index: number) => void;
+  isPreviewMode:boolean;
+ 
+  setDocumentTemplates:(documents:TemplateDocument[])=>void;
 };
 
 export function ThumbnailStrip({
@@ -30,7 +35,12 @@ export function ThumbnailStrip({
   template,
   activeSide,
   activeTimestamp, 
+  activeIndex,
+  setActiveIndex,
   showPages,
+  isPreviewMode,
+ 
+  setDocumentTemplates,
 }: ThumbnailStripProps) {
   // 🧩 Group snapshots by timestamp
   const groupedByTimestamp: Record<string, SnapshotEntry[]> = {};
@@ -115,12 +125,12 @@ export function ThumbnailStrip({
       width: 'inherit',
       zIndex: 20,
       display: 'flex',
-      justifyContent: 'left',
-      alignItems: 'left',
+      justifyContent: isPreviewMode?'center':'left',
+      alignItems:  isPreviewMode?'center':'left',
       gap: '1rem',
       padding: '0.75rem 1rem',
-      borderTop: '1px solid #e2e8f0',
-      background: '#f8fafc',
+      borderTop: '1px dotted #e2e8f0',
+      background: '#e2e8f0',
       flexWrap: 'wrap',
       overflowX: 'auto',
       boxSizing: 'border-box',
@@ -129,6 +139,10 @@ export function ThumbnailStrip({
     }}
   >
       {/* ➕ Add Page Button */}
+
+      {!isPreviewMode && (
+        <div>
+
       <ToneButton
       icon={<Copy size={18}/>}
       label={defaultType === 'inside' ? 'Duplicate ' : 'Duplicate '}
@@ -143,6 +157,12 @@ export function ThumbnailStrip({
       onClick={handleAddPage}
       disabled={!canAddPage}
       />
+        </div>
+        
+      ) }
+
+
+    
       {!canAddPage && (
      <div style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: '0.5rem' }}>
         Max pages reached for this format
@@ -158,24 +178,26 @@ export function ThumbnailStrip({
         const time = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
         const label = getThumbnailLabel(index, entry, defaultType);
 
-        const isActive =
-          activeTimestamp === timestamp &&
-          (activeSide === undefined || activeSide === side);
+        const isActive = activeTimestamp === timestamp && activeSide === side;
+
+
+        console.log('isActive', isActive)
 
         return (
           <div
-            key={side + timestamp}
+            key={side + timestamp + index}
             onClick={() => onSelect(entry)}
             style={{
-              border: isActive ? '2px solid #0284c7' : '1px solid #cbd5e1',
-              width: 80,
+              border: isActive ? '2px solid #0284c7' : '1px solid #1e!e!e',
+              width: 50,
               padding: '0.2rem',
               cursor: 'pointer',
               textAlign: 'center',
               borderRadius: 8,
               background: '#ffffff',
               boxShadow: isActive ? '0 0 6px rgba(2,132,199,0.4)' : 'none',
-              transition: 'border 0.2s ease, box-shadow 0.2s ease'
+              transition: 'border 0.2s ease, box-shadow 0.2s ease',
+              transform: isPreviewMode ? 'scale(1.05)' : 'transform 0.2s ease',
             }}
           >
            <img

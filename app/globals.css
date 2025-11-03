@@ -410,7 +410,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 12px;
   height: 24px;
-  background: radial-gradient(circle, var(--tone) 40%, #fff 60%);
+  background: radial-gradient(circle, var(--tone) 40%, #e1e0e09a 60%);
   border-radius: 50%;
   border: 1px solid var(--tone);
   cursor: pointer;
@@ -424,11 +424,47 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 input[type="range"]::-moz-range-thumb {
   width: 12px;
-  height: 24px;
+  height: 64px;
   background: var(--tone);
   border-radius: 50%;
   border: 1px solid #fff;
   cursor: pointer;
 }
+
+.canvas-scrollbar {
+  appearance: none;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.canvas-scrollbar.vertical::-webkit-slider-thumb {
+  width: 12px;
+  height: 60px; /* 👈 longer thumb */
+  background: var(--tone, #888);
+  border-radius: 6px;
+  border: none;
+  cursor: grab;
+  transition: background 0.3s ease;
+}
+
+.canvas-scrollbar.horizontal::-webkit-slider-thumb {
+  width: 60px; /* 👈 longer thumb */
+  height: 12px;
+  background: var(--tone, #888);
+  border-radius: 6px;
+  border: none;
+  cursor: grab;
+  transition: background 0.3s ease;
+}
+
+.canvas-scrollbar::-webkit-slider-thumb:hover {
+  background: #555; /* subtle hover tone */
+}
+
+.canvas-scrollbar::-webkit-slider-runnable-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+}
+
 
 

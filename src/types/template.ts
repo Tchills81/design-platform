@@ -27,7 +27,7 @@ export type TemplateElement =
       isItalic?: boolean;
       position: { x: number; y: number };
       tone: string;
-      role?: 'greeting' | 'title' | 'message' | 'inside-message' | 'caption';
+      role?: 'greeting' | 'title' | 'message' | 'inside-message' | 'caption' | 'body';
     }
   | {
       type: 'shape';

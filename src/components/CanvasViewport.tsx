@@ -1,6 +1,6 @@
 'use client';
 
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { Stage, Layer, Line, Text, Rect } from 'react-konva';
 import { CardSideLayer } from '@/src/components/CardSideLayer';
 import RulerLayer from '@/src/components/RulerLayer';
 import { PrintGuidesOverlay } from '@/src/components/PrintGuidesOverlay';
@@ -9,10 +9,11 @@ import { CropBoxOverlay } from '@/src/components/CropBoxOverlay';
 import { CanvasMode } from '@/src/types/CanvasMode';
 import { DualTemplate, TemplateElement } from '@/src/types/template';
 import { RefObject } from 'react';
-import { tone } from '../types/tone';
+import { tone,toneBackgroundClasses } from '../types/tone';
 import Konva from 'konva';
 import { DesignElement } from '../types/DesignElement';
 import CanvasScrollbars from './CanvasScrollbars';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 interface CanvasViewportProps {
   template: DualTemplate;
@@ -31,6 +32,8 @@ interface CanvasViewportProps {
   selectedImageId: string | null;
   selectedTextId: string | null;
   cropRegion: { x: number; y: number; width: number; height: number };
+  resetTransformMode: () => void;
+  setModeActive:(active:boolean)=>void;
 
   scrollPos:{x:number; y:number};
 
@@ -38,6 +41,7 @@ interface CanvasViewportProps {
   
   setCropRegion: (region: { x: number; y: number; width: number; height: number }) => void;
   canvasSize:{scaleX:number; scaleY:number; width:number; height:number};
+  thumbValue:number;
   cardX: number;
   cardY: number;
   position: { x: number; y: number };
@@ -56,8 +60,23 @@ interface CanvasViewportProps {
   textAlign: 'center' | 'left' | 'right';
   isMultiline: boolean;
   isUnderline: boolean;
+  isPreviewMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
   setElementId: React.Dispatch<React.SetStateAction<string>>;
+
+  pendingStyle: {
+    isBold?: boolean;
+    isItalic?: boolean;
+}
+
+setPendingStyle: React.Dispatch<React.SetStateAction<
+{   isBold: boolean;
+    isItalic: boolean;
+ } | {} >>;
+
+ 
+
+
   handlers: {
     setImageRef?: (ref: Konva.Image | null) => void;
     onPaint?: (col: number, row: number) => void;
@@ -68,13 +87,15 @@ interface CanvasViewportProps {
     setGhostLines: (lines: { x?: number; y?: number }) => void;
     setSelectedFont: (font: string) => void;
     setSelectedColor: (color: string) => void;
-    setInputPosition: (pos: { x: number; y: number }) => void;
+    setInputPosition: (pos: { x: number; y: number } | null) => void;
     setShowToolbar: (show: boolean) => void;
-    setSelectedImageId: (id: string) => void;
+    setSelectedImageId: (id: string | null) => void;
     onFontSizeChange: (size: number) => void;
     onPrimitiveSelect: () => void;
     handleHorizontalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
     handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
+    setSelectedTextId: (value: React.SetStateAction<string | null>) => void;
+
   };
 }
 
@@ -98,6 +119,8 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     cropRegion,
     setCropRegion,
     setScrollPosition,
+    pendingStyle,
+    setPendingStyle,
     scrollPos,
     cardX,
     cardY,
@@ -107,6 +130,8 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     editingText,
     designElements,
     transformModeActive,
+    resetTransformMode,
+    setModeActive,
     rows,
     cols,
     cellSize,
@@ -120,12 +145,21 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     setTemplate,
     setElementId,
     canvasSize,
+    thumbValue,
     handlers,
+    isPreviewMode,
   } = props;
 
   const face = template[side];
   const card = face?.card;
   if (!card) return null;  
+
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+
+ const  backgroundColor = isPreviewMode ? toneBackgroundClasses[template.tone as tone] : '#e2e8f0';
+
+  console.log('backgroundColor', backgroundColor)
+  
 
   return (
     <div
@@ -141,10 +175,72 @@ export default function CanvasViewport(props: CanvasViewportProps) {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        style={{ backgroundColor: '#1e1e1e' }}
+        className={`${isPreviewMode? backgroundColor:backgroundClass}`}
+        style={{ backgroundColor: '#1e1e1e', position:'absolute' }}
+
+
+        onClick={(e) => {
+            const toolbarEl = document.getElementById('text-toolbar');
+            const { clientX, clientY } = e.evt;
+            const domTarget = document.elementFromPoint(clientX, clientY);
+            const clickedInsideToolbar = toolbarEl?.contains(domTarget);
+          
+            console.log("clickedInsideToolbar: stage Event", clickedInsideToolbar);
+          
+            if (clickedInsideToolbar) return; // ✅ Exit early
+          
+            const clickedNode = e.target;
+            
+
+            const isImage =clickedNode.getClassName?.() === 'Image' ;
+            const isShape = clickedNode.name?.() == 'Shape';
+
+            const isTransformer = clickedNode.getClassName?.() === 'Transformer';
+            const isStage = clickedNode === e.target.getStage();
+
+           
+          
+            if ((!isImage && !isShape)  && !isTransformer) {
+                handlers.setSelectedImageId(null);
+                resetTransformMode(); // ← graceful exit from resize mode
+                setModeActive(false);
+                
+              }
+           
+
+
+            
+          
+            if ((isStage || isImage || isShape) && selectedTextId) {
+              if (!template || !template[side] || !template[side].elements) return;
+          
+              const updatedElements = template[side].elements.map(el =>
+                el.id === selectedTextId && el.type === 'text'
+                  ? { ...el, ...pendingStyle }
+                  : el
+              );
+          
+              setTemplate(prev => ({
+                ...prev!,
+                [side]: {
+                  ...prev![side],
+                  elements: updatedElements
+                }
+              }));
+          
+              setPendingStyle({});
+            }
+          
+            if (isStage || isImage || isShape) {
+              handlers.setSelectedTextId(null);
+              handlers.setShowToolbar(true);
+              handlers.setInputPosition(null);
+            }
+          }}
       >
         {/* Canvas layer */}
         <CardSideLayer
+        isPreviewMode={isPreviewMode}
           scrollOffset={scrollOffset}
           scrollPos={scrollPos}
           setScrollPosition={setScrollPosition}
@@ -181,6 +277,10 @@ export default function CanvasViewport(props: CanvasViewportProps) {
           setTemplate={setTemplate}
           handlers={handlers}
         />
+        <Layer x={position.x} y={position.y} scaleX={zoom} scaleY={zoom}  listening={false}>
+            <Rect stroke={'#1e1e1e'} width={template.width} height={template.height}/>
+
+        </Layer>
 
         {/* Rulers */}
         {showRulers && (
@@ -273,6 +373,7 @@ export default function CanvasViewport(props: CanvasViewportProps) {
       )}
       
       </Layer>
+      
       </Stage>
 
       <CanvasScrollbars
@@ -282,7 +383,9 @@ export default function CanvasViewport(props: CanvasViewportProps) {
   handleVerticalScroll={handlers.handleVerticalScroll}
   canvasSize={canvasSize}
   viewportSize={stageSize}
+  thumbValue={thumbValue}
   tone={template.tone}
+  zoom={zoom}
 />
 
 

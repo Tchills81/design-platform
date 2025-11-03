@@ -135,8 +135,18 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     canvasSize,
     scrollPosition,
     setVisible,
-    fadeTimeout
-    
+    fadeTimeout,
+    thumbValue,
+    setThumbValue,
+    hasInitialized,
+    setInitialPosition,
+    initailPosition,
+    positionRef,
+    setPreviewEntry, 
+    setIsPreviewing,
+    setIsPreviewMode,
+    setIsCollapsed,
+    setActiveIndex,
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -284,42 +294,88 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const handleHorizontalScroll = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const rawValue = parseInt(e.target.value);
-      const x = clamp(rawValue, 0, canvasSize.width - stageSize.width);
-      setScrollPosition((prev) => ({ x, y: prev.y }));
+      const scrollableWidth = Math.max(0, canvasSize.width - stageSize.width);
+      const scrollThumbValue = clamp(rawValue, 0, scrollableWidth);
+  
+      // FIX: Calculate newY using centerOffset
+      const centerOffset = (stageSize.width - canvasSize.width) / 2;
+      const newX = scrollThumbValue + centerOffset;
       
+      setScrollPosition((prev) => ({ x: scrollThumbValue, y: prev.y}));
+  
      
+      setPosition((prev) => ({ x: -newX, y: prev.y}));
+      
+      
+  
       triggerFade?.();
     },
-    [canvasSize, stageSize, setScrollPosition, triggerFade]
+    [canvasSize, stageSize, setPosition, setScrollPosition, triggerFade]
   );
+  
+  
+  
   
   const handleVerticalScroll = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const rawValue = parseInt(e.target.value);
-      const y = clamp(rawValue, 0, canvasSize.height - stageSize.height);
-      setScrollPosition((prev) => ({ x: prev.x, y }));
-      setPosition((prev) => ({ x: prev.x, y:-y }));
+      const rawValue = parseInt(e.target.value); // unscaled thumb value
+  
+      const scrollableHeight = Math.max(0, canvasSize.height - stageSize.height); // already scaled
+      const scaledRawValue = rawValue * zoom; // convert to visual space
+  
+      const scrollThumbValue = clamp(rawValue, 0, scrollableHeight); // now consistent with canvas
 
-      //console.log('handleVerticalScroll', position)
+      /*let  centerOffset = (stageSize.height - canvasSize.height)/2
+      if(centerOffset < 0) centerOffset = -centerOffset;*/
+
+
+      const centerOffset = Math.abs((stageSize.height - canvasSize.height) / 2);
+
+
+     // const centerOffset = (stageSize.height - canvasSize.height)/2 // already scaled
+  
+      const newY = scrollThumbValue + centerOffset; // no extra zoom needed
+  
+      console.log({
+        rawValue,
+        scaledRawValue,
+        scrollThumbValue,
+        centerOffset,
+        newY,
+        finalTransformY: -newY,
+      });
+  
+      setScrollPosition((prev) => ({ x: prev.x, y: scrollThumbValue }));
+      setPosition((prev) => ({ x: prev.x, y: rawValue==0? 0: -newY}));
+  
       triggerFade?.();
+
+      console.log(positionRef.current); // ✅ will reflect updated value after next render
     },
-    [canvasSize, stageSize, setScrollPosition, triggerFade]
+    [canvasSize, stageSize, zoom, setPosition, setScrollPosition, triggerFade]
   );
+  
+
+
+
+
   
   
 
 
   const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(value, max));
+
+
+
+  const centerZoomedCanvas=useCallback(()=>{
+
+
+    const konvaGroup = cardGridGroupRef.current;
+    if (!konvaGroup || !template) return;
+    
   
-  
-  const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
-    const oldZoom = zoom;
-    const rawZoom = oldZoom * scaleBy;
-    const newZoom = allowBelowOne ? rawZoom : Math.max(initialZoomedOutValue, rawZoom);
-    setZoom(newZoom);
-  
-    // 🧭 Center of the stage
+    const currentKonvaPosition = konvaGroup.position();
     const center = {
       x: stageSize.width / 2,
       y: stageSize.height / 2,
@@ -327,72 +383,93 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   
     // 🎯 Recalculate position to keep canvas centered
     const newPosition = {
-      x: center.x - ((center.x - position.x) / oldZoom) * newZoom,
-      y: center.y - ((center.y - position.y) / oldZoom) * newZoom,
+      x: center.x - ((center.x - currentKonvaPosition.x) / zoom) * zoom,
+      y: center.y - ((center.y - currentKonvaPosition.y) / zoom) * zoom,
     };
+
+
+    // 🧩 Apply canvas transform
+    setPosition(newPosition);
+    
+
+  }, [zoom])
+
+  const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
+    const oldZoom = zoom;
+    const rawZoom = oldZoom * scaleBy;
+    const newZoom = allowBelowOne ? rawZoom : Math.max(initialZoomedOutValue, rawZoom);
   
     const konvaGroup = cardGridGroupRef.current;
     if (!konvaGroup || !template) return;
   
-    // 🧮 Scaled canvas dimensions
+    const currentKonvaPosition = konvaGroup.position();
+    const center = { x: stageSize.width / 2, y: stageSize.height / 2 };
+  
+    // 🎯 Recalculate canvas position to keep it centered
+    const newPosition = {
+      x: center.x - ((center.x - currentKonvaPosition.x) / oldZoom) * newZoom,
+      y: center.y - ((center.y - currentKonvaPosition.y) / oldZoom) * newZoom,
+    };
+  
     const scaledCanvasWidth = template.width * newZoom;
     const scaledCanvasHeight = template.height * newZoom;
   
-    const scrollableWidth = Math.max(0, scaledCanvasWidth - stageSize.width);
+    const isDefaultZoom = newZoom === initialZoomedOutValue;
+  
+    setZoom(newZoom);
+  
+    if (isDefaultZoom) {
+      setPosition(initailPosition);
+      setScrollPosition({ x: 0, y: 0 });
+    } else {
+      setPosition(newPosition);
+    }
+  
+    setCanvasSize({
+      scaleX: newZoom,
+      scaleY: newZoom,
+      width: scaledCanvasWidth,
+      height: scaledCanvasHeight,
+    });
+  
+    // 🧭 Scroll thumb calculations
     const scrollableHeight = Math.max(0, scaledCanvasHeight - stageSize.height);
+    const scrollableWidth = Math.max(0, scaledCanvasWidth - stageSize.width);
   
-    // 🧩 Apply canvas transform
-    setPosition(newPosition);
+    const canvasTopY = (stageSize.height / 2) - (scaledCanvasHeight / 2);
+    const canvasTopX = (stageSize.width / 2) - (scaledCanvasWidth / 2);
   
-    // 🧭 Get global canvas position
-    const globalPosition = konvaGroup.getAbsolutePosition();
-  
-    // 🎯 Compute scroll offset from centered origin
-    const centeredOffsetY = (stageSize.height - scaledCanvasHeight) / 2;
-    const scrollOffsetY = globalPosition.y-centeredOffsetY;
-    const clampedScrollY = clamp(scrollOffsetY, 0, scrollableHeight);
-  
-    // 🧭 Same for horizontal scroll if needed
-    const centeredOffsetX = (stageSize.width - scaledCanvasWidth) / 2;
-    const scrollOffsetX = globalPosition.x-centeredOffsetX;
-    const clampedScrollX = clamp(scrollOffsetX, 0, scrollableWidth);
-  
-    // 🧩 Update scroll position state
-    setScrollPosition(newPosition);
-  
-    // 🧪 Dispatch synthetic scroll events to sync thumb
-    const verticalInput = document.querySelector('.canvas-scrollbar.vertical') as HTMLInputElement;
-    const horizontalInput = document.querySelector('.canvas-scrollbar.horizontal') as HTMLInputElement;
+    const scrollThumbValueY = clamp(newPosition.y - canvasTopY, 0, scrollableHeight);
+    const scrollThumbValueX = clamp(newPosition.x - canvasTopX, 0, scrollableWidth);
 
-    console.log('centeredOffsetY', centeredOffsetY, 'scrollOffsetY', scrollOffsetY, 'Scroll offsets:', { x: clampedScrollX, y: clampedScrollY })
+
+    
+    return;
   
+    // 🖱️ Trigger scroll handlers
+    const verticalInput = document.querySelector('.canvas-scrollbar.vertical') as HTMLInputElement;
     if (verticalInput) {
-      verticalInput.value = String(clampedScrollY);
+      verticalInput.value = String(scrollThumbValueY);
       const event = { target: verticalInput } as React.ChangeEvent<HTMLInputElement>;
       handleVerticalScroll(event);
     }
   
+    /*
+    const horizontalInput = document.querySelector('.canvas-scrollbar.horizontal') as HTMLInputElement;
     if (horizontalInput) {
-      horizontalInput.value = String(clampedScrollX);
+      horizontalInput.value = String(scrollThumbValueX);
       const event = { target: horizontalInput } as React.ChangeEvent<HTMLInputElement>;
       handleHorizontalScroll(event);
     }
-  
-    //console.log('Zoomed to', newZoom, 'Position set to', newPosition, 'Global position', globalPosition);
-    console.log('Scroll offsets:', { x: clampedScrollX, y: clampedScrollY });
+    */
   
     // 🎨 Bleed logic
     setBleedToggleDisabled(newZoom > 1);
-  }, [
-    zoom,
-    position,
-    stageSize,
-    initialZoomedOutValue,
-    template,
-    cardGridGroupRef,
-    handleVerticalScroll,
-    handleHorizontalScroll,
-  ]);
+  }, [zoom, position, stageSize, initialZoomedOutValue, template, cardGridGroupRef, handleVerticalScroll, handleHorizontalScroll]);
+  
+  
+  
+  
   
 
 
@@ -968,7 +1045,7 @@ const setDesignElement = useCallback(
     await new Promise(resolve => setTimeout(resolve, 500));
     const front = captureCardFaceSnapshot({
       stageRef,
-      bounds: canvasBounds,
+      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
       pixelRatio: 2
     });
   
@@ -976,7 +1053,7 @@ const setDesignElement = useCallback(
     await new Promise(resolve => setTimeout(resolve, 500));
     const back = captureCardFaceSnapshot({
       stageRef,
-      bounds: canvasBounds,
+      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
       pixelRatio: 2
     });
   
@@ -991,6 +1068,15 @@ const setDesignElement = useCallback(
   
   const captureBothSides = useCallback(async () => {
     if (!stageRef.current) return;
+
+    setIsPreviewMode(true);
+    setIsPreviewing(true);
+    setIsCollapsed(false);
+
+    setShowPages(true);
+     return; 
+
+    handlePreview(snapshotArchive[0]); return;
 
     //const clonedTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
 
@@ -1008,7 +1094,7 @@ const setDesignElement = useCallback(
     console.log('generating preview for front', showBleeds, showRulers)
     const front = captureCardFaceSnapshot({
       stageRef,
-      bounds: canvasBounds,
+      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
       pixelRatio: 2,
     });
   
@@ -1017,7 +1103,7 @@ const setDesignElement = useCallback(
     console.log('generating preview for back', showBleeds, showRulers)
     const back = captureCardFaceSnapshot({
       stageRef,
-      bounds: canvasBounds,
+      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
       pixelRatio: 2,
     });
   
@@ -1172,8 +1258,8 @@ const setDesignElement = useCallback(
       const entryFront: SnapshotEntry = {
         image: images.front,
         side: 'front',
-        width: card?.width,
-        height: card?.height,
+        width: sourceTemplate.width,
+        height: sourceTemplate.height,
         timestamp,
         templateId: sourceTemplate.id,
         tone: sourceTemplate.tone as tone,
@@ -1184,8 +1270,8 @@ const setDesignElement = useCallback(
       const entryBack: SnapshotEntry = {
         image: images.back,
         side: 'back',
-        width: card?.width,
-        height: card?.height,
+        width: sourceTemplate.width,
+        height: sourceTemplate.height,
         timestamp,
         templateId: sourceTemplate.id,
         tone: sourceTemplate.tone as tone,
@@ -1454,6 +1540,12 @@ const setDesignElement = useCallback(
     setIsMultline(false);
     setIsUnderline(false);
     setSnapshotArchive([]);
+    setIsPreviewMode(false);
+    setIsPreviewing(false);
+    setIsCollapsed(true);
+    setShowPages(false);
+    setZoom(1);
+    setInitialZoomedOutValue(1);
     
   }, []);
 
@@ -1553,6 +1645,20 @@ const setDesignElement = useCallback(
     },
     [canvasSize, stageSize, scrollPosition, setScrollPosition]
   );
+  
+
+  const handlePreview =useCallback((entry: SnapshotEntry)=>{
+    setPreviewEntry(entry);
+    setIsPreviewing(true);
+  }, [setPreviewEntry, setIsPreviewing])
+
+
+
+  const closePreview =useCallback(()=>{
+    setPreviewEntry(null);
+    setIsPreviewing(false);
+  }, [setPreviewEntry, setIsPreviewing])
+
 
 
 
@@ -1686,6 +1792,14 @@ const setDesignElement = useCallback(
     setCanvasSize,
     scrollByWheel,
     handleVerticalScroll,
-    handleHorizontalScroll
+    handleHorizontalScroll,
+    clamp,
+    triggerFade,
+    setInitialPosition,
+    closePreview,
+    handlePreview,
+    setIsPreviewMode,
+    setIsCollapsed,
+    setActiveIndex,
   };
 }

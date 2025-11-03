@@ -26,6 +26,8 @@ import { CanvasMode } from "../types/CanvasMode";
 import { SnapshotEntry } from "../types/SnapshotEntry";
 import { normalizeDualTemplate } from "../utils/normalizeDualTemplate";
 import { renderToCanvas } from "../utils/renderToCanvas";
+import { PreviewModal } from "../components/PreviewModal";
+import { ModalThumbnailStrip } from "../components/ModalThumbnailStrip";
 
 
 export default function CanvasWrapper() {
@@ -110,6 +112,11 @@ export default function CanvasWrapper() {
     hasChanged,
     showPages,
     stripRef,
+    isPreviewing,
+    previewEntry,
+    isPreviewMode,
+    isCollapsed,
+    activeIndex
   
     
   } = state;
@@ -173,8 +180,12 @@ export default function CanvasWrapper() {
     setHasChanged,
     setPageAdded,
     setShowPages,
-    
-  
+    setDocumentTemplates,
+    handlePreview,
+    closePreview,
+    setIsPreviewMode,
+    setIsCollapsed,
+    setActiveIndex,
     
   } = actions;
 
@@ -209,6 +220,17 @@ export default function CanvasWrapper() {
       height: '100vh',
       overflow: 'hidden'
     }}>
+
+<PreviewModal
+  entry={previewEntry}
+  snapshots={snapshotArchive}
+  isOpen={isPreviewing}
+  onClose={closePreview}
+  handlePreview={handlePreview}
+  zoom={zoom}
+  setZoom={setZoom}
+/>
+
       
       <CanvasControls
         snapshots={snapshots}
@@ -221,6 +243,10 @@ export default function CanvasWrapper() {
         cardY={canvasBounds.y}
         mode={mode}
         modes={modes}
+        setIsPreviewMode={setIsPreviewMode}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={isCollapsed}
+        isPreviewMode={isPreviewMode}
         faceMode={faceMode}
         setFaceMode={setFaceMode}
         setModes={setModes}
@@ -310,6 +336,8 @@ export default function CanvasWrapper() {
 {mode === 'painting' && (
   
     <CardGridBackground
+     x={position.x}
+     y={position.y}
       width={template.width}
       height={template.height}
       zoom={zoom}
@@ -348,17 +376,26 @@ export default function CanvasWrapper() {
       />
 
 
-
-      {template && snapshots.back !== null && snapshots.front !== null &&  showPages==true &&(
+      {template && snapshots.back !== null && snapshots.front !== null &&  showPages==true && (
                   <ThumbnailStrip
                     stripRef={stripRef}
                     activeSide={side}
+                    activeIndex={activeIndex}
+                    setActiveIndex={setActiveIndex}
                     showPages={showPages}
+                    isPreviewMode={isPreviewMode}
                     activeTimestamp={activeTimestamp}
                     template={template}
                     snapshots={snapshotArchive}
+                    setDocumentTemplates={setDocumentTemplates}
                     onSelect={async (entry:SnapshotEntry) => {
                       const { side: page, timestamp, template: snapshotTemplate } = entry;
+
+                     
+
+
+                      
+
       
                       if (hasChanged) {
                         const updatedTemplate = { ...template };
@@ -382,11 +419,12 @@ export default function CanvasWrapper() {
       
                       const normalized = normalizeDualTemplate(snapshotTemplate);
                       setTemplate(normalized);
-                      setSide(page);
-                      setActiveTimestamp(timestamp);
+                     
       
                       if (timestamp !== activeTimestamp || page !== side) {
                         renderToCanvas(normalized, setTemplate, setMode, page, () => {
+                          setSide(page);
+                          setActiveTimestamp(timestamp);
                           console.log('Rendered updated template with selected face');
                         });
                       }
@@ -463,6 +501,9 @@ export default function CanvasWrapper() {
 
 
 
+
+
+
 {showShareModal && (
   <ShareModal
   isOpen={showShareModal}
@@ -500,6 +541,8 @@ export default function CanvasWrapper() {
     }}
   />
 )}
+
+
 
 
 

@@ -72,3 +72,16 @@ export const toneActiveClasses: Record<string, string> = {
   calm: 'bg-teal-500 text-white shadow-md',
   bold: 'bg-purple-600 text-white shadow-md'
 };
+
+
+export const toneBackgroundClasses: Record<tone, string> = {
+  festive: 'bg-red-100',
+  neutral: 'bg-gray-100',
+  primary: 'bg-blue-100',
+  accent: 'bg-pink-100',
+  ceremonial: 'bg-yellow-100',
+  reflective: 'bg-indigo-100',
+  elegant: 'bg-purple-100',
+  minimal: 'bg-white'
+};
+
