@@ -106,7 +106,9 @@ export default function CanvasStage({
     scrollPosition,
     canvasSize,
     thumbValue,
-    isPreviewMode
+    isPreviewMode,
+    elementRef,
+    konvaText,
   
 
   } = state;
@@ -129,8 +131,8 @@ export default function CanvasStage({
     setScrollPosition,
     handleHorizontalScroll,
     handleVerticalScroll,
-  
-  
+    _handleTextClick,
+    setKonvaText
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -153,6 +155,7 @@ export default function CanvasStage({
   side={side}
   mode={mode}
   zoom={zoom}
+  elementRef={elementRef}
   thumbValue={thumbValue}
   stageSize={stageSize}
   scrollPos={scrollPosition}
@@ -195,6 +198,8 @@ export default function CanvasStage({
   setModeActive={setModeActive}
   pendingStyle={pendingStyle}
   isPreviewMode={isPreviewMode}
+  konvaText={konvaText}
+  
   handlers={{
     setImageRef: updateImageRef,
     onPaint: handleCellPaint,
@@ -206,6 +211,8 @@ export default function CanvasStage({
     handleHorizontalScroll:handleHorizontalScroll,
     handleVerticalScroll:handleVerticalScroll,
     setSelectedTextId: setSelectedTextId,
+    _handleTextClick:_handleTextClick,
+    setKonvaText:setKonvaText,
     
     setGhostLines,
     setSelectedFont,

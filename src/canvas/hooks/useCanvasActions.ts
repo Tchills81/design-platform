@@ -147,6 +147,12 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setIsPreviewMode,
     setIsCollapsed,
     setActiveIndex,
+    setIsFullScreen,
+    elementRef,
+    setEditingTextId,
+    setOverlayProps,
+    setShowOverlayInput,
+    setKonvaText
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -1069,6 +1075,7 @@ const setDesignElement = useCallback(
   const captureBothSides = useCallback(async () => {
     if (!stageRef.current) return;
 
+    handleZoom(initialZoomedOutValue);
     setIsPreviewMode(true);
     setIsPreviewing(true);
     setIsCollapsed(false);
@@ -1546,6 +1553,7 @@ const setDesignElement = useCallback(
     setShowPages(false);
     setZoom(1);
     setInitialZoomedOutValue(1);
+    setTemplate(null);
     
   }, []);
 
@@ -1659,7 +1667,113 @@ const setDesignElement = useCallback(
     setIsPreviewing(false);
   }, [setPreviewEntry, setIsPreviewing])
 
+  const handleFullScreenChange=useCallback(()=>{
 
+    // Check if the element we care about is the one currently in fullscreen mode
+    setIsFullScreen(document.fullscreenElement === elementRef.current);
+
+  }, [])
+
+
+  const toggleFullScreen = () => {
+    const isEntering = !document.fullscreenElement;
+  
+    if (isEntering) {
+      // Enter fullscreen mode
+      setStageSize({ width: window.innerWidth, height: window.innerHeight });
+      setZoom(prev => Math.min(prev, 1.2)); // Optional: ceremonial zoom boost
+      elementRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+      });
+    } else {
+      // Exit fullscreen mode
+      document.exitFullscreen();
+      setZoom(1); // Reset zoom to default or preserve previous state
+    }
+  };
+
+
+  const computeOverlayPosition = (textNode: Konva.Text, stage: Konva.Stage) => {
+    const zoom = stage.scaleX(); // assuming uniform scale
+    const stagePos = stage.position(); // { x, y } — canvas offset
+    const nodePos = textNode.getAbsolutePosition(); // { x, y } — logical position
+  
+    // Translate to screen-space
+    const screenX = nodePos.x * zoom + stagePos.x;
+    const screenY = nodePos.y * zoom + stagePos.y;
+  
+    return { x: screenX, y: screenY };
+  };
+
+
+  const _handleTextClick = useCallback((textNode: Konva.Text)=>{
+
+    const {
+      text,
+      x,
+      y,
+      width,
+      height,
+      fontSize,
+      fontFamily,
+      fill,
+      fontStyle,
+      align,
+      lineHeight
+    } = textNode.attrs;
+  
+    // 1. Hide canvas text node
+
+    setKonvaText(textNode);
+    
+    textNode.visible(false);
+
+    textNode.getLayer()?.batchDraw();
+  
+    // 2. Set editing state
+    setEditingText(text);
+    setSelectedTextId(textNode.id());
+    setInputPosition({ x, y });
+
+    const pos = computeOverlayPosition(textNode, stageRef.current)
+  
+    setOverlayProps({
+      selectedFont: fontFamily,
+      selectedFontSize: fontSize,
+      selectedColor: fill,
+      isBold: fontStyle.includes('bold'),
+      isItalic: fontStyle.includes('italic'),
+      textAlign: align,
+      isMultiline: true,
+      isUnderline: textNode.attrs.textDecoration === 'underline',
+      editingText: textNode.text(),
+      width:width,
+      height:height,
+      lineHeight:lineHeight,
+      inputPosition: {  x:pos.x, y:pos.y},
+      showToolbar: true,
+      mode: 'card',
+      tone: template?.tone as tone,
+      onTextBlur:()=>{},
+      onTextChange:onTextChange
+      
+    })
+    
+    
+  
+    // 4. Show toolbar and overlay
+    setShowToolbar(true);
+    setShowOverlayInput(true);
+  
+    // 5. Activate transform mode
+    activateTransformMode(textNode.id(), "text");
+  
+    console.log("🖋️ Text selected with ID:", textNode.id(), "label:", text);
+  }, [])
+  
+
+
+  
 
 
 
@@ -1801,5 +1915,11 @@ const setDesignElement = useCallback(
     setIsPreviewMode,
     setIsCollapsed,
     setActiveIndex,
+    setIsFullScreen,
+    handleFullScreenChange,
+    toggleFullScreen,
+    _handleTextClick,
+    setKonvaText,
+
   };
 }

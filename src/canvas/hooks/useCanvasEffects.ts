@@ -84,7 +84,8 @@ export function useCanvasEffects(
     canvasSize,
     hasInitialized,
     positionRef,
-    initailPosition
+    initailPosition,
+    konvaText
     
   } = state;
 
@@ -126,7 +127,8 @@ export function useCanvasEffects(
     clamp,
     setPosition,
     triggerFade,
-    setInitialPosition
+    setInitialPosition,
+    handleFullScreenChange
 
   } = actions;
 
@@ -506,6 +508,18 @@ useEffect(() => {
 
 
 
+useEffect(() => {
+  document.addEventListener('fullscreenchange', handleFullScreenChange);
+  // You might also need vendor prefixes for older browsers (moz, webkit, ms)
+
+  setStageSize({ width: window.innerWidth, height: window.innerHeight + stripHeight });
+  return () => {
+    document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  };
+}, []);
+
+
+
   // 🧠 Update preview image
   useEffect(() => {
     if (!template) return;
@@ -571,9 +585,11 @@ useEffect(() => {
       console.log("handleGlobalClick", toolbarRef)
       if (clickedInsideToolbar) return;
 
+      konvaText?.visible(true);
+      konvaText?.getLayer()?.batchDraw();
       setSelectedTextId(null);
       setShowToolbar(false);
-      setEditingText("");
+      //setEditingText("");
       setInputPosition(null);
     };
 

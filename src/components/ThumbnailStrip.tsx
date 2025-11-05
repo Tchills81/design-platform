@@ -204,6 +204,7 @@ export function ThumbnailStrip({
            src={image}
            alt={`${label} Thumbnail`}
            style={{
+            
             maxWidth: '100%',
             maxHeight: '100%',
             objectFit: 'contain',

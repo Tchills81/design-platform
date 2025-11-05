@@ -13,6 +13,7 @@ import { ELEMENT_LIBRARY } from "@/lib/elements";
 import { AccessLevel } from "@/src/types/access";
 import { usePageLimiter } from "@/src/utils/usePageLimiter";
 import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
+import { TextToolbarOverlayProps } from "../overlays/TextToolbarOverlay";
 export function useCanvasState() {
 
 //
@@ -104,6 +105,8 @@ export function useCanvasState() {
   // 🧭 Zoom and stage
   const [zoom, setZoom] = useState<number>(1);
   const [initialZoomedOutValue, setInitialZoomedOutValue] = useState(1);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const elementRef = useRef<HTMLDivElement>(null);
  
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({
     width: window.innerWidth,
@@ -126,6 +129,12 @@ export function useCanvasState() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [visible, setVisible] = useState(true);
   const [thumbValue, setThumbValue]= useState<number>(0)
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [overlayProps, setOverlayProps] = useState<Partial<TextToolbarOverlayProps> | null>(null);
+  const [showOverlayInput, setShowOverlayInput] = useState(false);
+  const [konvaText, setKonvaText] = useState<Konva.Text| null>(null);
+
+
 
 
   const hasInitialized = useRef(false);
@@ -421,6 +430,8 @@ export function useCanvasState() {
   setZoom,
   initialZoomedOutValue, 
   setInitialZoomedOutValue,
+  isFullScreen, 
+  setIsFullScreen,
   stageSize,
   setStageSize,
   canvasBounds,
@@ -479,6 +490,7 @@ export function useCanvasState() {
   containerRef,
   cardGridGroupRef,
   hasInitializedZoom,
+  elementRef,
 
   updateImageRef,
   overlayStyle, 
@@ -511,6 +523,15 @@ export function useCanvasState() {
   setIsCollapsed,
   activeIndex, 
   setActiveIndex,
+  editingTextId, 
+  setEditingTextId,
+  overlayProps, 
+  setOverlayProps,
+  showOverlayInput, 
+  setShowOverlayInput,
+
+  konvaText, 
+  setKonvaText,
 
   // 🧠 Derived tone
   tone,

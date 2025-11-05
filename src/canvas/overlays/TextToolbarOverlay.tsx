@@ -12,6 +12,9 @@ export interface TextToolbarOverlayProps {
   isUnderline:boolean;
   showToolbar: boolean;
   inputPosition: { x: number; y: number } | null;
+  width?:number;
+  height?:number;
+  lineHeight?:number;
   mode: CanvasMode;
   selectedFont: string;
   selectedColor: string;

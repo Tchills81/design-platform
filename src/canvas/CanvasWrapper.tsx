@@ -28,6 +28,7 @@ import { normalizeDualTemplate } from "../utils/normalizeDualTemplate";
 import { renderToCanvas } from "../utils/renderToCanvas";
 import { PreviewModal } from "../components/PreviewModal";
 import { ModalThumbnailStrip } from "../components/ModalThumbnailStrip";
+import TextOverlayInput from "../components/TextOverlayInput";
 
 
 export default function CanvasWrapper() {
@@ -104,6 +105,7 @@ export default function CanvasWrapper() {
     stageRef,
     accessLevel,
     zoom,
+    initialZoomedOutValue,
     hasInitializedZoom,
     position,
     gridPosition,
@@ -116,8 +118,9 @@ export default function CanvasWrapper() {
     previewEntry,
     isPreviewMode,
     isCollapsed,
-    activeIndex
-  
+    activeIndex,
+    overlayProps,
+    konvaText
     
   } = state;
 
@@ -186,6 +189,8 @@ export default function CanvasWrapper() {
     setIsPreviewMode,
     setIsCollapsed,
     setActiveIndex,
+    setIsFullScreen,
+    toggleFullScreen,
     
   } = actions;
 
@@ -245,6 +250,8 @@ export default function CanvasWrapper() {
         modes={modes}
         setIsPreviewMode={setIsPreviewMode}
         setIsCollapsed={setIsCollapsed}
+        setIsFullScreen={setIsFullScreen}
+        toggleFullScreen={toggleFullScreen}
         isCollapsed={isCollapsed}
         isPreviewMode={isPreviewMode}
         faceMode={faceMode}
@@ -263,6 +270,7 @@ export default function CanvasWrapper() {
         selectedImageId={selectedImageId}
         stageSize={stageSize}
         zoom={zoom}
+        initialZoomedOutValue={initialZoomedOutValue}
         hasInitializedZoom={hasInitializedZoom}
         setZoom={setZoom}
         setMode={setMode}
@@ -496,7 +504,34 @@ export default function CanvasWrapper() {
       mode={mode}
       />
 
+
   </div>
+)}
+
+{showToolbar && (
+  <TextOverlayInput
+  toolbarRef={toolbarRef}
+  inputPosition={overlayProps?.inputPosition}
+  editingText={editingText}
+  onTextChange={onTextChange}
+  onTextBlur={()=>{}}
+  selectedFont={selectedFont}
+  selectedFontSize={selectedFontSize}
+  selectedColor={selectedColor}
+  isMultiline={isMultiline}
+  isUnderline={isUnderline}
+  isBold={isBold}
+  isItalic={isItalic}
+  textAlign={textAlign}
+  width={konvaText?.width()}
+  height={konvaText?.height()}
+  lineHeight={konvaText?.lineHeight()}
+  zoom={zoom}
+  tone={template.tone as tone}
+  konvaText={konvaText}
+  
+/>
+
 )}
 
 
@@ -508,6 +543,7 @@ export default function CanvasWrapper() {
   <ShareModal
   isOpen={showShareModal}
   onClose={() => setShowShareModal(false)}
+  isPreviewMode={isPreviewMode}
   shareLink={"www.giftcraft.com/generatedLink/userId/templateId/designId/"}
   accessLevel={accessLevel}
   onAccessChange={setAccessLevel}

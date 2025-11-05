@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, LogOutIcon, NotepadTextDashed, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Copy, Fullscreen, LogOutIcon, NotepadTextDashed, ScalingIcon, Share2Icon, ZoomIn, ZoomOut } from 'lucide-react';
 import { ArrowRight } from 'react-feather';
 import { IconButton } from './IconButton';
 import { ToggleCheckbox } from './ToggleCheckbox';
@@ -22,6 +22,9 @@ interface FooterControlClusterProps {
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
   setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
   setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowShareModal:React.Dispatch<React.SetStateAction<boolean>>;
+  setIsFullScreen:React.Dispatch<React.SetStateAction<boolean>>;
+  toggleFullScreen:()=>void;
   setIsPreviewMode:(mode:boolean)=>void;
   setIsCollapsed:React.Dispatch<React.SetStateAction<boolean>>;
   showPages:boolean;
@@ -39,6 +42,7 @@ interface FooterControlClusterProps {
   toggleGrids: () => void;
   bleedToggleDisabled?: boolean;
   zoom: number;
+  initialZoomedOutValue:number;
   setZoom: (newZoom: number) => void;
   setMode: () => void;
   duplicatePage: () => void;
@@ -72,6 +76,7 @@ export default function FooterControlCluster({
   toggleGrids,
   bleedToggleDisabled,
   zoom,
+  initialZoomedOutValue,
   setTemplate,
   setZoom,
   setMode,
@@ -85,12 +90,15 @@ export default function FooterControlCluster({
   hasChanged,
   setPageAdded,
   setShowPages,
+  setIsFullScreen,
   showPages,
   mode,
   isPreviewMode,
   setIsPreviewMode,
   setIsCollapsed,
   isCollapsed,
+  setShowShareModal,
+  toggleFullScreen,
   side
 }: FooterControlClusterProps) {
   
@@ -146,30 +154,18 @@ export default function FooterControlCluster({
 
              <ToneButton
               icon={<NotepadTextDashed/>}
-              label={showPages ? "Hide Pages" : "Show Pages"}
+              label={showPages ? "Hide" : "Show"}
               tone={tone}
               onClick={()=>setShowPages(prev => !prev)}
             />
-         
-
-         {isPreviewMode &&(
 
 
-           <ToneButton
-              icon={<LogOutIcon/>}
-              label='Exit Preview'
-              tone={tone}
-              onClick={()=>setIsPreviewMode(false)}
-            />
-         )}
-          
-      
-        
-          <div className="flex items-center gap-2">
+
+           <div className="flex items-center gap-2">
             <input
               type="range"
               min={0.25}
-              max={1.5}
+              max={isPreviewMode ? 1: 1.5}
               step={0.01}
               value={zoom}
               onChange={handleSliderChange}
@@ -179,6 +175,49 @@ export default function FooterControlCluster({
               {Math.round(zoom * 100)}%
             </span>
           </div>
+         
+
+         {isPreviewMode &&(
+
+          <>
+          <ToneButton
+          icon={<Share2Icon/>}
+          label="Share"
+          tone={tone}
+          onClick={() => {setShowShareModal(true)}}
+          />
+
+           
+            <ToneButton
+              icon={<Fullscreen/>}
+              label=''
+              tone={tone}
+              onClick={()=>{
+                //setIsFullScreen(prev => !prev);
+                //setZoom(0.5)
+                toggleFullScreen();
+              }}
+            />
+
+          <ToneButton
+              icon={<LogOutIcon/>}
+              label=''
+              tone={tone}
+              onClick={()=>{
+                setZoom(initialZoomedOutValue);
+                setIsPreviewMode(false);
+              }
+              }
+            />
+          </>
+
+
+           
+         )}
+          
+      
+        
+         
 
           {!isPreviewMode && (
 

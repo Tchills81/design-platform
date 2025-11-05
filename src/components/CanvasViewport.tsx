@@ -24,6 +24,7 @@ interface CanvasViewportProps {
   scrollOffset: { x: number; y: number };
   cardGridGroupRef: RefObject<any>;
   stageRef: RefObject<any>;
+  elementRef: RefObject<HTMLDivElement | null>
   showRulers: boolean;
   showBleeds: boolean;
   ghostLines: { x?: number; y?: number };
@@ -63,6 +64,7 @@ interface CanvasViewportProps {
   isPreviewMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
   setElementId: React.Dispatch<React.SetStateAction<string>>;
+  konvaText: Konva.Text | null;
 
   pendingStyle: {
     isBold?: boolean;
@@ -95,6 +97,8 @@ setPendingStyle: React.Dispatch<React.SetStateAction<
     handleHorizontalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
     handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
     setSelectedTextId: (value: React.SetStateAction<string | null>) => void;
+    setKonvaText: (node:Konva.Text)=>void;
+     _handleTextClick: (textNode: Konva.Text) => void;
 
   };
 }
@@ -148,6 +152,9 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     thumbValue,
     handlers,
     isPreviewMode,
+    elementRef,
+    konvaText,
+
   } = props;
 
   const face = template[side];
@@ -158,61 +165,55 @@ export default function CanvasViewport(props: CanvasViewportProps) {
 
  const  backgroundColor = isPreviewMode ? toneBackgroundClasses[template.tone as tone] : '#e2e8f0';
 
-  console.log('backgroundColor', backgroundColor)
+ 
   
 
   return (
-    <div
-      style={{
-        width: stageSize.width,
-        height: stageSize.height,
-        position: 'relative',
-        overflow: 'hidden',
-        backgroundColor: '#f9fafb',
-      }}
+    <div ref={elementRef} className='canvas-stage'
+      
     >
       <Stage
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
         className={`${isPreviewMode? backgroundColor:backgroundClass}`}
-        style={{ backgroundColor: '#1e1e1e', position:'absolute' }}
+        style={{ backgroundColor:  '#1e1e1e', position:'absolute' }}
 
 
         onClick={(e) => {
-            const toolbarEl = document.getElementById('text-toolbar');
+            const overlayEl = document.getElementById('text-overlay');
             const { clientX, clientY } = e.evt;
             const domTarget = document.elementFromPoint(clientX, clientY);
-            const clickedInsideToolbar = toolbarEl?.contains(domTarget);
           
-            console.log("clickedInsideToolbar: stage Event", clickedInsideToolbar);
-          
-            if (clickedInsideToolbar) return; // ✅ Exit early
+            const clickedInsideOverlay = overlayEl?.contains(domTarget);
+            if (clickedInsideOverlay) {
+              console.log('Clicked inside overlay — do not dismiss');
+              return;
+            }
           
             const clickedNode = e.target;
-            
-
-            const isImage =clickedNode.getClassName?.() === 'Image' ;
-            const isShape = clickedNode.name?.() == 'Shape';
-
-            const isTransformer = clickedNode.getClassName?.() === 'Transformer';
+            const className = clickedNode.getClassName?.();
+            const nodeName = clickedNode.name?.();
+          
+            const isImage = className === 'Image';
+            const isShape = nodeName === 'Shape';
+            const isTransformer = className === 'Transformer';
+            const isRect = className === 'Rect';
             const isStage = clickedNode === e.target.getStage();
-
-           
           
-            if ((!isImage && !isShape)  && !isTransformer) {
-                handlers.setSelectedImageId(null);
-                resetTransformMode(); // ← graceful exit from resize mode
-                setModeActive(false);
-                
-              }
-           
-
-
-            
+            console.log('target', clickedNode);
           
-            if ((isStage || isImage || isShape) && selectedTextId) {
-              if (!template || !template[side] || !template[side].elements) return;
+            // Optional: handle non-dismissable clicks
+            if (!isImage && !isShape && !isTransformer && !isRect && !isStage) {
+              handlers.setSelectedImageId(null);
+              resetTransformMode();
+              setModeActive(false);
+              return;
+            }
+          
+            // Apply pending style updates
+            if ((isStage || isImage || isShape || isRect) && selectedTextId) {
+              if (!template?.[side]?.elements) return;
           
               const updatedElements = template[side].elements.map(el =>
                 el.id === selectedTextId && el.type === 'text'
@@ -231,12 +232,19 @@ export default function CanvasViewport(props: CanvasViewportProps) {
               setPendingStyle({});
             }
           
-            if (isStage || isImage || isShape) {
-              handlers.setSelectedTextId(null);
-              handlers.setShowToolbar(true);
+            // Dismiss overlay and show Konva text
+            if (isStage || isImage || isShape || isRect) {
+              konvaText?.visible(true);
+              konvaText?.getLayer()?.batchDraw();
+              handlers.setSelectedImageId(null);
+              resetTransformMode();
+              setModeActive(false);
               handlers.setInputPosition(null);
+              //handlers.setShowToolbar(true);
+              console.log('Showing Konva text');
             }
           }}
+          
       >
         {/* Canvas layer */}
         <CardSideLayer
@@ -278,7 +286,7 @@ export default function CanvasViewport(props: CanvasViewportProps) {
           handlers={handlers}
         />
         <Layer x={position.x} y={position.y} scaleX={zoom} scaleY={zoom}  listening={false}>
-            <Rect stroke={'#1e1e1e'} width={template.width} height={template.height}/>
+            <Rect stroke={'#1e1e1e'} width={template.width} height={template.height} listening={false}/>
 
         </Layer>
 

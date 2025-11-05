@@ -36,6 +36,7 @@ interface CardSideLayerProps {
   canvasBounds: { x: number; y: number; width: number; height: number };
   scrollPos: {x: number; y: number}
   setScrollPosition: React.Dispatch<React.SetStateAction<{x: number, y: number}>>;
+ 
   containerRef?: any;
   cardGridGroupRef?:any;
   scrollOffset?:any;
@@ -72,6 +73,7 @@ interface CardSideLayerProps {
     setSelectedImageId: (id: string) => void;
     onFontSizeChange: (size: number) => void;
     onPrimitiveSelect: () => void;
+    _handleTextClick: (textNode: Konva.Text) => void;
   };
 }
 
@@ -284,7 +286,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   handlers.onTextUpdate(updated);
                 }}
                 onClick={(e) => {
-                  const stage = e.target.getStage();
+                  /*const stage = e.target.getStage();
                   const pointerPos = stage?.getPointerPosition();
                   if (pointerPos) {
                     handlers.onFontSizeChange(el.size);
@@ -292,8 +294,26 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                     handlers.setSelectedColor(el.color);
                     handlers.onTextClick(el.label, pointerPos, el.id);
                     setElementId(el.id);
-                  }
-                }}
+                  }*/
+
+
+
+                    const node = e.target;
+                    const stage = node.getStage();
+                    const pointerPos = stage?.getPointerPosition();
+
+                    if (node && node instanceof Konva.Text && pointerPos) {
+                       // 1. Pass the actual node to your overlay logic
+                       handlers._handleTextClick(node);
+
+                       // 2. Sync sidebar state (optional if overlay handles this)
+                       handlers.onFontSizeChange(node.fontSize());
+                       handlers.setSelectedFont(node.fontFamily());
+                       handlers.setSelectedColor(el.color);
+
+                       // 3. Track selected element
+                       setElementId(node.id());
+                }}}
                 onEdit={(text, pos, align) => {
                   handlers.onTextEdit(text, pos, el);
                   handlers.setSelectedFont(el.font || '--font-inter');

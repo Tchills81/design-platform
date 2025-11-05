@@ -57,11 +57,15 @@ export interface CanvasControlsProps {
     selectedTextId: string | null;
     selectedImageId: string | null;
     zoom:number;
+    initialZoomedOutValue:number;
     hasInitializedZoom:RefObject<boolean>;
     
     setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
     setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
     setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsFullScreen:React.Dispatch<React.SetStateAction<boolean>>;
+    toggleFullScreen:()=>void;
+    
     setMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
     setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
     setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
@@ -129,13 +133,14 @@ export default function CanvasControls({
     selectedTextId,
     selectedImageId,
     zoom,
+    initialZoomedOutValue,
     hasInitializedZoom,
    
     activeTimestamp,
     setActiveTimestamp,
     setCanvasReady,
     duplicatePage,
-
+    setIsFullScreen,
     setMode,
     setSide,
     setTemplate,
@@ -183,6 +188,7 @@ export default function CanvasControls({
     isPreviewMode,
     setIsPreviewMode,
     setIsCollapsed,
+    toggleFullScreen,
     isCollapsed
   }: CanvasControlsProps) {
     // ...render logic
@@ -420,11 +426,15 @@ activeMode={faceMode}
         mode={mode}
         isPreviewMode={isPreviewMode}
         setIsCollapsed={setIsCollapsed}
+        setShowShareModal={setShowShareModal}
+        setIsFullScreen={setIsFullScreen}
+        toggleFullScreen={toggleFullScreen}
         isCollapsed = {isCollapsed}
         side={side}
         activeTimestamp={activeTimestamp}
         setActiveTimestamp={setActiveTimestamp}
         zoom={zoom}
+        initialZoomedOutValue={initialZoomedOutValue}
         setZoom={(newZoom:number)=>{
           const scaleBy = newZoom / zoom;
           handleZoom(scaleBy);

@@ -15,6 +15,7 @@ interface ShareModalProps {
   onAccessChange: (level: AccessLevel) => void;
   accessLevel: AccessLevel;
   onInvite: (email: string) => void;
+  isPreviewMode:boolean;
 }
 
 export default function ShareModal({
@@ -23,10 +24,13 @@ export default function ShareModal({
   shareLink,
   accessLevel,
   onAccessChange,
-  onInvite
+  onInvite,
+  isPreviewMode
 }: ShareModalProps) {
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const title:string= isPreviewMode? 'Share Your Preview Ceremony': 'Share Your Design Ceremony'
 
   function handleCopy() {
     navigator.clipboard.writeText(shareLink);
@@ -38,7 +42,7 @@ export default function ShareModal({
     <Dialog open={isOpen} onClose={onClose}>
       <DialogTitle>
         <div className="flex items-center gap-2 text-blue-600 text-lg font-semibold">
-          📤 Share Your Design Ceremony
+          📤 {title}
         </div>
       </DialogTitle>
 
