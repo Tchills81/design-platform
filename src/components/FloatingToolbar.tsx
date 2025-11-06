@@ -1,4 +1,5 @@
-// src/components/FloatingToolbar.tsx
+'use client';
+
 import { ReactNode, useEffect, useState } from 'react';
 
 interface FloatingToolbarProps {
@@ -7,19 +8,24 @@ interface FloatingToolbarProps {
 }
 
 export default function FloatingToolbar({ position, children }: FloatingToolbarProps) {
-  const [style, setStyle] = useState({ left: 0, top: 0 });
+  const [style, setStyle] = useState({ left: 0, top: 0, width:'' });
 
   useEffect(() => {
+    // Offset to position toolbar slightly below and right of the selected text
+    const offsetX = 50;
+    const offsetY = 20;
+
     setStyle({
-      left: position.x+50,
-      top:  position.y
+      left: position.x + offsetX,
+      top: position.y + offsetY,
+      width:'100%'
     });
   }, [position]);
 
   return (
     <div
-      className="absolute z-30 top-0.5 bottom-0.5 bg-white/90 backdrop-blur-md rounded-lg shadow-lg p-3 flex gap-2"
-      
+      className="absolute z-50 rounded-lg  border-gray-200 px-4 py-2 flex flex-wrap items-center gap-3"
+      style={style}
     >
       {children}
     </div>

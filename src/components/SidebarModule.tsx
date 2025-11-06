@@ -2,6 +2,7 @@
 
 import React, { ReactNode, useState, ReactElement } from 'react';
 import { tone } from '@/src/types/tone';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 interface SidebarSectionProps {
   label: string;
@@ -17,6 +18,8 @@ interface SidebarModuleProps {
 
 export default function SidebarModule({ tone, children }: SidebarModuleProps) {
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+  
 
   const enhancedChildren = React.Children.map(children, (child) => {
     if (!React.isValidElement(child)) return child;
@@ -34,8 +37,8 @@ export default function SidebarModule({ tone, children }: SidebarModuleProps) {
   });
 
   return (
-    <aside className="absolute left-10 top-30 z-30 bg-white shadow-lg 
-                     rounded-xl w-64 max-h-[calc(100vh-5rem)] overflow-y-auto p-4 flex flex-col gap-6">
+    <aside className={`absolute left-10 top-30 z-30 ${backgroundClass} shadow-lg 
+                     rounded-xl w-64 max-h-[calc(100vh-5rem)] overflow-y-auto p-4 flex flex-col gap-6`}>
       <div className="text-xs uppercase tracking-wide text-muted">{tone} Mode</div>
       {enhancedChildren}
     </aside>

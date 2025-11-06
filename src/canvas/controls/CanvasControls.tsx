@@ -6,7 +6,7 @@
 
 
 // src/canvas/CanvasControls.tsx
-import { ArrowLeft, Brush, Image, Text, XIcon } from 'lucide-react';
+import { ArrowLeft, Brush, Image, LayoutTemplateIcon, Text, XIcon } from 'lucide-react';
 
 import { ToneButton } from '@/src/components/ToneButton';
 import SidebarModule from '@/src/components/SidebarModule';
@@ -216,8 +216,8 @@ export default function CanvasControls({
 
 <SidebarModule tone={template.tone as tone}>
 <ToneButton
-icon={<ArrowLeft />}
-label="Back to Templates"
+icon={<LayoutTemplateIcon  />}
+label="Templates"
 tone={template.tone}
 onClick={() => {
 setModes(['front', 'back']);

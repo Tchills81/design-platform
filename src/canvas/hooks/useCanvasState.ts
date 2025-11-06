@@ -166,6 +166,7 @@ export function useCanvasState() {
   // 🧠 Refs
   const imageRef = useRef<Konva.Image>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const textToolbarRef = useRef<HTMLDivElement>(null);
   const imagebarRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -406,6 +407,7 @@ export function useCanvasState() {
 
     // 🧰 UI
     toolbarRef,
+    textToolbarRef,
     showToolbar,
     setShowToolbar,
     isImageToolbar,

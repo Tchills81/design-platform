@@ -120,7 +120,9 @@ export default function CanvasWrapper() {
     isCollapsed,
     activeIndex,
     overlayProps,
-    konvaText
+    konvaText,
+    textToolbarRef
+
     
   } = state;
 
@@ -472,9 +474,9 @@ export default function CanvasWrapper() {
 
 
 {showToolbar && inputPosition && mode === 'card' && (
-  <div ref={toolbarRef} id="text-toolbar">
+  <div ref={textToolbarRef} id="text-toolbar">
     <TextToolbarOverlay
-      toolbarRef={toolbarRef}
+      toolbarRef={textToolbarRef}
       selectedFont={selectedFont}
       onFontChange={onFontChange}
       selectedColor={selectedColor}

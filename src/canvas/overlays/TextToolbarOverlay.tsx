@@ -78,7 +78,7 @@ export default function TextToolbarOverlay({
           selectedFontSize={selectedFontSize}
           isBold={isBold}
           isItalic={isItalic}
-          editingText={editingText}
+          
           tone={tone}
           toggleCommentModal={()=>{setShowCommentModal(true);}}
           onFontChange={onFontChange}
@@ -86,8 +86,8 @@ export default function TextToolbarOverlay({
           onFontSizeChange={onFontSizeChange}
           onToggleBold={onToggleBold}
           onToggleItalic={onToggleItalic}
-          onTextChange={onTextChange}
-          onTextBlur={onTextBlur}
+          
+         
           onAddText={onAddText}
           onRemoveText={onRemoveText}
           exitEditingMode={exitEditingMode}

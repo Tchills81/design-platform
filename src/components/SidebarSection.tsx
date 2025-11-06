@@ -20,12 +20,12 @@ export default function SidebarSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex justify-between items-center w-full text-sm font-semibold mb-2 cursor-pointer"
+        className="flex justify-between items-center w-full text-sm font-light mb-2 cursor-pointer"
         aria-expanded={isOpen}
         aria-controls={`section-${label}`}
       >
         <span>{label}</span>
-        <span>{isOpen ? '−' : '+'}</span>
+        <span>{isOpen ? '-' : '+'}</span>
       </button>
 
       {isOpen && (

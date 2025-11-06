@@ -105,13 +105,7 @@ const TextElement: React.FC<TextElementProps> = ({
 
   return (
     <Group>
-      <SelectionFrame
-        x={position.x}
-        y={position.y}
-        width={textRef.current?.width() ?? 0}
-        height={textRef.current?.height() ?? 0}
-        selected={!!selected}
-      />
+     
       <Text
         id={id}
         ref={textRef}

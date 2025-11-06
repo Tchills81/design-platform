@@ -85,7 +85,8 @@ export function useCanvasEffects(
     hasInitialized,
     positionRef,
     initailPosition,
-    konvaText
+    konvaText,
+    textToolbarRef
     
   } = state;
 
@@ -580,9 +581,9 @@ useEffect(() => {
   // 🧠 Global click to deselect text
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
-      const clickedInsideToolbar = toolbarRef.current?.contains(e.target as Node);
+      const clickedInsideToolbar = textToolbarRef.current?.contains(e.target as Node);
 
-      console.log("handleGlobalClick", toolbarRef)
+      console.log("handleGlobalClick", 'clickedInsideToolbar', clickedInsideToolbar ); 
       if (clickedInsideToolbar) return;
 
       konvaText?.visible(true);
@@ -595,7 +596,7 @@ useEffect(() => {
 
     document.addEventListener("mousedown", handleGlobalClick);
     return () => document.removeEventListener("mousedown", handleGlobalClick);
-  }, []);
+  }, [konvaText]);
 
   // 🧠 Portal target setup
   useEffect(() => {

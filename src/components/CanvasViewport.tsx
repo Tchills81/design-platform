@@ -231,18 +231,33 @@ export default function CanvasViewport(props: CanvasViewportProps) {
           
               setPendingStyle({});
             }
-          
-            // Dismiss overlay and show Konva text
-            if (isStage || isImage || isShape || isRect) {
-              konvaText?.visible(true);
-              konvaText?.getLayer()?.batchDraw();
+
+
+            if(isImage || isShape || isRect || isStage){
+
+                konvaText?.visible(true);
+                konvaText?.getLayer()?.batchDraw();
+
+            }
+           
+
+            if(isShape ==isImage ==isRect == false || isStage){
+
               handlers.setSelectedImageId(null);
               resetTransformMode();
               setModeActive(false);
-              handlers.setInputPosition(null);
-              //handlers.setShowToolbar(true);
-              console.log('Showing Konva text');
+            }else if (isRect){
+                handlers.setSelectedImageId(null);
+              resetTransformMode();
+              setModeActive(false);
+            }else{
+
+                konvaText?.visible(true);
+                konvaText?.getLayer()?.batchDraw();
             }
+            
+          
+            
           }}
           
       >
