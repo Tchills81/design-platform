@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { RefObject, useState } from 'react';
 import { ToggleCheckbox } from './ToggleCheckbox';
 import { ToneButton } from './ToneButton';
 import { AddImageButton } from './AddImageButton';
-import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon} from 'lucide-react';
+import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon, ImageUpscaleIcon, TrashIcon} from 'lucide-react';
 import { ImageTools, TemplateSideKey } from '../utils/imageTools';
 import { DualTemplate } from '../types/template';
 import Konva from 'konva';
 import { cropRenderedRegion } from '../utils/cropRenderedRegion';
 import { supportedShapeTypes } from './elements/shapes/types';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
+import { Group } from 'konva/lib/Group';
+import ImagePreviewModal from './ImagePreviewModal';
 
 type ImageToolbarProps = {
   selectedElementId: string | null;
@@ -21,8 +24,14 @@ type ImageToolbarProps = {
   onToggleCropMode?: (enabled: boolean) => void;
   setCropMode: (enabled: boolean) => void;
   imageRef?: any;
+  imagebarRef: RefObject<HTMLDivElement | null>;
   cropRegion?: { x: number; y: number; width: number; height: number };
   canvasBounds?: { x: number; y: number };
+  cardGridGroupRef: RefObject<Group| null>;
+  previewSrc: string | null;
+  setPreviewSrc:React.Dispatch<React.SetStateAction<string | null>>;
+  
+  
 };
 
 const ImageToolbar: React.FC<ImageToolbarProps> = ({
@@ -37,8 +46,13 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   toggleCommentModal,
   setCropMode,
   imageRef,
+  imagebarRef,
   cropRegion,
   canvasBounds,
+  cardGridGroupRef,
+  previewSrc,
+  setPreviewSrc
+  
 }) => {
   const isElementSelected = !!selectedElementId;
   const [isCropMode, setIsCropMode] = useState(false);
@@ -62,11 +76,28 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   };
 
   const handleCropConfirm = () => {
-    if (!imageRef?.current || !cropRegion || !canvasBounds || !selectedElementId) return;
-    const layer = imageRef.current?.getLayer();
+    if (
+      !imageRef?.current ||
+      !cropRegion ||
+      !cardGridGroupRef?.current ||
+      !selectedElementId
+    ) return;
+  
+    const layer = imageRef.current.getLayer();
     const croppedSrc = layer ? cropRenderedRegion(layer, cropRegion) : null;
     if (!croppedSrc) return;
-
+  
+    // 🧭 Get canvas transform info
+    const group = cardGridGroupRef?.current;
+    const groupPos = group.getAbsolutePosition(); // includes centering offset
+    const scale = group.scaleX(); // assuming uniform scaling
+  
+    // 🧮 Convert screen crop to canvas coordinates
+    const canvasX = (cropRegion.x - groupPos.x) / scale;
+    const canvasY = (cropRegion.y - groupPos.y) / scale;
+    const canvasWidth = cropRegion.width / scale;
+    const canvasHeight = cropRegion.height / scale;
+  
     setTemplate(prev => {
       if (!prev) return prev;
       const updatedElements = prev[side]?.elements.map(el => {
@@ -75,18 +106,18 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
             ...el,
             src: croppedSrc,
             size: {
-              width: cropRegion.width,
-              height: cropRegion.height,
+              width: canvasWidth,
+              height: canvasHeight,
             },
             position: {
-              x: cropRegion.x - canvasBounds.x,
-              y: cropRegion.y - canvasBounds.y,
+              x: canvasX,
+              y: canvasY,
             },
           };
         }
         return el;
       });
-
+  
       return {
         ...prev,
         [side]: {
@@ -95,12 +126,13 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
         },
       };
     });
-
+  
     recordSnapshot();
     setIsCropMode(false);
     setCropMode(false);
     onToggleCropMode?.(false);
   };
+  
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
@@ -133,28 +165,42 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   };
 
   console.log('shapeType', (imageRef?.current.getClassName()));
+
+ 
+  const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
   
   const showColorPicker =
   isElementSelected &&
   imageRef?.current &&
   supportedShapeTypes.includes(imageRef.current.getClassName());
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
 
   return (
-    <div className="absolute top-1/2 right-4 -translate-x-1/2 z-50 bg-gray-50
-     rounded-xl shadow-lg px-4 py-5 min-w-[250px] font-inter flex flex-col gap-4">
-      <AddImageButton tone={tone} onUpload={handleOnUploadImage} />
-
+    <>
+    <div ref={imagebarRef}  id='image-tool-bar'
+    className={` pointer-events-auto cursor-grab absolute z-100 left-1/2 top-20 -translate-x-1/2 
+      flex items-center gap-1 px-1 py-1 bg-white rounded-xl shadow-xl border border-gray-200 
+      whitespace-nowrap overflow-x-auto max-w-[90vw] ${backgroundClass}`}
+    >
+      <AddImageButton
+  tone={tone}
+  context="design"
+  onUpload={(src) => {
+   
+    setPreviewSrc(src);
+    }}
+/>
       <ToneButton
         label="Resize"
-        icon={<Type size={18} />}
+        icon={<ImageUpscaleIcon size={18} />}
         tone={tone}
         fontSize="text-sm"
         isActive={false}
         onClick={handleResizeClick}
         disabled={!isElementSelected}
       />
-
+  
       <ToneButton
         label="Crop"
         icon={<Crop size={18} />}
@@ -164,7 +210,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
         onClick={handleCropClick}
         disabled={!isElementSelected}
       />
-
+  
       {isCropMode && (
         <ToneButton
           label="Confirm Crop"
@@ -176,19 +222,17 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
           disabled={!imageRef?.current || !cropRegion}
         />
       )}
-
+  
       <ToneButton
         label="Remove"
-        icon={<XIcon size={18} />}
+        icon={<TrashIcon size={18} />}
         tone="danger"
         fontSize="text-sm"
         isActive={false}
         onClick={handleRemoveClick}
         disabled={!isElementSelected}
       />
-
-      
-
+  
       {onToggleCropMode && (
         <ToggleCheckbox
           tone={tone}
@@ -202,8 +246,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
           }}
         />
       )}
-
-       <ToneButton
+  
+      <ToneButton
         label="Add Reflection"
         icon={<ListPlusIcon size={18} />}
         tone={tone}
@@ -212,7 +256,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
         onClick={toggleCommentModal}
         disabled={!isElementSelected}
       />
-
+  
       {showColorPicker && (
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Fill Color:</label>
@@ -224,12 +268,35 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
           />
         </div>
       )}
-
-       <div className="text-xs text-gray-500 text-center pt-2 select-none">
-        Drag this toolbar anywhere
-      </div>
     </div>
+
+    <div>
+
+    {previewSrc && (
+  <ImagePreviewModal
+    src={previewSrc}
+    role={previewRole}
+    onRoleChange={setPreviewRole}
+    onCancel={() => {
+      setPreviewSrc(null);
+      setPreviewRole('background');
+    }}
+    onConfirm={(role) => {
+
+      console.log('previewSrc', previewSrc.slice(previewSrc.length-5, previewSrc.length), 'role', role);
+      handleOnUploadImage(previewSrc, role);
+      setPreviewSrc(null);
+      setPreviewRole('background');
+    }}
+  />
+)}
+
+    </div>
+
+</>
+   
   );
+  
 };
 
 export default ImageToolbar;

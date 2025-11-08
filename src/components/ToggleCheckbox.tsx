@@ -43,7 +43,7 @@ interface ToggleCheckboxProps {
           disabled={disabled}
           className={`accent-current w-4 h-4 focus:outline-none focus:ring-2 focus:ring-offset-2 ${focusClass}`}
         />
-        <span className="select-none">{label}</span>
+        <span className="select-none font-semibold">{label}</span>
       </label>
     );
   };

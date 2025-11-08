@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { RefObject, useState } from 'react';
 import { ArrowLeft, Copy, Fullscreen, LogOutIcon, NotepadTextDashed, ScalingIcon, Share2Icon, ZoomIn, ZoomOut } from 'lucide-react';
 import { ArrowRight } from 'react-feather';
 import { IconButton } from './IconButton';
@@ -13,6 +13,7 @@ import { DualTemplate } from '../types/template';
 import { SnapshotEntry } from '../types/SnapshotEntry';
 import { CanvasMode } from '../types/CanvasMode';
 import { tone } from '@/src/types/tone';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 interface FooterControlClusterProps {
   template: DualTemplate | null;
@@ -56,6 +57,7 @@ interface FooterControlClusterProps {
   setHasChanged: React.Dispatch<React.SetStateAction<boolean>>;
   captureFrontAndBack(): Promise<{ front: string; back: string }>;
   createPageTemplate: (page: number) => void;
+  footerClusterRef: RefObject<HTMLDivElement | null>
 }
 
 export default function FooterControlCluster({
@@ -99,12 +101,13 @@ export default function FooterControlCluster({
   isCollapsed,
   setShowShareModal,
   toggleFullScreen,
+  footerClusterRef,
   side
 }: FooterControlClusterProps) {
   
 
   
-  
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newZoom = parseFloat(e.target.value);
@@ -113,6 +116,7 @@ export default function FooterControlCluster({
 
   return (
     <>
+    
       {/* Toggle Button */}
       <button
         onClick={() => {
@@ -142,8 +146,9 @@ export default function FooterControlCluster({
 
       {/* Footer Cluster */}
       {!isCollapsed && (
-        <div
-          className="fixed bottom-1  right-0 z-30 flex items-center gap-4 bg-white/80 backdrop-blur-sm px-1 py-1 rounded-md shadow-sm"
+        <div ref={footerClusterRef} id='footer-cluster'
+          className={`fixed bottom-1  right-0 z-30 flex items-center gap-2
+                      backdrop-blur-sm px-1 py-1 rounded-md shadow-sm ${backgroundClass}`}
           style={{
             width: 'auto',
             maxWidth: stageSize.width,

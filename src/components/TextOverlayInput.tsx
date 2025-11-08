@@ -125,7 +125,8 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
           height: size.height,
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
-          zIndex: 1000
+          zIndex: 10,
+          
         }}
       >
         <textarea
@@ -155,16 +156,16 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
             resize: 'none',
             outline: 'none',
             pointerEvents: 'auto',
-            boxSizing: 'border-box',
-            padding: 4
+            boxSizing: 'content-box',
+          
           }}
         />
         <div
           onMouseDown={handleMouseDown}
           style={{
             position: 'absolute',
-            bottom: 0,
-            right: 0,
+            bottom: -16,
+            right: -16,
             width: 12,
             height: 12,
             background: '#ccc',

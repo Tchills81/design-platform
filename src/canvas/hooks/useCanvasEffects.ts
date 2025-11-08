@@ -44,6 +44,9 @@ export function useCanvasEffects(
     showExportModal,
     prepareForPrint,
     toolbarRef,
+    sideBarRef,
+    topBarRef,
+    footerClusterRef,
     stageSize,
     setTemplate,
     inputPosition,
@@ -129,7 +132,9 @@ export function useCanvasEffects(
     setPosition,
     triggerFade,
     setInitialPosition,
-    handleFullScreenChange
+    handleFullScreenChange,
+    computeOverlayPosition,
+    setActiveIndex
 
   } = actions;
 
@@ -144,7 +149,7 @@ useEffect(() => {
   // 1. Calculate and set initial zoom
   const SIDEBAR_WIDTH = 280;
   const RULER_THICKNESS = 24;
-  const TOP_BAR_HEIGHT = 64;
+  const TOP_BAR_HEIGHT = 110;
   const FOOTER_HEIGHT = 48;
   const RIGHT_MARGIN = 280;
   const EXTRA_MARGIN = 120;
@@ -217,19 +222,21 @@ useEffect(() => {
     konvaGroup.position({ x: clampedKonvaX, y: clampedKonvaY });
     //konvaGroup.getLayer()?.batchDraw();
 
+
+    if(konvaText){
+      konvaText?.visible(true);
+      konvaText?.getLayer()?.batchDraw();
+      setSelectedTextId(null);
+      setShowToolbar(false);
+      setInputPosition(null);
+    
+    }
+
     // Update the scroll position state to match the new konva position
     setScrollPosition({ x: clampedKonvaX, y: clampedKonvaY });
     triggerFade();
 
-    /*Update the DOM scrollbars to reflect the change
-    const verticalInput = document.querySelector('.canvas-scrollbar.vertical') as HTMLInputElement;
-    if (verticalInput) {
-        verticalInput.value = String(clampedKonvaY - centerOffsetY);
-    }
-    const horizontalInput = document.querySelector('.canvas-scrollbar.horizontal') as HTMLInputElement;
-    if (horizontalInput) {
-        horizontalInput.value = String(clampedKonvaX - centerOffsetX);
-    }*/
+    
   };
 
   window.addEventListener('wheel', handleWheel, { passive: false });
@@ -582,15 +589,27 @@ useEffect(() => {
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const clickedInsideToolbar = textToolbarRef.current?.contains(e.target as Node);
+      const clickedOnTextOverlay = toolbarRef.current?.contains(e.target as Node);
+      const clickedOnTopBar = topBarRef.current?.contains(e.target as Node);
+      const clickedOnSideBar = sideBarRef.current?.contains(e.target as Node);
+      const clickedOnFooterCluster = footerClusterRef.current?.contains(e.target as Node);
 
-      console.log("handleGlobalClick", 'clickedInsideToolbar', clickedInsideToolbar ); 
-      if (clickedInsideToolbar) return;
+      console.log("handleGlobalClick", 
+                  'clickedInsideToolbar', 
+                  clickedInsideToolbar, 'offsetHeight',  ); 
+
+
+      if (clickedInsideToolbar ||  
+          clickedOnTextOverlay || 
+          clickedOnTopBar      || 
+          clickedOnSideBar     || 
+          clickedOnFooterCluster
+        ) return;
 
       konvaText?.visible(true);
       konvaText?.getLayer()?.batchDraw();
       setSelectedTextId(null);
       setShowToolbar(false);
-      //setEditingText("");
       setInputPosition(null);
     };
 
@@ -607,7 +626,7 @@ useEffect(() => {
   // 🧠 Log template changes
   useEffect(() => {
     if (template) {
-      console.log("🔍 template.back:", template.back);
+      console.log("🔍 template", template);
     }
   }, [side]);
 
@@ -687,6 +706,10 @@ useEffect(() => {
     };
   
     runCapture();
+
+    setActiveIndex(snapshotArchive.length)
+
+    
   }, [
     canvasReady,
     template,

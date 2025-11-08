@@ -7,28 +7,37 @@ export type InjectableAsset = {
   role: 'background' | 'element';
 };
 
+
+export function getInjectionSideFromIndex(index: number | null): 'front' | 'back' {
+
+  if(index){
+
+    return index % 2 === 0 ? 'front' : 'back';
+
+  }
+  return 'front';
+  
+}
+
+
 export async function injectAssetIntoTemplate(
   template: DualTemplate,
-  asset: InjectableAsset
+  asset: InjectableAsset,
+  side: 'front' | 'back'
 ): Promise<DualTemplate> {
-  const enrichedTemplate: DualTemplate = {
-    ...template,
-    front: {
-      card: {
-        width: template.width,
-        height: template.height,
-        background: template.front?.card?.background ?? '',
-        backgroundImage:
-          asset.role === 'background'
-            ? asset.src
-            : template.front?.card?.backgroundImage ?? '',
-        gridColors: template.front?.card?.gridColors ?? [],
-        cellSize: template.front?.card?.cellSize ?? 20,
-      },
-      elements: [...(template.front?.elements ?? [])],
-    },
-    back: template.back,
+  const currentFace = template[side];
+  if (!currentFace) {
+    console.warn(`Side "${side}" not found in template`);
+    return template;
+  }
+
+  const updatedCard = {
+    ...currentFace.card,
+    backgroundImage:
+      asset.role === 'background' ? asset.src : currentFace.card?.backgroundImage ?? '',
   };
+
+  let updatedElements = [...(currentFace.elements ?? [])];
 
   if (asset.role === 'element') {
     const img = await loadImage(asset.src);
@@ -44,16 +53,21 @@ export async function injectAssetIntoTemplate(
         width: baseWidth,
         height: baseWidth / aspectRatio,
       },
-      tone: 'neutral',
+      tone: template.tone ?? 'neutral',
     };
 
-    enrichedTemplate?.front?.elements.push(newElement);
+    updatedElements.push(newElement);
   }
 
-  console.log('Enriched Template:', enrichedTemplate);
-
-  return enrichedTemplate;
+  return {
+    ...template,
+    [side]: {
+      card: updatedCard,
+      elements: updatedElements,
+    },
+  };
 }
+
 
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -61,5 +75,6 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
     img.src = src;
     img.onload = () => resolve(img);
     img.onerror = reject;
+    
   });
 }

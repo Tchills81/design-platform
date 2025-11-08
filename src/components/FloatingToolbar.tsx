@@ -16,16 +16,17 @@ export default function FloatingToolbar({ position, children }: FloatingToolbarP
     const offsetY = 20;
 
     setStyle({
-      left: position.x + offsetX,
-      top: position.y + offsetY,
+      left: 0,
+      top: 0,
       width:'100%'
     });
   }, [position]);
 
   return (
     <div
-      className="absolute z-50 rounded-lg  border-gray-200 px-4 py-2 flex flex-wrap items-center gap-3"
+      className="absolute z-1001 left-0.5 top-0 rounded-lg  border-gray-200 px-4 py-2 flex flex-wrap items-center gap-3"
       style={style}
+      
     >
       {children}
     </div>

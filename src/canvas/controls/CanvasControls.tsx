@@ -6,7 +6,7 @@
 
 
 // src/canvas/CanvasControls.tsx
-import { ArrowLeft, Brush, Image, LayoutTemplateIcon, Text, XIcon } from 'lucide-react';
+import { ArrowLeft, Brush, Image, LayoutTemplateIcon, Text, TrashIcon, TypeIcon, XIcon } from 'lucide-react';
 
 import { ToneButton } from '@/src/components/ToneButton';
 import SidebarModule from '@/src/components/SidebarModule';
@@ -78,6 +78,7 @@ export interface CanvasControlsProps {
     designElements:DesignElement[];
     activeTimestamp:string | null; 
     hasChanged:boolean;
+    setPreviewSrc:React.Dispatch<React.SetStateAction<string | null>>;
     captureFrontAndBack(): Promise<{ front: string; back: string }>;
     setActiveTimestamp:React.Dispatch<React.SetStateAction<string | null>>;
     setCanvasReady:React.Dispatch<React.SetStateAction<boolean>>;
@@ -111,6 +112,9 @@ export interface CanvasControlsProps {
     setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
     setIsPreviewMode:(mode:boolean)=>void;
+    footerClusterRef: RefObject<HTMLDivElement | null>
+    topBarRef: RefObject<HTMLDivElement | null>
+    sideBarRef: RefObject<HTMLDivElement | null>
     showPages:boolean;
     isPreviewMode:boolean;
     isCollapsed:boolean;
@@ -189,7 +193,12 @@ export default function CanvasControls({
     setIsPreviewMode,
     setIsCollapsed,
     toggleFullScreen,
-    isCollapsed
+    isCollapsed,
+    footerClusterRef,
+    topBarRef,
+    sideBarRef,
+    setPreviewSrc
+    
   }: CanvasControlsProps) {
     // ...render logic
   if (!template) return null;
@@ -214,7 +223,7 @@ export default function CanvasControls({
     {!isPreviewMode && (
 
 
-<SidebarModule tone={template.tone as tone}>
+<SidebarModule tone={template.tone as tone} sideBarRef={sideBarRef}>
 <ToneButton
 icon={<LayoutTemplateIcon  />}
 label="Templates"
@@ -279,13 +288,50 @@ onPreview={captureBothSides}
 </SidebarSection>
 
 
-<SidebarSection label="Canvas Tools">
-<ToneButton icon={<Text />} label="Add Text" onClick={handleAddText} tone={template.tone} />
+<SidebarSection label='Canvas Tools'>
+  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+  <div style={{ width: '100%' }}>
+      <ToneButton
+        icon={<TypeIcon />}
+        label="Add text"
+        onClick={handleAddText}
+        tone={template.tone}
+      />
+    </div>
 
-<ToneButton icon={<XIcon />} label="Remove Text" onClick={handleRemoveText} tone={template.tone} isActive={!!selectedTextId} />
-<AddImageButton context="design" tone={template.tone} onUpload={handleOnUploadImage} />
-<ToneButton icon={<Image />} label="Resize Image" onClick={() => activateTransformMode(selectedImageId ?? '', 'image')} tone={template.tone} />
+    <div style={{ width: '100%' }}>
+      <ToneButton
+        icon={<TrashIcon />}
+        label=""
+        onClick={handleRemoveText}
+        tone={template.tone}
+        isActive={!!selectedTextId && !!selectedTextId}
+      />
+    </div>
+
+    <div style={{ width: '100%' }}>
+      <AddImageButton
+        tone={template.tone}
+        context="design"
+        onUpload={(src) => setPreviewSrc(src)}
+      />
+    </div>
+
+    <div style={{ width: '100%' }}>
+      <ToneButton
+        isActive={!!selectedTextId}
+        icon={<Image />}
+        label=""
+        onClick={() => activateTransformMode(selectedImageId ?? '', 'image')}
+        tone={template.tone}
+        
+      />
+    </div>
+
+    
+  </div>
 </SidebarSection>
+
 
 
 
@@ -294,9 +340,10 @@ onPreview={captureBothSides}
 
   )}
       
-  { mode=='card' && zoom<1 && !isPreviewMode &&(
+  { mode=='card' && !isPreviewMode &&(
 
 <TopControlBar
+topBarRef={topBarRef}
 template={template}
 tone={template.tone as tone}
 zoom={zoom}
@@ -415,6 +462,7 @@ activeMode={faceMode}
 
 
      <FooterControlCluster
+        footerClusterRef={footerClusterRef}
         stageSize={stageSize}
         template={template}
         setTemplate={setTemplate}

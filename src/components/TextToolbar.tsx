@@ -5,6 +5,7 @@ import { FontDropdown } from './FontPicker';
 import ColorPicker from './ColorPicker';
 import { FontSizeDropdown } from './FontSizeDropdown';
 import { ToneButton } from './ToneButton';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 
 import {
   Type,
@@ -17,7 +18,9 @@ import {
   StretchHorizontal,
   Bold,
   Italic,
-  ListPlus
+  ListPlus,
+  TypeIcon,
+  TrashIcon
 } from 'lucide-react';
 import { tone } from '../types/tone';
 
@@ -78,60 +81,48 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   lineHeight,
   onLineHeightChange,
 }) => {
+
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+  
   return (
     <div
-    className="absolute z-50 left-1/2 top-0 -translate-x-1/2 
-      flex items-center gap-1 px-4 py-2 bg-white rounded-xl shadow-xl border border-gray-200 
-      whitespace-nowrap overflow-x-auto max-w-[90vw]"
+    className={`absolute z-50 left-1/2 top-20 -translate-x-1/2 
+      flex items-center gap-1 px-1 py-1 bg-white rounded-xl shadow-xl border border-gray-200 
+      whitespace-nowrap overflow-x-auto max-w-[90vw] ${backgroundClass}`}
   >
  {/* Font & Style */}
+      <ToneButton
+        icon={<TypeIcon/>}
+        label="Add text"
+        onClick={()=>{}}
+        tone={tone}
+      />
+
+      <ToneButton
+        icon={<TrashIcon />}
+        label=""
+        onClick={()=>{}}
+        tone={tone}
+        isActive={!!selectedTextId && !!selectedTextId}
+      />
       <FontDropdown selectedFont={selectedFont} onChange={onFontChange} />
       <FontSizeDropdown selectedSize={selectedFontSize} onChange={onFontSizeChange} />
       <ColorPicker selectedColor={selectedColor} onChange={onColorChange} />
-      <ToneButton icon={<Bold size={16} />} label="" isActive={isBold} onClick={onToggleBold} tone={tone} />
-      <ToneButton icon={<Italic size={16} />} label="" isActive={isItalic} onClick={onToggleItalic} tone={tone} />
-      <ToneButton icon={<Underline size={16} />} label="" isActive={isUnderlined} onClick={onToggleUnderline} tone={tone} />
+      <ToneButton icon={<Bold size={16}  />} label="" isActive={isBold} onClick={onToggleBold} tone={tone} title='Bold' />
+      <ToneButton icon={<Italic size={16} />} label="" isActive={isItalic} onClick={onToggleItalic} tone={tone} title='Italic' />
+      <ToneButton icon={<Underline size={16} />} label="" isActive={isUnderlined} onClick={onToggleUnderline} tone={tone} title='Underline' />
       <ToneButton icon={<WrapText size={16} />} label="" isActive={isMultiline} onClick={onToggleMultiline} tone={tone} />
 
       {/* Alignment */}
-      <ToneButton icon={<AlignLeft size={16} />} label="" isActive={textAlign === 'left'} onClick={() => onAlignChange('left')} tone={tone} />
-      <ToneButton icon={<AlignCenter size={16} />} label="" isActive={textAlign === 'center'} onClick={() => onAlignChange('center')} tone={tone} />
-      <ToneButton icon={<AlignRight size={16} />} label="" isActive={textAlign === 'right'} onClick={() => onAlignChange('right')} tone={tone} />
+      <ToneButton icon={<AlignLeft size={16} />} label="" isActive={textAlign === 'left'} onClick={() => onAlignChange('left')} tone={tone} title='align left' />
+      <ToneButton icon={<AlignCenter size={16} />} label="" isActive={textAlign === 'center'} onClick={() => onAlignChange('center')} tone={tone} title='align center' />
+      <ToneButton icon={<AlignRight size={16} />} label="" isActive={textAlign === 'right'} onClick={() => onAlignChange('right')} tone={tone} title='aling right' />
 
       {/* Comment & Exit */}
       
-      <ToneButton icon={<XIcon size={16} />} label="Close" onClick={exitEditingMode} tone={tone} />
+      <ToneButton icon={<XIcon size={16} />} label="" onClick={exitEditingMode} tone={tone} title='close' />
 
-      {/* Width & Line Height */}
-      {isMultiline && (
-        <div className="flex items-center gap-4 ml-4">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <StretchHorizontal size={16} />
-            Width
-            <input
-              type="range"
-              min={100}
-              max={600}
-              value={textWidth ?? 240}
-              onChange={(e) => onWidthChange?.(parseInt(e.target.value))}
-              className="w-32 accent-indigo-500"
-            />
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            Line Height
-            <input
-              type="range"
-              min={1}
-              max={2}
-              step={0.1}
-              value={lineHeight ?? 1.4}
-              onChange={(e) => onLineHeightChange?.(parseFloat(e.target.value))}
-              className="w-24 accent-indigo-500"
-            />
-          </label>
-        </div>
-      )}
+      
     </div>
   );
 };

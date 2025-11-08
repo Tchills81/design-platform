@@ -182,12 +182,17 @@ export default function CanvasViewport(props: CanvasViewportProps) {
 
         onClick={(e) => {
             const overlayEl = document.getElementById('text-overlay');
+            const overImageBar = document.getElementById('image-tool-bar');
             const { clientX, clientY } = e.evt;
             const domTarget = document.elementFromPoint(clientX, clientY);
           
             const clickedInsideOverlay = overlayEl?.contains(domTarget);
-            if (clickedInsideOverlay) {
-              console.log('Clicked inside overlay — do not dismiss');
+
+            const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
+            console.log('overImageBar', e.target); 
+
+            if (clickedInsideOverlay || clickedInsideOverImageBar) {
+              console.log('Clicked inside overlay / image toolbar — do not dismiss ');
               return;
             }
           
@@ -201,20 +206,26 @@ export default function CanvasViewport(props: CanvasViewportProps) {
             const isRect = className === 'Rect';
             const isStage = clickedNode === e.target.getStage();
           
-            console.log('target', clickedNode);
+           // console.log('clickedInsideOverImageBar', clickedInsideOverImageBar);
           
-            // Optional: handle non-dismissable clicks
-            if (!isImage && !isShape && !isTransformer && !isRect && !isStage) {
+            // 🎯 Show transform only for image or shape
+            const shouldShowTransform = isImage || isShape;
+          
+            // 🧹 Dismiss selection for canvas or stage
+            const shouldDismiss = isRect || isStage;
+          
+            // 🧼 Dismiss for anything else
+            const isUnknown = !isImage && !isShape && !isTransformer && !isStage && !isRect;
+          
+            if (shouldDismiss || isUnknown) {
               handlers.setSelectedImageId(null);
               resetTransformMode();
               setModeActive(false);
               return;
             }
           
-            // Apply pending style updates
-            if ((isStage || isImage || isShape || isRect) && selectedTextId) {
-              if (!template?.[side]?.elements) return;
-          
+            // 🎨 Apply pending style updates
+            if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
               const updatedElements = template[side].elements.map(el =>
                 el.id === selectedTextId && el.type === 'text'
                   ? { ...el, ...pendingStyle }
@@ -231,33 +242,12 @@ export default function CanvasViewport(props: CanvasViewportProps) {
           
               setPendingStyle({});
             }
-
-
-            if(isImage || isShape || isRect || isStage){
-
-                konvaText?.visible(true);
-                konvaText?.getLayer()?.batchDraw();
-
-            }
-           
-
-            if(isShape ==isImage ==isRect == false || isStage){
-
-              handlers.setSelectedImageId(null);
-              resetTransformMode();
-              setModeActive(false);
-            }else if (isRect){
-                handlers.setSelectedImageId(null);
-              resetTransformMode();
-              setModeActive(false);
-            }else{
-
-                konvaText?.visible(true);
-                konvaText?.getLayer()?.batchDraw();
-            }
-            
           
-            
+            // ✨ Show transform
+            if (shouldShowTransform) {
+              konvaText?.visible(true);
+              konvaText?.getLayer()?.batchDraw();
+            }
           }}
           
       >

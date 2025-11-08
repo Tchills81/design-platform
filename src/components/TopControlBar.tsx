@@ -12,6 +12,7 @@ import AvatarDropdown from './AvatarDropdown';
 import { signOut } from 'next-auth/react';
 import FooterControlCluster from '@/src/components/FooterControlCluster';
 import { DualTemplate } from '../types/template';
+import { RefObject } from 'react';
 
 
 
@@ -38,6 +39,7 @@ interface TopControlBarProps {
   showGrids: boolean;
   toggleGrids: () => void;
   bleedToggleDisabled?: boolean;
+  topBarRef: RefObject<HTMLDivElement | null>
 }
 
 export default function TopControlBar({
@@ -63,6 +65,7 @@ export default function TopControlBar({
   onUndo,
   onRedo,
   activeMode,
+  topBarRef
 }: TopControlBarProps) {
   
   const isInside = activeMode === "insideFront" || activeMode === "insideBack";
@@ -80,7 +83,7 @@ export default function TopControlBar({
 
   return (
     <>
-    <div className="absolute top-6 right-4 z-20 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+    <div ref={topBarRef} id='top-bar' className="absolute top-6 right-4 z-20 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg">
      
 
      <ToneButton

@@ -12,7 +12,7 @@ import { isTextElement } from "@/src/types/template";
 import { normalizeDualTemplate } from "@/src/utils/normalizeDualTemplate";
 import { renderToCanvas } from "@/src/utils/renderToCanvas";
 import { serializeDualTemplate } from "@/src/utils/serializeDualTemplate";
-import { injectAssetIntoTemplate } from "@/src/utils/injectAssetIntoTemplate";
+import { getInjectionSideFromIndex, InjectableAsset, injectAssetIntoTemplate } from "@/src/utils/injectAssetIntoTemplate";
 import { captureCardFaceSnapshot } from "@/src/utils/captureCardFaceSnapshot";
 import { printSnapshots } from "@/src/components/printSnapshots";
 import { supportedShapes } from "@/src/components/elements/shapeRegistry";
@@ -20,6 +20,7 @@ import isEqual from 'lodash.isequal';
 
 import Konva from "konva";
 import { DesignElement } from "@/src/types/DesignElement";
+import { number } from "framer-motion";
 
 export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
@@ -152,7 +153,11 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setEditingTextId,
     setOverlayProps,
     setShowOverlayInput,
-    setKonvaText
+    setKonvaText,
+    setPreviewRole,
+    setPreviewSrc,
+    konvaText,
+    activeIndex
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -400,6 +405,20 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
   }, [zoom])
 
+
+
+  const computeOverlayPosition = (textNode: Konva.Text, stage: Konva.Stage, scale:number=zoom) => {
+    scale= stage.scaleX(); // assuming uniform scale
+    const stagePos = stage.position(); // { x, y } — canvas offset
+    const nodePos = textNode.getAbsolutePosition(); // { x, y } — logical position
+  
+    // Translate to screen-space
+    const screenX = nodePos.x * scale + stagePos.x;
+    const screenY = nodePos.y * scale + stagePos.y;
+  
+    return { x: screenX, y: screenY };
+  };
+
   const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
     const oldZoom = zoom;
     const rawZoom = oldZoom * scaleBy;
@@ -447,6 +466,16 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   
     const scrollThumbValueY = clamp(newPosition.y - canvasTopY, 0, scrollableHeight);
     const scrollThumbValueX = clamp(newPosition.x - canvasTopX, 0, scrollableWidth);
+
+
+      if(konvaText){
+
+        const pos=computeOverlayPosition(konvaText, stageRef.current, newZoom)
+        setInputPosition(pos);
+
+      }
+     
+    
 
 
     
@@ -764,9 +793,11 @@ const setDesignElement = useCallback(
   }, [selectedTextId, template, side, editingText]);
 
   const exitEditingMode = useCallback(() => {
+    konvaText?.visible(true);
+    konvaText?.getLayer()?.batchDraw();
     setSelectedTextId(null);
     setShowToolbar(false);
-    setEditingText("");
+    setInputPosition(null);
     console.log("🚪 Exited editing mode");
   }, []);
 
@@ -959,8 +990,21 @@ const setDesignElement = useCallback(
   }, [template, card, cols, rows, selectedColor]);
 
 
+
+  function useInjectAsset(template: DualTemplate) {
+    return async (asset:InjectableAsset) => {
+      const side = getInjectionSideFromIndex(activeIndex);
+      const enriched = await injectAssetIntoTemplate(template, asset, side);
+      return enriched;
+    };
+  }
+  
+
+
   const handleOnUploadImage = useCallback(async (src: string, role: "background" | "element") => {
     if (!template || !template[side]) return;
+
+    console.log('handleOnUploadImage')
   
     recordSnapshot();
   
@@ -979,13 +1023,18 @@ const setDesignElement = useCallback(
       },
     ]);
   
-    const enriched = await injectAssetIntoTemplate(template, { src, role });
+    const inject = useInjectAsset(template); // ✅ get the function
+    const enriched = await inject({ src, role }); // ✅ call it with asset
 
 
-    //.log('enriched template after image upload', template, src, enriched);
+    console.log('side', side,  'enriched', enriched);
   
     setTemplate(prev => {
-      if (!prev || !prev[side]) return prev;
+      if (!prev || !prev[side])
+        {
+           
+           return prev;
+        }
       return {
         ...prev,
         [side]: enriched[side],
@@ -1063,9 +1112,9 @@ const setDesignElement = useCallback(
       pixelRatio: 2
     });
   
-    setSnapshots({ front, back }); // still update state for UI
-    
-    //handleTemplateSelect(clonedTemplate || undefined);
+    setSnapshots({ front, back }); 
+
+    setSide(side);
     
   
     return { front: front ?? '', back: back ?? '' }; // ✅ ensure non-null values
@@ -1261,6 +1310,7 @@ const setDesignElement = useCallback(
   
       const timestamp = new Date().toISOString();
       const clonedTemplate = deepFreeze(JSON.parse(JSON.stringify(sourceTemplate)));
+      
   
       const entryFront: SnapshotEntry = {
         image: images.front,
@@ -1325,6 +1375,8 @@ const setDesignElement = useCallback(
         setActiveTimestamp(timestamp);
         setPageAdded(false);
       }
+
+      
     },
     [card, setSnapshotArchive, pageAdded, activeTimestamp]
   );
@@ -1693,17 +1745,7 @@ const setDesignElement = useCallback(
   };
 
 
-  const computeOverlayPosition = (textNode: Konva.Text, stage: Konva.Stage) => {
-    const zoom = stage.scaleX(); // assuming uniform scale
-    const stagePos = stage.position(); // { x, y } — canvas offset
-    const nodePos = textNode.getAbsolutePosition(); // { x, y } — logical position
   
-    // Translate to screen-space
-    const screenX = nodePos.x * zoom + stagePos.x;
-    const screenY = nodePos.y * zoom + stagePos.y;
-  
-    return { x: screenX, y: screenY };
-  };
 
 
   const _handleTextClick = useCallback((textNode: Konva.Text)=>{
@@ -1735,7 +1777,9 @@ const setDesignElement = useCallback(
     setSelectedTextId(textNode.id());
     setInputPosition({ x, y });
 
-    const pos = computeOverlayPosition(textNode, stageRef.current)
+    const pos = computeOverlayPosition(textNode, stageRef.current, zoom)
+
+    setInputPosition(pos)
   
     setOverlayProps({
       selectedFont: fontFamily,
@@ -1920,6 +1964,8 @@ const setDesignElement = useCallback(
     toggleFullScreen,
     _handleTextClick,
     setKonvaText,
-
+    computeOverlayPosition,
+    setPreviewSrc,
+    setActiveIndex
   };
 }

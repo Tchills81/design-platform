@@ -12,7 +12,7 @@ import { getMaxPageCount } from '../utils/getMaxPageCount';
 type ThumbnailStripProps = {
   stripRef: React.RefObject<HTMLDivElement | null>;
   snapshots: SnapshotEntry[];
-  onSelect: (entry: SnapshotEntry) => void;
+  onSelect: (entry: SnapshotEntry, index:number) => void;
   template?: DualTemplate | null;
   onAddPage: () => void;
   onDuplicatePage: () => void;
@@ -178,17 +178,21 @@ export function ThumbnailStrip({
         const time = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
         const label = getThumbnailLabel(index, entry, defaultType);
 
-        const isActive = activeTimestamp === timestamp && activeSide === side;
+        //const isActive = activeTimestamp === timestamp && activeSide === side;
+        const isActive = activeIndex === index;
 
 
-        console.log('isActive', isActive)
+        console.log('isActive', index)
 
         return (
           <div
             key={side + timestamp + index}
-            onClick={() => onSelect(entry)}
+            onClick={() =>{ 
+              onSelect(entry, index);
+              if(setActiveIndex)
+                setActiveIndex(index)}}
             style={{
-              border: isActive ? '2px solid #0284c7' : '1px solid #1e!e!e',
+              border: isActive ? '2px solid #0284c7' : '1px solid #1e1e1e',
               width: 50,
               padding: '0.2rem',
               cursor: 'pointer',
@@ -198,6 +202,8 @@ export function ThumbnailStrip({
               boxShadow: isActive ? '0 0 6px rgba(2,132,199,0.4)' : 'none',
               transition: 'border 0.2s ease, box-shadow 0.2s ease',
               transform: isPreviewMode ? 'scale(1.05)' : 'transform 0.2s ease',
+              willChange: 'transform, box-shadow, border',
+
             }}
           >
            <img

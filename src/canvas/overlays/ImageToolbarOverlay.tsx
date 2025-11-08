@@ -6,6 +6,7 @@ import { DualTemplate } from "@/src/types/template";
 import { CanvasMode } from "@/src/types/CanvasMode";
 import { RefObject, useState } from "react";
 import { motion } from "framer-motion";
+import { Group } from "konva/lib/Group";
 
 export interface ImageToolbarOverlayProps {
   selectedImageId: string | null;
@@ -16,6 +17,8 @@ export interface ImageToolbarOverlayProps {
   cropRegion: { x: number; y: number; width: number; height: number };
   canvasBounds: { x: number; y: number; width: number; height: number };
   imagebarRef: RefObject<HTMLDivElement | null>;
+  cardGridGroupRef: RefObject<Group | null>;
+
   handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
@@ -23,6 +26,8 @@ export interface ImageToolbarOverlayProps {
   setTransformModeActive: (active: boolean) => void;
   setCropMode: (active: boolean) => void;
   onToggleCropMode: (active: boolean) => void;
+  previewSrc: string | null;
+  setPreviewSrc:React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export default function ImageToolbarOverlay({
@@ -40,20 +45,21 @@ export default function ImageToolbarOverlay({
   setTransformModeActive,
   setShowCommentModal,
   setCropMode,
-  onToggleCropMode
+  onToggleCropMode,
+  cardGridGroupRef,
+  previewSrc,
+  setPreviewSrc
 }: ImageToolbarOverlayProps) {
   if (!selectedImageId || mode !== 'card') return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-end pointer-events-none z-50">
-      <motion.div
-        ref={imagebarRef}
-        id="image-toolbar"
-        className="pointer-events-auto cursor-grab bg-white shadow-lg rounded-xl p-4 flex flex-col gap-3 mb-[10vh] mr-6"
-        drag
-        dragMomentum={false}
-      >
+      
         <ImageToolbar
+        setPreviewSrc={setPreviewSrc}
+        previewSrc={previewSrc}
+        imagebarRef={imagebarRef}
+        cardGridGroupRef={cardGridGroupRef}
           selectedElementId={selectedImageId}
           handleOnUploadImage={handleOnUploadImage}
           tone={tone}
@@ -69,7 +75,7 @@ export default function ImageToolbarOverlay({
           canvasBounds={canvasBounds}
         />
        
-      </motion.div>
+      
     </div>
   );
 }

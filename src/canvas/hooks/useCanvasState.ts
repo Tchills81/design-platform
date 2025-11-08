@@ -24,6 +24,7 @@ export function useCanvasState() {
   const [dualFaces, setDualFaces]=useState<DualTemplate[]>([])
   
   const [activePageId, setActivePageId] = useState<string>('front');
+  
   const [pageAdded, setPageAdded]=useState<boolean>(false);
 
   const [lastSavedTemplate, setLastSavedTemplate] = useState<DualTemplate | null>(null);
@@ -85,6 +86,9 @@ export function useCanvasState() {
   const [brushSize, setBrushSize] = useState<number>(12);
   const [brushColor, setBrushColor] = useState<string>("#ff0000");
   const [selectedColor, setSelectedColor] = useState<string>("#ff595e");
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+   const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
+
 
   // 🧰 UI overlays and toolbars
   const [showToolbar, setShowToolbar] = useState<boolean>(false);
@@ -156,9 +160,10 @@ export function useCanvasState() {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
   const stripRef = useRef<HTMLDivElement>(null);
   const [stripHeight, setStripHeight] = useState(0);
+  
   const [verticalOffset, setVerticalOffset] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(0);
 
 
 
@@ -167,6 +172,9 @@ export function useCanvasState() {
   const imageRef = useRef<Konva.Image>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textToolbarRef = useRef<HTMLDivElement>(null);
+  const footerClusterRef = useRef<HTMLDivElement>(null);
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const sideBarRef = useRef<HTMLDivElement>(null);
   const imagebarRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -404,10 +412,15 @@ export function useCanvasState() {
     setSelectedColor,
     showBackground, 
     setShowBackground,
+    previewSrc, setPreviewSrc,
+    previewRole, setPreviewRole,
 
     // 🧰 UI
     toolbarRef,
     textToolbarRef,
+    footerClusterRef,
+    topBarRef,
+    sideBarRef,
     showToolbar,
     setShowToolbar,
     isImageToolbar,

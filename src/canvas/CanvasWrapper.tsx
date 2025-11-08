@@ -10,7 +10,7 @@ import { ExportRitualModal } from "../components/ExportRitualModal";
 import TextToolbarOverlay from "./overlays/TextToolbarOverlay";
 import ImageToolbarOverlay from "./overlays/ImageToolbarOverlay";
 import SnapshotGalleryOverlay from "./overlays/SnapshotGalleryOverlay";
-
+import { unstable_batchedUpdates } from 'react-dom';
 import CanvasControls from "./controls/CanvasControls";
 import CanvasStage from "./controls/CanvasStage";
 import CanvasMetadata from "./controls/CanvasMetadata";
@@ -121,9 +121,12 @@ export default function CanvasWrapper() {
     activeIndex,
     overlayProps,
     konvaText,
-    textToolbarRef
-
-    
+    textToolbarRef,
+    footerClusterRef,
+    sideBarRef,
+    topBarRef,
+    cardGridGroupRef,
+    previewSrc
   } = state;
 
   const {
@@ -193,6 +196,8 @@ export default function CanvasWrapper() {
     setActiveIndex,
     setIsFullScreen,
     toggleFullScreen,
+    setPreviewSrc
+    
     
   } = actions;
 
@@ -240,6 +245,7 @@ export default function CanvasWrapper() {
 
       
       <CanvasControls
+        setPreviewSrc={setPreviewSrc}
         snapshots={snapshots}
         snapshotArchive={snapshotArchive}
         designElements={designElements}
@@ -316,6 +322,9 @@ export default function CanvasWrapper() {
         setPageAdded={setPageAdded}
         setShowPages={setShowPages}
         showPages={showPages}
+        footerClusterRef={footerClusterRef}
+        topBarRef={topBarRef}
+        sideBarRef={sideBarRef}
         
       />
 
@@ -398,44 +407,43 @@ export default function CanvasWrapper() {
                     template={template}
                     snapshots={snapshotArchive}
                     setDocumentTemplates={setDocumentTemplates}
-                    onSelect={async (entry:SnapshotEntry) => {
+                    onSelect={async (entry, index) => {
                       const { side: page, timestamp, template: snapshotTemplate } = entry;
-
-                     
-
-
-                      
-
-      
+                    
+                      /*unstable_batchedUpdates(() => {
+                        setActiveIndex(index);
+                      });*/
+                    
                       if (hasChanged) {
                         const updatedTemplate = { ...template };
                         updatedTemplate[page] = template[page];
-      
+                    
                         const captured = await captureFrontAndBack();
                         const updatedImage = side === 'front' ? captured.front : captured.back;
-      
-                        setSnapshotArchive(prev =>
-                          prev.map(e =>
-                            e.timestamp === activeTimestamp && e.side === side
-                              ? {
-                                  ...e,
-                                  image: updatedImage,
-                                  template: updatedTemplate
-                                }
-                              : e
-                          )
-                        );
+                    
+                        unstable_batchedUpdates(() => {
+                          setSnapshotArchive(prev =>
+                            prev.map(e =>
+                              e.timestamp === activeTimestamp && e.side === side
+                                ? { ...e, image: updatedImage, template: updatedTemplate }
+                                : e
+                            )
+                          );
+                        });
                       }
-      
+                    
                       const normalized = normalizeDualTemplate(snapshotTemplate);
-                      setTemplate(normalized);
-                     
-      
+                    
+                      unstable_batchedUpdates(() => {
+                        setTemplate(normalized);
+                      });
+                    
                       if (timestamp !== activeTimestamp || page !== side) {
                         renderToCanvas(normalized, setTemplate, setMode, page, () => {
-                          setSide(page);
-                          setActiveTimestamp(timestamp);
-                          console.log('Rendered updated template with selected face');
+                          unstable_batchedUpdates(() => {
+                            setSide(page);
+                            setActiveTimestamp(timestamp);
+                          });
                         });
                       }
                     }}
@@ -513,7 +521,7 @@ export default function CanvasWrapper() {
 {showToolbar && (
   <TextOverlayInput
   toolbarRef={toolbarRef}
-  inputPosition={overlayProps?.inputPosition}
+  inputPosition={inputPosition}
   editingText={editingText}
   onTextChange={onTextChange}
   onTextBlur={()=>{}}
@@ -588,6 +596,9 @@ export default function CanvasWrapper() {
       
 
       <ImageToolbarOverlay 
+      setPreviewSrc={setPreviewSrc}
+      previewSrc={previewSrc}
+      cardGridGroupRef={cardGridGroupRef}
       selectedImageId={selectedImageId}
       handleOnUploadImage={handleOnUploadImage}
       tone={template.tone}
