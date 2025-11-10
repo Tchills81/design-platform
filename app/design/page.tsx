@@ -14,9 +14,7 @@ export default function DesignPage() {
   return (
     <main className={`${backgroundClass}`} style={{ padding: '2rem', fontFamily: 'Inter', position: 'relative' }}>
         {/* Top Bar */}
-        <div className="absolute top-4 left-6 fade-in">
-          <ToneAwareLogo size={64} />
-         </div>
+        
       <CanvasWrapper />
     </main>
   );

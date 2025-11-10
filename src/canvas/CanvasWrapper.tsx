@@ -29,6 +29,8 @@ import { renderToCanvas } from "../utils/renderToCanvas";
 import { PreviewModal } from "../components/PreviewModal";
 import { ModalThumbnailStrip } from "../components/ModalThumbnailStrip";
 import TextOverlayInput from "../components/TextOverlayInput";
+import { SidebarTabs } from "../components/SidebarTabs";
+import { SidebarPanel } from "../components/SidebarPanel";
 
 
 export default function CanvasWrapper() {
@@ -126,7 +128,12 @@ export default function CanvasWrapper() {
     sideBarRef,
     topBarRef,
     cardGridGroupRef,
-    previewSrc
+    previewSrc,
+    activeTab,
+    SIDEBAR_WIDTH,
+    PANEL_WIDTH,
+    initailPosition
+    
   } = state;
 
   const {
@@ -196,8 +203,12 @@ export default function CanvasWrapper() {
     setActiveIndex,
     setIsFullScreen,
     toggleFullScreen,
-    setPreviewSrc
-    
+    setPreviewSrc,
+    setActiveTab,
+    setStageSize,
+    setPosition,
+    setStageStyle,
+    recenterCanvas
     
   } = actions;
 
@@ -222,6 +233,72 @@ export default function CanvasWrapper() {
 
   
   return (
+    <>
+
+
+{/* 🧭 Sidebar Tabs + Panel */}
+<div
+      style={{
+        position: 'absolute',
+        top: 54,
+        left: 0,
+        width: activeTab ? 340 : 60,
+        height: '100vh', // ✅ anchor to viewport
+        pointerEvents: 'none', // allows canvas interactions underneath
+        zIndex: 50
+      }}
+    >
+      {/* Tabs */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 60,
+          height: '100vh', // ✅ match viewport height
+          pointerEvents: 'auto'
+        }}
+      >
+        <SidebarTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          hasInitializedZoom={hasInitializedZoom}
+          tone={template.tone}
+           SIDEBAR_WIDTH={SIDEBAR_WIDTH}
+           PANEL_WIDTH={PANEL_WIDTH}
+          setStageStyle={setStageStyle}
+          recenterCanvas={recenterCanvas}
+        />
+      </div>
+
+      {/* Panel */}
+      {activeTab && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 60,
+            width: 280,
+            height: '100vh', // ✅ ensures SidebarPanel gets full height
+            pointerEvents: 'auto'
+          }}
+        >
+          <SidebarPanel
+            tab={activeTab}
+            tone={template.tone}
+            PANEL_WIDTH={PANEL_WIDTH}
+            handleTemplateSelect={handleTemplateSelect}
+            resetDesign={resetDesign}
+            onClose={() => {
+              setActiveTab(null);
+              hasInitializedZoom.current=false;
+             
+              }}
+          />
+        </div>
+      )}
+    </div>
+
     <div ref={containerRef}
     id="canvas-container"
     style={{
@@ -232,6 +309,12 @@ export default function CanvasWrapper() {
       height: '100vh',
       overflow: 'hidden'
     }}>
+
+    {/* 🧭 Sidebar Tabs */}
+  
+
+
+    
 
 <PreviewModal
   entry={previewEntry}
@@ -333,6 +416,9 @@ export default function CanvasWrapper() {
 
 {showGrids && (
   <>
+
+
+
   <GridBackground
   width={stageSize.width}
   height={stageSize.height}
@@ -393,6 +479,10 @@ export default function CanvasWrapper() {
         actions={actions}
 
       />
+
+  
+
+
 
 
       {template && snapshots.back !== null && snapshots.front !== null &&  showPages==true && (
@@ -626,5 +716,13 @@ export default function CanvasWrapper() {
 
       
     </div>
+
+
+
+
+
+   
+
+    </>
   );
 }

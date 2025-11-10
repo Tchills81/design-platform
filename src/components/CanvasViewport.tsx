@@ -18,6 +18,8 @@ import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 interface CanvasViewportProps {
   template: DualTemplate;
   side: 'front' | 'back';
+  SIDEBAR_WIDTH:number;
+  stageStyle: {};
   mode: CanvasMode;
   zoom: number;
   stageSize: { width: number; height: number };
@@ -154,6 +156,8 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     isPreviewMode,
     elementRef,
     konvaText,
+    SIDEBAR_WIDTH,
+    stageStyle
 
   } = props;
 
@@ -169,15 +173,26 @@ export default function CanvasViewport(props: CanvasViewportProps) {
   
 
   return (
-    <div ref={elementRef} className='canvas-stage'
+    <div
+    ref={elementRef}
+    className="canvas-stage"
+    style={{
+      position: 'relative',
       
-    >
+     
+      top: 0,
+      overflow: 'hidden'
+    }}
+  >
+  
+      
+    
       <Stage
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
         className={`${isPreviewMode? backgroundColor:backgroundClass}`}
-        style={{ backgroundColor:  '#1e1e1e', position:'absolute' }}
+        style={stageStyle}
 
 
         onClick={(e) => {

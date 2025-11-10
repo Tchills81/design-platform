@@ -168,7 +168,7 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
             right: -16,
             width: 12,
             height: 12,
-            background: '#ccc',
+            background: '#FFF',
             cursor: 'nwse-resize',
             borderRadius: 2
           }}

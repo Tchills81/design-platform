@@ -14,6 +14,7 @@ import { AccessLevel } from "@/src/types/access";
 import { usePageLimiter } from "@/src/utils/usePageLimiter";
 import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
 import { TextToolbarOverlayProps } from "../overlays/TextToolbarOverlay";
+import { SidebarTab } from "@/src/types/Tab";
 export function useCanvasState() {
 
 //
@@ -111,6 +112,10 @@ export function useCanvasState() {
   const [initialZoomedOutValue, setInitialZoomedOutValue] = useState(1);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+
+  const SIDEBAR_WIDTH = 60; // or 280 if panel is open
+  const TOPBAR_OFFSET = 30; // or 280 if panel is open
+  const PANEL_WIDTH = 385;
  
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({
     width: window.innerWidth,
@@ -160,6 +165,8 @@ export function useCanvasState() {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
   const stripRef = useRef<HTMLDivElement>(null);
   const [stripHeight, setStripHeight] = useState(0);
+  const [activeTab, setActiveTab] = useState<SidebarTab| null>(null);
+
   
   const [verticalOffset, setVerticalOffset] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
@@ -518,6 +525,8 @@ export function useCanvasState() {
 
   hasChanged, 
   setHasChanged,
+  activeTab, 
+  setActiveTab,
 
   maxPageCount, 
   setMaxPageCount,
@@ -547,6 +556,9 @@ export function useCanvasState() {
 
   konvaText, 
   setKonvaText,
+  SIDEBAR_WIDTH,
+  TOPBAR_OFFSET,
+  PANEL_WIDTH,
 
   // 🧠 Derived tone
   tone,

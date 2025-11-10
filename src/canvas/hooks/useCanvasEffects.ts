@@ -89,7 +89,11 @@ export function useCanvasEffects(
     positionRef,
     initailPosition,
     konvaText,
-    textToolbarRef
+    textToolbarRef,
+    SIDEBAR_WIDTH,
+    TOPBAR_OFFSET,
+    PANEL_WIDTH,
+    activeTab
     
   } = state;
 
@@ -134,7 +138,8 @@ export function useCanvasEffects(
     setInitialPosition,
     handleFullScreenChange,
     computeOverlayPosition,
-    setActiveIndex
+    setActiveIndex,
+    recenterCanvas
 
   } = actions;
 
@@ -142,19 +147,19 @@ export function useCanvasEffects(
 
 useEffect(() => {
   if (hasInitializedZoom.current) return;
-  if (!template || !containerRef.current || mode === "painting") return;
+  if (!template || !containerRef.current || mode === "painting" ) return;
 
   const container = containerRef.current;
 
   // 1. Calculate and set initial zoom
-  const SIDEBAR_WIDTH = 280;
+  const _SIDEBAR_WIDTH = 280;
   const RULER_THICKNESS = 24;
   const TOP_BAR_HEIGHT = 110;
   const FOOTER_HEIGHT = 48;
   const RIGHT_MARGIN = 280;
   const EXTRA_MARGIN = 120;
 
-  const viewportWidth = container.offsetWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
+  const viewportWidth = container.offsetWidth - _SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
   const viewportHeight = container.offsetHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
 
   const zoomX = (viewportWidth - EXTRA_MARGIN) / template.width;
@@ -172,8 +177,7 @@ useEffect(() => {
   // 3. Center canvas in stage
   const initialKonvaX = (stageSize.width - scaledWidth) / 2;
   const initialKonvaY = (stageSize.height - scaledHeight) / 2;
-  setPosition({ x: initialKonvaX, y: initialKonvaY });
-  setInitialPosition({ x: initialKonvaX, y: initialKonvaY });
+  
 
   // 4. Reset scroll thumbs
   const verticalInput = document.querySelector('.canvas-scrollbar.vertical') as HTMLInputElement;
@@ -182,67 +186,89 @@ useEffect(() => {
   if (horizontalInput) horizontalInput.value = '0';
 
   // 5. Apply stage styling
-  setStageStyle({ /* ... your styles ... */ });
+
+  if(activeTab){
+
+
+    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:(PANEL_WIDTH+SIDEBAR_WIDTH)});
+
+    setPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
+
+    setInitialPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
+    
+  }else{
+
+    setPosition({ x: initialKonvaX, y: initialKonvaY });
+    setInitialPosition({ x: initialKonvaX, y: initialKonvaY});
+    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:0});
+    setInputPosition(null);
+   
+    
+  }
+    
+
+ 
 
   hasInitializedZoom.current = true;
-}, [template, mode]);
+}, [template, mode, activeTab]);
 
 
 
 useEffect(() => {
   const handleWheel = (e: WheelEvent) => {
+    // ✅ Allow native scroll if sidebar is open and event targets a scrollable sidebar region
+    if (activeTab) {
+       
+      const isSidebarScroll = (e.target as HTMLElement)?.closest('.sidebar-scroll');
+      if (isSidebarScroll) return; // Let sidebar scroll naturally
+    }
+
     const konvaGroup = cardGridGroupRef.current;
     if (!konvaGroup || !template) return;
 
     e.preventDefault();
 
-    // Determine max scroll values
     const scaledCanvasHeight = template.height * zoom;
     const scaledCanvasWidth = template.width * zoom;
     const maxY = Math.max(0, scaledCanvasHeight - stageSize.height);
     const maxX = Math.max(0, scaledCanvasWidth - stageSize.width);
 
-    // Get the current Konva group position
     const currentKonvaPosition = konvaGroup.position();
-
-    // Calculate the next Konva position based on wheel delta
-    // Delta is already inverted by the browser (negative is scroll up, positive is scroll down)
     const nextKonvaX = currentKonvaPosition.x - e.deltaX;
     const nextKonvaY = currentKonvaPosition.y - e.deltaY;
 
-    // Calculate the center offsets
-    const centerOffsetX = (stageSize.width - scaledCanvasWidth) / 2;
+
+  
+
+    let centerOffsetX = (stageSize.width - scaledCanvasWidth) / 2;
+
+    if(activeTab){
+      centerOffsetX = (stageSize.width - scaledCanvasWidth -(PANEL_WIDTH+SIDEBAR_WIDTH)) / 2;
+    }
     const centerOffsetY = (stageSize.height - scaledCanvasHeight) / 2;
 
-    // Clamp the Konva position to the scrollable area
     const clampedKonvaX = clamp(nextKonvaX, -(maxX / 2) + centerOffsetX, maxX / 2 + centerOffsetX);
     const clampedKonvaY = clamp(nextKonvaY, -(maxY / 2) + centerOffsetY, maxY / 2 + centerOffsetY);
 
-    // Set the Konva group's position directly
     konvaGroup.position({ x: clampedKonvaX, y: clampedKonvaY });
-    //konvaGroup.getLayer()?.batchDraw();
 
-
-    if(konvaText){
-      konvaText?.visible(true);
-      konvaText?.getLayer()?.batchDraw();
+    if (konvaText) {
+      konvaText.visible(true);
+      konvaText.getLayer()?.batchDraw();
       setSelectedTextId(null);
       setShowToolbar(false);
       setInputPosition(null);
-    
     }
 
-    // Update the scroll position state to match the new konva position
     setScrollPosition({ x: clampedKonvaX, y: clampedKonvaY });
     triggerFade();
-
-    
   };
 
   window.addEventListener('wheel', handleWheel, { passive: false });
   return () => window.removeEventListener('wheel', handleWheel);
 }, [
-  scrollPosition, // Depend on the scroll position state
+  activeTab, // ✅ include this so the effect updates when sidebar opens/closes
+  scrollPosition,
   zoom,
   template,
   stageSize,
@@ -250,6 +276,7 @@ useEffect(() => {
   triggerFade,
   setScrollPosition
 ]);
+
 
 
 
@@ -301,7 +328,7 @@ useEffect(() => {
     setOverlayStyle({
       position: 'absolute',
       top: position.y,
-      left: position.x ,
+      left: position.x + SIDEBAR_WIDTH, // ✅ add sidebar offset
       transform: `scale(${absoluteGroupScale.x})`,
       transformOrigin: 'top left',
       zIndex: 2,

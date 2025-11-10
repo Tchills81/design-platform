@@ -21,6 +21,7 @@ import isEqual from 'lodash.isequal';
 import Konva from "konva";
 import { DesignElement } from "@/src/types/DesignElement";
 import { number } from "framer-motion";
+import { SidebarTab } from "@/src/types/Tab";
 
 export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
@@ -157,7 +158,12 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setPreviewRole,
     setPreviewSrc,
     konvaText,
-    activeIndex
+    activeIndex,
+    setActiveTab,
+    hasInitializedZoom,
+    activeTab,
+    PANEL_WIDTH,
+    SIDEBAR_WIDTH
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -407,17 +413,19 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
 
 
-  const computeOverlayPosition = (textNode: Konva.Text, stage: Konva.Stage, scale:number=zoom) => {
+  const computeOverlayPosition =useCallback( (textNode: Konva.Text, stage: Konva.Stage, scale:number=zoom):{x:number, y:number} => {
     scale= stage.scaleX(); // assuming uniform scale
     const stagePos = stage.position(); // { x, y } — canvas offset
     const nodePos = textNode.getAbsolutePosition(); // { x, y } — logical position
   
-    // Translate to screen-space
+    
+
+
     const screenX = nodePos.x * scale + stagePos.x;
     const screenY = nodePos.y * scale + stagePos.y;
   
     return { x: screenX, y: screenY };
-  };
+  }, []);
 
   const handleZoom = useCallback((scaleBy: number, allowBelowOne = false) => {
     const oldZoom = zoom;
@@ -428,7 +436,10 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     if (!konvaGroup || !template) return;
   
     const currentKonvaPosition = konvaGroup.position();
-    const center = { x: stageSize.width / 2, y: stageSize.height / 2 };
+    let center = { x: stageSize.width / 2, y: stageSize.height / 2 };
+    if(activeTab){
+      center = { x:(stageSize.width-(PANEL_WIDTH+SIDEBAR_WIDTH)) / 2, y: stageSize.height / 2 };
+    }
   
     // 🎯 Recalculate canvas position to keep it centered
     const newPosition = {
@@ -475,6 +486,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
       }
      
+
     
 
 
@@ -1593,6 +1605,8 @@ const setDesignElement = useCallback(
 
 
   const resetDesign = useCallback(() => {
+
+    hasInitializedZoom.current = false;
     setSelectedImageId(null);
     resetTransformMode();
     setCropModeActive(false);
@@ -1779,6 +1793,8 @@ const setDesignElement = useCallback(
 
     const pos = computeOverlayPosition(textNode, stageRef.current, zoom)
 
+     pos.x += activeTab ? PANEL_WIDTH + SIDEBAR_WIDTH : 0;
+
     setInputPosition(pos)
   
     setOverlayProps({
@@ -1817,8 +1833,39 @@ const setDesignElement = useCallback(
   
 
 
-  
 
+
+  function getVisibleCanvasBounds(activeTab: SidebarTab | null): { x: number; y: number; width: number; height: number } {
+    const sidebarWidth = activeTab ? 385+60 : 60; // tabs + panel
+    const topBarHeight = 60; // adjust if needed
+  
+    return {
+      x: sidebarWidth,
+      y: topBarHeight,
+      width: window.innerWidth - sidebarWidth,
+      height: window.innerHeight
+    };
+  }
+
+
+  const recenterCanvas=useCallback(()=>{
+   
+    if(!template) return;
+   
+    
+
+    //setStageSize({width:bounds.width, height:bounds.height})
+
+    const centerX= position.x - (PANEL_WIDTH + SIDEBAR_WIDTH) / 2;
+    //const centerY = bounds.y + (bounds.height - scaledHeight) / 2
+    setPosition({x:position.x-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:position.y});
+
+    setInitialPosition({x:position.x-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:position.y})
+
+   
+
+  },[template])
+  
 
 
 
@@ -1966,6 +2013,7 @@ const setDesignElement = useCallback(
     setKonvaText,
     computeOverlayPosition,
     setPreviewSrc,
-    setActiveIndex
+    setActiveTab,
+    recenterCanvas
   };
 }

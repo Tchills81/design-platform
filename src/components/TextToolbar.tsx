@@ -51,6 +51,7 @@ interface TextToolbarProps {
   onRemoveText?: () => void;
   toggleCommentModal: () => void;
   selectedTextId?: string | null;
+  
 }
 
 const TextToolbar: React.FC<TextToolbarProps> = ({
@@ -94,14 +95,15 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
       <ToneButton
         icon={<TypeIcon/>}
         label="Add text"
-        onClick={()=>{}}
+        onClick={()=>{
+          if(onAddText){ onAddText()}}}
         tone={tone}
       />
 
       <ToneButton
         icon={<TrashIcon />}
         label=""
-        onClick={()=>{}}
+        onClick={()=>{ if(onRemoveText) onRemoveText();}}
         tone={tone}
         isActive={!!selectedTextId && !!selectedTextId}
       />

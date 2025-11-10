@@ -27,3 +27,32 @@ export const TemplateGeometry: Record<TemplateSize, { width: number; height: num
   [TemplateSize.PROMO_PORTRAIT]: { width: 900, height: 1600, defaultCellSize: 64 },
   [TemplateSize.PROMO_LANDSCAPE]: { width: 1600, height: 900, defaultCellSize: 64 }
 };
+
+
+export const TEMPLATE_PRESETS = [
+  {
+    id: 'minimal-card',
+    name: 'Minimal Card',
+    description: 'Clean layout with subtle tone and centered text.',
+    onSelect: () => {
+      // Call your template selection logic here
+      console.log('Minimal Card selected');
+    }
+  },
+  {
+    id: 'dual-face',
+    name: 'Dual Face Layout',
+    description: 'Front and back design with mirrored tone.',
+    onSelect: () => {
+      console.log('Dual Face selected');
+    }
+  },
+  {
+    id: 'grid-gallery',
+    name: 'Grid Gallery',
+    description: 'Multi-cell layout for image-rich designs.',
+    onSelect: () => {
+      console.log('Grid Gallery selected');
+    }
+  }
+];

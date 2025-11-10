@@ -231,25 +231,12 @@ export default function FooterControlCluster({
              
 
 <ToggleCheckbox
-  label="Show Rulers"
-  checked={showRulers}
-  onToggle={toggleRulers}
-  tone={tone}
-/>
-<ToggleCheckbox
   label="Show Bleeds"
   checked={showBleeds}
   onToggle={toggleBleeds}
   tone={tone}
   disabled={bleedToggleDisabled}
 />
-<ToggleCheckbox
-  label="Show Grid"
-  checked={showGrids}
-  onToggle={toggleGrids}
-  tone={tone}
-/>
-
  
 
 {mode === 'painting' && (

@@ -109,6 +109,7 @@ export default function CanvasStage({
     isPreviewMode,
     elementRef,
     konvaText,
+    SIDEBAR_WIDTH
   
 
   } = state;
@@ -151,6 +152,7 @@ export default function CanvasStage({
 
     
     <CanvasViewport
+   
   template={template}
   side={side}
   mode={mode}
@@ -158,6 +160,7 @@ export default function CanvasStage({
   elementRef={elementRef}
   thumbValue={thumbValue}
   stageSize={stageSize}
+  stageStyle={stageStyle}
   scrollPos={scrollPosition}
   setScrollPosition={setScrollPosition}
   scrollOffset={scrollOffset}
@@ -199,7 +202,7 @@ export default function CanvasStage({
   pendingStyle={pendingStyle}
   isPreviewMode={isPreviewMode}
   konvaText={konvaText}
-  
+  SIDEBAR_WIDTH={SIDEBAR_WIDTH}
   handlers={{
     setImageRef: updateImageRef,
     onPaint: handleCellPaint,

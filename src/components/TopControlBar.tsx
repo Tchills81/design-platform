@@ -83,7 +83,7 @@ export default function TopControlBar({
 
   return (
     <>
-    <div ref={topBarRef} id='top-bar' className="absolute top-6 right-4 z-20 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+    <div ref={topBarRef} id='top-bar' className="absolute top-0 right-4 z-20 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg">
      
 
      <ToneButton
@@ -153,7 +153,7 @@ export default function TopControlBar({
 
 <ToneButton
   icon={<LogOutIcon />}
-  label=""
+  label="Log Out"
   tone={tone}
   onClick={() => {
     signOut({ callbackUrl: '/' })

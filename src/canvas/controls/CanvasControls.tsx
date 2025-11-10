@@ -220,7 +220,7 @@ export default function CanvasControls({
     
     <>
 
-    {!isPreviewMode && (
+    {isPreviewMode && (
 
 
 <SidebarModule tone={template.tone as tone} sideBarRef={sideBarRef}>

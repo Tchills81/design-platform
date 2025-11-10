@@ -9,6 +9,8 @@ import { TemplateSize } from '../enumarations/TemplateSize';
 import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
 import { getDefaultPageType } from '../utils/getDefaultPageType';
 import { getMaxPageCount } from '../utils/getMaxPageCount';
+import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
+
 type ThumbnailStripProps = {
   stripRef: React.RefObject<HTMLDivElement | null>;
   snapshots: SnapshotEntry[];
@@ -80,6 +82,8 @@ export function ThumbnailStrip({
   const currentPageCount = snapshots.length;
   const canAddPage = currentPageCount < maxPageCount;
 
+  const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+
 
   // 🧩 Labeling logic for thumbnails
   function getThumbnailLabel(index: number, entry: SnapshotEntry, defaultType: 'page' | 'inside'): string {
@@ -116,7 +120,7 @@ export function ThumbnailStrip({
   
 
   return (
-    <div
+    <div className={`${backgroundClass}`}
     ref={stripRef}
     style={{
       position: 'absolute',
@@ -125,17 +129,18 @@ export function ThumbnailStrip({
       width: 'inherit',
       zIndex: 20,
       display: 'flex',
-      justifyContent: isPreviewMode?'center':'left',
-      alignItems:  isPreviewMode?'center':'left',
+      justifyContent: isPreviewMode?'center':'center',
+      alignItems:  isPreviewMode?'center':'center',
       gap: '1rem',
       padding: '0.75rem 1rem',
       borderTop: '1px dotted #e2e8f0',
-      background: '#e2e8f0',
+     
       flexWrap: 'wrap',
       overflowX: 'auto',
       boxSizing: 'border-box',
       transition: 'opacity 0.3s ease-in-out, transform 0.9s ease-in-out',
-      animation: 'fadeInUp 0.9s ease-out forwards' // ✅ ceremonial entrance
+      animation: 'fadeInUp 0.9s ease-out forwards', // ✅ ceremonial entrance
+      
     }}
   >
       {/* ➕ Add Page Button */}
@@ -144,15 +149,15 @@ export function ThumbnailStrip({
         <div>
 
       <ToneButton
-      icon={<Copy size={18}/>}
-      label={defaultType === 'inside' ? 'Duplicate ' : 'Duplicate '}
+      icon={<Copy />}
+      label={defaultType === 'inside' ? 'Inside' : ''}
       tone={template?.tone as tone || 'ceremonial'}
       onClick={handleDuplicatePage}
       disabled={!canAddPage}
       />
       <ToneButton
-      icon={<SquarePlus size={18}/>}
-      label={defaultType === 'inside' ? 'Add ' : 'Add '}
+      icon={<SquarePlus />}
+      label={defaultType === 'inside' ? 'Inside' : ''}
       tone={template?.tone as tone || 'ceremonial'}
       onClick={handleAddPage}
       disabled={!canAddPage}
