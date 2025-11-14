@@ -1,23 +1,38 @@
 
 import { Dispatch, RefObject, SetStateAction } from 'react';
 import { SidebarTab, tabs } from '../types/Tab';
+
+import { useTabContext } from '../canvas/hooks/TabContext';
+
 import { has } from 'lodash';
 
 type SidebarTabsProps = {
-  activeTab: SidebarTab | null;
-  setActiveTab: (tab: SidebarTab | null) => void;
   recenterCanvas: () => void;
-  PANEL_WIDTH:number;
-  SIDEBAR_WIDTH:number;
-  hasInitializedZoom: RefObject<boolean>
- 
-setStageStyle: Dispatch<SetStateAction<{}>>
+  PANEL_WIDTH: number;
+  SIDEBAR_WIDTH: number;
+  hasInitializedZoom: RefObject<boolean>;
+  SidebarTabsRef: RefObject<HTMLDivElement | null>;
+  //setStageStyle: Dispatch<SetStateAction<{}>>;
+
+  setStageStyle: (style: React.CSSProperties) => void
   tone: string;
 };
 
-export function SidebarTabs({ activeTab, SIDEBAR_WIDTH, PANEL_WIDTH, hasInitializedZoom, setActiveTab, setStageStyle, recenterCanvas, tone }: SidebarTabsProps) {
+
+export function SidebarTabs({
+  SidebarTabsRef, 
+  SIDEBAR_WIDTH, 
+  PANEL_WIDTH, 
+  hasInitializedZoom, 
+  setStageStyle, 
+  recenterCanvas, 
+  tone 
+}: SidebarTabsProps)
+ {
+  const [activeTab, setActiveTab] = useTabContext();
+
   return (
-    <div
+    <div ref={SidebarTabsRef} id='side-bar-tabs'
       style={{
         position: 'absolute',
         top: 0,
@@ -42,7 +57,9 @@ export function SidebarTabs({ activeTab, SIDEBAR_WIDTH, PANEL_WIDTH, hasInitiali
           key={tab.id}
           onClick={() => {
             const nextTab = tab.id === activeTab ? null : tab.id;
-            setActiveTab(nextTab);
+
+            
+            
           
             const nextLeft = nextTab ? PANEL_WIDTH+SIDEBAR_WIDTH : 0;
 
@@ -50,7 +67,9 @@ export function SidebarTabs({ activeTab, SIDEBAR_WIDTH, PANEL_WIDTH, hasInitiali
             if(nextTab){
                 setStageStyle({ backgroundColor: '#1e1e1e', position: 'absolute', left:  PANEL_WIDTH+SIDEBAR_WIDTH });
                 recenterCanvas();
+                setActiveTab(nextTab);
             }else{
+                 setActiveTab(null)
                 hasInitializedZoom.current=false;
             }
             

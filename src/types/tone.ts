@@ -85,3 +85,14 @@ export const toneBackgroundClasses: Record<tone, string> = {
   minimal: 'bg-white'
 };
 
+
+export const tonePromptSuggestions: Record<tone, string[]> = {
+  festive: ['a holiday table with glowing lights', 'a cheerful parade in warm tones'],
+  neutral: ['a grayscale cityscape', 'a minimalist desk setup'],
+  primary: ['a bold poster with geometric shapes', 'a vibrant jungle scene'],
+  accent: ['a splash of watercolor over abstract forms', 'a neon-lit alley'],
+  ceremonial: ['a golden altar in candlelight', 'a ritual circle under moonlight'],
+  reflective: ['a misty lake at dawn', 'a quiet study with soft shadows'],
+  elegant: ['a fashion editorial in muted purples', 'a ballroom with chandeliers'],
+  minimal: ['a white canvas with one black dot', 'a sparse grid of icons']
+};

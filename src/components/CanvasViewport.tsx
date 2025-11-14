@@ -14,6 +14,7 @@ import Konva from 'konva';
 import { DesignElement } from '../types/DesignElement';
 import CanvasScrollbars from './CanvasScrollbars';
 import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
+import { SidebarTab } from '../types/Tab';
 
 interface CanvasViewportProps {
   template: DualTemplate;
@@ -39,8 +40,15 @@ interface CanvasViewportProps {
   setModeActive:(active:boolean)=>void;
 
   scrollPos:{x:number; y:number};
+   setActiveTab: (tab: SidebarTab | null) => void
+   tab:SidebarTab;
 
-  setScrollPosition:React.Dispatch<React.SetStateAction<{ x: number; y: number; }>>;
+  
+
+  setScrollPosition: (pos: {
+    x: number;
+    y: number;
+}) => void
   
   setCropRegion: (region: { x: number; y: number; width: number; height: number }) => void;
   canvasSize:{scaleX:number; scaleY:number; width:number; height:number};
@@ -53,6 +61,7 @@ interface CanvasViewportProps {
   editingText: string | undefined;
   designElements: DesignElement[];
   transformModeActive: boolean;
+  isTransitioningTemplate: boolean;
   rows: number;
   cols: number;
   cellSize: number;
@@ -65,7 +74,8 @@ interface CanvasViewportProps {
   isUnderline: boolean;
   isPreviewMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
-  setElementId: React.Dispatch<React.SetStateAction<string>>;
+  //setElementId: React.Dispatch<React.SetStateAction<string>>;
+  setElementId: (id: string) => void
   konvaText: Konva.Text | null;
 
   pendingStyle: {
@@ -73,10 +83,12 @@ interface CanvasViewportProps {
     isItalic?: boolean;
 }
 
-setPendingStyle: React.Dispatch<React.SetStateAction<
-{   isBold: boolean;
-    isItalic: boolean;
- } | {} >>;
+
+
+ setPendingStyle: (style: {
+    isBold?: boolean
+    isItalic?: boolean;
+}) => void;
 
  
 
@@ -98,9 +110,10 @@ setPendingStyle: React.Dispatch<React.SetStateAction<
     onPrimitiveSelect: () => void;
     handleHorizontalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
     handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
-    setSelectedTextId: (value: React.SetStateAction<string | null>) => void;
+    //setSelectedTextId: (value: React.SetStateAction<string | null>) => void;
+    setSelectedTextId: (id: string | null) => void
     setKonvaText: (node:Konva.Text)=>void;
-     _handleTextClick: (textNode: Konva.Text) => void;
+     _handleTextClick: (textNode: Konva.Text, tabActive:boolean) => void;
 
   };
 }
@@ -157,7 +170,10 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     elementRef,
     konvaText,
     SIDEBAR_WIDTH,
-    stageStyle
+    stageStyle,
+    setActiveTab,
+    isTransitioningTemplate,
+    tab
 
   } = props;
 
@@ -196,79 +212,114 @@ export default function CanvasViewport(props: CanvasViewportProps) {
 
 
         onClick={(e) => {
-            const overlayEl = document.getElementById('text-overlay');
-            const overImageBar = document.getElementById('image-tool-bar');
-            const { clientX, clientY } = e.evt;
-            const domTarget = document.elementFromPoint(clientX, clientY);
-          
-            const clickedInsideOverlay = overlayEl?.contains(domTarget);
 
-            const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
-            console.log('overImageBar', e.target); 
+         
 
-            if (clickedInsideOverlay || clickedInsideOverImageBar) {
-              console.log('Clicked inside overlay / image toolbar — do not dismiss ');
-              return;
-            }
-          
-            const clickedNode = e.target;
-            const className = clickedNode.getClassName?.();
-            const nodeName = clickedNode.name?.();
-          
-            const isImage = className === 'Image';
-            const isShape = nodeName === 'Shape';
-            const isTransformer = className === 'Transformer';
-            const isRect = className === 'Rect';
-            const isStage = clickedNode === e.target.getStage();
-          
-           // console.log('clickedInsideOverImageBar', clickedInsideOverImageBar);
-          
-            // 🎯 Show transform only for image or shape
-            const shouldShowTransform = isImage || isShape;
-          
-            // 🧹 Dismiss selection for canvas or stage
-            const shouldDismiss = isRect || isStage;
-          
-            // 🧼 Dismiss for anything else
-            const isUnknown = !isImage && !isShape && !isTransformer && !isStage && !isRect;
-          
-            if (shouldDismiss || isUnknown) {
-              handlers.setSelectedImageId(null);
-              resetTransformMode();
-              setModeActive(false);
-              return;
-            }
-          
-            // 🎨 Apply pending style updates
-            if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
-              const updatedElements = template[side].elements.map(el =>
-                el.id === selectedTextId && el.type === 'text'
-                  ? { ...el, ...pendingStyle }
-                  : el
-              );
-          
-              setTemplate(prev => ({
-                ...prev!,
-                [side]: {
-                  ...prev![side],
-                  elements: updatedElements
-                }
-              }));
-          
-              setPendingStyle({});
-            }
-          
-            // ✨ Show transform
-            if (shouldShowTransform) {
-              konvaText?.visible(true);
-              konvaText?.getLayer()?.batchDraw();
-            }
-          }}
+            /**
+             * 
+             * 🔍 What This onClick Handler Does
+Detects DOM target under the click
+
+Checks if click was inside overlay or image toolbar
+
+If yes → exits early
+
+Identifies clicked Konva node
+
+Class name, node name, type
+
+Dismisses selection if clicked on canvas, rect, or unknown
+
+Calls:
+
+handlers.setSelectedImageId(null)
+
+resetTransformMode()
+
+setModeActive(false)
+
+Applies pending style updates if needed
+
+Shows transform if applicable
+             */
+
+const overlayEl = document.getElementById('text-overlay');
+  const overImageBar = document.getElementById('image-tool-bar');
+  const { clientX, clientY } = e.evt;
+  const domTarget = document.elementFromPoint(clientX, clientY);
+
+  const clickedInsideOverlay = overlayEl?.contains(domTarget);
+  const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
+
+  if (clickedInsideOverlay || clickedInsideOverImageBar) {
+    console.log('Clicked inside overlay / image toolbar — do not dismiss');
+    return;
+  }
+
+  const clickedNode = e.target;
+  const className = clickedNode.getClassName?.();
+  const nodeName = clickedNode.name?.();
+
+  const isImage = className === 'Image';
+  const isShape = nodeName === 'Shape';
+  const isFrame = nodeName === 'Frame'; // ✅ Frame detection
+  const isTransformer = className === 'Transformer';
+  const isRect = className === 'Rect';
+  const isStage = clickedNode === e.target.getStage();
+
+  console.log('nodeName:', nodeName);
+
+  const shouldShowTransform = isImage || isShape || isFrame;
+  const shouldDismiss = isRect || isStage;
+  const isUnknown =
+    !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect;
+
+  if (shouldDismiss || isUnknown) {
+    handlers.setSelectedImageId(null); // ✅ Deselect image-wrapped shapes and frames
+    resetTransformMode();
+    setModeActive(false);
+    return;
+  }
+
+  // 🎨 Apply pending style updates to selected text
+  if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
+    const updatedElements = template[side].elements.map((el) =>
+      el.id === selectedTextId && el.type === 'text'
+        ? { ...el, ...pendingStyle }
+        : el
+    );
+
+    setTemplate((prev) => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: updatedElements,
+      },
+    }));
+
+    setPendingStyle({});
+  }
+
+  // ✨ Select and show transform
+  if (shouldShowTransform) {
+    const selectedId = clickedNode.id?.();
+    if (selectedId) {
+      handlers.setSelectedImageId(selectedId); // ✅ Select shape or frame by ID
+    }
+
+    konvaText?.visible(true);
+    konvaText?.getLayer()?.batchDraw();
+  }
+
+}}
           
       >
         {/* Canvas layer */}
         <CardSideLayer
-        isPreviewMode={isPreviewMode}
+          setActiveTab={setActiveTab}
+          isTransitioningTemplate={isTransitioningTemplate}
+          tab={tab}
+          isPreviewMode={isPreviewMode}
           scrollOffset={scrollOffset}
           scrollPos={scrollPos}
           setScrollPosition={setScrollPosition}
@@ -305,10 +356,7 @@ export default function CanvasViewport(props: CanvasViewportProps) {
           setTemplate={setTemplate}
           handlers={handlers}
         />
-        <Layer x={position.x} y={position.y} scaleX={zoom} scaleY={zoom}  listening={false}>
-            <Rect stroke={'#1e1e1e'} width={template.width} height={template.height} listening={false}/>
-
-        </Layer>
+      
 
         {/* Rulers */}
         {showRulers && (

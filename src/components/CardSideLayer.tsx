@@ -5,11 +5,12 @@ import ImageElement from './ImageElement';
 import TextElement from './TextElement';
 import { TemplateElement, DualTemplate, isTextElementForTextComponent } from '../types/template';
 import { CanvasMode } from '../types/CanvasMode';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Konva from 'konva';
 import { DesignElement } from '../types/DesignElement';
 import { tone } from '../types/tone';
 import { Rect } from 'react-konva';
+import { SidebarTab } from '../types/Tab';
 
 interface CardSideLayerProps {
   card: {
@@ -20,6 +21,7 @@ interface CardSideLayerProps {
     gridColors?: string[];
   };
 
+  isTransitioningTemplate: boolean;
   isPreviewMode?: boolean;
   showBackground: boolean;
   dynamicBackground: string;
@@ -35,7 +37,11 @@ interface CardSideLayerProps {
   position: { x: number; y: number };
   canvasBounds: { x: number; y: number; width: number; height: number };
   scrollPos: {x: number; y: number}
-  setScrollPosition: React.Dispatch<React.SetStateAction<{x: number, y: number}>>;
+
+  setScrollPosition: (pos: {
+    x: number;
+    y: number;
+}) => void
  
   containerRef?: any;
   cardGridGroupRef?:any;
@@ -55,7 +61,10 @@ interface CardSideLayerProps {
   isMultiline: boolean;
   isUnderline: boolean;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
-  setElementId: React.Dispatch<React.SetStateAction<string>>;
+  //setElementId: React.Dispatch<React.SetStateAction<string>>;
+  setElementId: (id: string) => void
+  setActiveTab: (tab: SidebarTab | null) => void
+  tab:SidebarTab;
   
   designElements: DesignElement[];
   handlers: {
@@ -73,7 +82,8 @@ interface CardSideLayerProps {
     setSelectedImageId: (id: string) => void;
     onFontSizeChange: (size: number) => void;
     onPrimitiveSelect: () => void;
-    _handleTextClick: (textNode: Konva.Text) => void;
+    _handleTextClick: (textNode: Konva.Text, tabActive:boolean) => void;
+    
   };
 }
 
@@ -126,7 +136,15 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   isMultiline,
   isUnderline,
   isPreviewMode,
+  setActiveTab,
+  isTransitioningTemplate,
+  tab
 }) => {
+
+
+  if (isTransitioningTemplate) return null;
+
+
   const imageRef = useRef<Konva.Image>(null);
   const cardBounds = {
     x: 0,
@@ -139,40 +157,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
     if (handlers.setImageRef) handlers.setImageRef(ref);
   };
 
-  // Layout offsets
-  const SIDEBAR_WIDTH = 280;
-  const RULER_THICKNESS = 24;
-  const TOP_BAR_HEIGHT = 64;
-  const FOOTER_HEIGHT = 48;
-  const RIGHT_MARGIN = 280;
-  const EXTRA_MARGIN = 120;      // bottom footer
-
-  
-
-  const maskX = 0;
-  const maskY = 0;
-  
-  const maskWidth = window.innerWidth
-  const maskHeight = window.innerHeight;
-
-  const availableWidth = window.innerWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
-  const availableHeight = window.innerHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
 
 
-  const cardWidth = template?.[side]?.card?.width ?? 0;
-  const cardHeight = template?.[side]?.card?.height ?? 0;
-
-  const zoomX = availableWidth / cardWidth;
-  const zoomY = availableHeight / cardHeight;
-
-  const initialZoom = Math.min(zoomX, zoomY);
-
-
-  const offsetX = (availableWidth - cardWidth * initialZoom) / 2 + SIDEBAR_WIDTH + RULER_THICKNESS;
-  const offsetY = (availableHeight - cardHeight * initialZoom) / 2 + TOP_BAR_HEIGHT + RULER_THICKNESS;
-  
-  
-  //console.log('scrollPosition', scrollPos, 'position', position)
 
 
   return (
@@ -237,6 +223,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 canvasBounds={cardBounds}
                 setGhostLines={handlers.setGhostLines}
                 onSelect={() => {
+
+                  console.log('el', el);
                   handlers.setSelectedImageId(el.id);
                   setElementId(el.id);
                 }}
@@ -286,25 +274,21 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   handlers.onTextUpdate(updated);
                 }}
                 onClick={(e) => {
-                  /*const stage = e.target.getStage();
-                  const pointerPos = stage?.getPointerPosition();
-                  if (pointerPos) {
-                    handlers.onFontSizeChange(el.size);
-                    handlers.setSelectedFont(el.font);
-                    handlers.setSelectedColor(el.color);
-                    handlers.onTextClick(el.label, pointerPos, el.id);
-                    setElementId(el.id);
-                  }*/
-
-
+                
 
                     const node = e.target;
                     const stage = node.getStage();
                     const pointerPos = stage?.getPointerPosition();
 
+                    
                     if (node && node instanceof Konva.Text && pointerPos) {
                        // 1. Pass the actual node to your overlay logic
-                       handlers._handleTextClick(node);
+
+
+                       console.log('tab..briri', tab, 'setActiveTab'); 
+
+                       
+                       handlers._handleTextClick(node, tab ? true:false);
 
                        // 2. Sync sidebar state (optional if overlay handles this)
                        handlers.onFontSizeChange(node.fontSize());
@@ -312,7 +296,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                        handlers.setSelectedColor(el.color);
 
                        // 3. Track selected element
-                       setElementId(node.id());
+                      setElementId(node.id());
                 }}}
                 onEdit={(text, pos, align) => {
                   handlers.onTextEdit(text, pos, el);

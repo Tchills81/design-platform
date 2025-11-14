@@ -33,7 +33,7 @@ export function TemplatePanelContent({
 
   const setSelectedType = (type: string) => {
     setSelectedTypeRaw(type);
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    //window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
   const setSelectedTone = (tone: string) => {

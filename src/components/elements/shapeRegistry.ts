@@ -51,6 +51,72 @@ export type ShapeMeta = {
         }),
       drawsFromCenter: false
     },
+
+
+  
+    // 🎉 Frame variants
+    'frame-basic': {
+      render: (element, props) =>
+        React.createElement(Rect, {
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: element.width ?? 240,
+          height: element.height ?? 180,
+          fill: 'transparent',
+          stroke: props.isSelected ? '#00f0ff' : element.stroke ?? '#1e293b',
+          strokeWidth: props.isSelected ? 2 : element.strokeWidth ?? 2,
+          hitStrokeWidth: 12, // or 16 for extra forgiveness
+          listening:true,
+          draggable: true,
+          name: 'Frame',
+          ...props
+        }),
+      drawsFromCenter: false
+    },
+  
+    'frame-dashed': {
+      render: (element, props) =>
+        React.createElement(Rect, {
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: element.width ?? 240,
+          height: element.height ?? 180,
+          fill: 'transparent',
+          stroke: props.isSelected ? '#00f0ff' : element.stroke ?? '#64748b',
+          strokeWidth: props.isSelected ? 2 : element.strokeWidth ?? 2,
+          dash: [6, 4],
+          hitStrokeWidth: 12, // or 16 for extra forgiveness
+          listening:true,
+
+          draggable: true,
+          name: 'Frame',
+          ...props
+        }),
+      drawsFromCenter: false
+    },
+  
+    'frame-rounded': {
+      render: (element, props) =>
+        React.createElement(Rect, {
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: element.width ?? 240,
+          height: element.height ?? 180,
+          fill: 'transparent',
+          stroke: props.isSelected ? '#00f0ff' : element.stroke ?? '#334155',
+          strokeWidth: props.isSelected ? 2 : element.strokeWidth ?? 2,
+          hitStrokeWidth: 12, // or 16 for extra forgiveness
+          listening:true,
+          cornerRadius: 12,
+          draggable: true,
+          name: 'Frame',
+          ...props
+        }),
+      drawsFromCenter: false
+    },
   
     circle: {
       render: (element, props) =>

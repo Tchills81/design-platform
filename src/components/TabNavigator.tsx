@@ -17,6 +17,7 @@ interface TabNavigatorProps {
   onSelect: (tpl: DualTemplate) => void;
   snapshotArchive: SnapshotEntry[];
   setSnapshotArchive: React.Dispatch<React.SetStateAction<SnapshotEntry[]>>;
+  
   setDualFaces: (dualFaces: DualTemplate[]) => void;
   showDesigns?: boolean;
 }
@@ -27,7 +28,8 @@ export default function TabNavigator({
   snapshotArchive,
   setSnapshotArchive,
   setDualFaces,
-  showDesigns
+  showDesigns,
+ 
 }: TabNavigatorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('templates');
   const [importedAsset, setImportedAsset] = useState<{
@@ -93,6 +95,7 @@ export default function TabNavigator({
                   onSelect={onSelect}
                   importedAsset={importedAsset ?? undefined}
                   setDualFaces={setDualFaces}
+                 
                 />
               )}
 

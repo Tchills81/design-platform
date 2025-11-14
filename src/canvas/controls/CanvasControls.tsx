@@ -28,7 +28,7 @@ import { RefObject, useState } from 'react';
 import TonePalette from '@/src/components/TonePalette';
 import { HistoryEntry } from '@/src/types/HistoryEntry';
 import ProfileCard from '@/src/components/ProfileCard';
-import ElementPanel from '@/src/components/ElementPanel';
+//import ElementPanel from '@/src/components/ElementPanel';
 import { DesignElement } from '@/src/types/DesignElement';
 import { SnapshotEntry } from '@/src/types/SnapshotEntry';
 
@@ -61,9 +61,15 @@ export interface CanvasControlsProps {
     hasInitializedZoom:RefObject<boolean>;
     
     setSide: React.Dispatch<React.SetStateAction<'front' | 'back'>>;
-    setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
+    //setFaceMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
+
+   // setFaceMode: (m: CanvasMode) => void;
+
+    setFaceMode: (updater: CanvasMode | ((prev: CanvasMode) => CanvasMode)) => void
+
     setPageAdded: React.Dispatch<React.SetStateAction<boolean>>;
     setIsFullScreen:React.Dispatch<React.SetStateAction<boolean>>;
+    //setIsFullScreen: (b: boolean) => void
     toggleFullScreen:()=>void;
     
     setMode: React.Dispatch<React.SetStateAction<CanvasMode>>;
@@ -78,9 +84,14 @@ export interface CanvasControlsProps {
     designElements:DesignElement[];
     activeTimestamp:string | null; 
     hasChanged:boolean;
-    setPreviewSrc:React.Dispatch<React.SetStateAction<string | null>>;
+    //setPreviewSrc:React.Dispatch<React.SetStateAction<string | null>>;
+
+    setPreviewSrc: (src: string | null) => void
+
     captureFrontAndBack(): Promise<{ front: string; back: string }>;
-    setActiveTimestamp:React.Dispatch<React.SetStateAction<string | null>>;
+    setActiveTimestamp:React.Dispatch<React.SetStateAction<string>>;
+
+    //setActiveTimestamp: (ts: string) => void
     setCanvasReady:React.Dispatch<React.SetStateAction<boolean>>;
     setHasChanged:React.Dispatch<React.SetStateAction<boolean>>;
     setShowRulers: React.Dispatch<React.SetStateAction<boolean>>;
@@ -111,6 +122,7 @@ export interface CanvasControlsProps {
     handleTemplateSelect:(tpl:DualTemplate)=>void;
     setShowPages: React.Dispatch<React.SetStateAction<boolean>>;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+    //setIsCollapsed: (b: boolean) => void
     setIsPreviewMode:(mode:boolean)=>void;
     footerClusterRef: RefObject<HTMLDivElement | null>
     topBarRef: RefObject<HTMLDivElement | null>
@@ -241,12 +253,7 @@ hasInitializedZoom.current = false;
 
 
 
-<SidebarSection label="Elements" >
-<ElementPanel tone={template.tone as tone}  onSelect={(el:DesignElement)=>{
-handleDesignSelected(el);
-}}/>
 
-</SidebarSection>
 
 
 <SidebarSection label="Canvas Rituals">

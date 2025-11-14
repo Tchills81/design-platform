@@ -50,6 +50,8 @@ export default function ImageToolbarOverlay({
   previewSrc,
   setPreviewSrc
 }: ImageToolbarOverlayProps) {
+
+  console.log('ImageToolbarOverlay', 'selectedImageId', selectedImageId, 'mode', mode);
   if (!selectedImageId || mode !== 'card') return null;
 
   return (

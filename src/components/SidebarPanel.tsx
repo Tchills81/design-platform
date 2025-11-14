@@ -1,34 +1,53 @@
-import { ReactNode } from 'react';
+import { ReactNode, RefObject, useEffect } from 'react';
 import { SidebarTab } from '../types/Tab';
 import { TEMPLATE_PRESETS } from '../enumarations/TemplateGeometry';
 import { TemplatePanelContent } from './TemplatePanelContent';
 import { PanelContainer } from './PanelContainer';
 import { DualTemplate } from '../types/template';
 import { tone } from '../types/tone';
+import { useTabContext } from '../canvas/hooks/TabContext';
+import { ElementPanelContent } from './ElementPanel';
+import { GenerateImagePanel } from './elements/renderGenerateImage';
 
 type SidebarPanelProps = {
-  tab: SidebarTab;
-  tone: string;
-  PANEL_WIDTH: number;
-  onClose?: () => void;
-  handleTemplateSelect: (tpl?: DualTemplate) => void;
-  resetDesign: () => void;
-};
+    tone: string;
+    PANEL_WIDTH: number;
+    onClose?: () => void;
+    handleTemplateSelect: (tpl?: DualTemplate) => void;
+    resetDesign: () => void;
+    PanelRef: RefObject<HTMLDivElement | null>;
 
-export function SidebarPanel({
-  tab,
-  tone,
-  PANEL_WIDTH,
-  handleTemplateSelect,
-  resetDesign,
-  onClose
-}: SidebarPanelProps) {
+  };
+  
+
+  export function SidebarPanel({
+    tone,
+    PANEL_WIDTH,
+    handleTemplateSelect,
+    resetDesign,
+    onClose,
+    PanelRef
+  }: SidebarPanelProps) {
+    const [tab] = useTabContext();
+  
+  useEffect(() => {
+    console.log('SidebarPanel mounted with tab:', tab);
+  }, [tab]);
+
   const renderContent = (): ReactNode => {
+    if (!tab) {
+      return (
+        <div className="text-sm text-gray-500 italic">
+          No active tab. Panel is visible but tab state is missing.
+        </div>
+      );
+    }
+
     switch (tab) {
+
       case 'templates':
         return (
-          <PanelContainer tone='primary'>
-            {/* 🎨 Featured Layouts */}
+          <PanelContainer tone="primary" PanelRef={PanelRef}>
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-600 mb-2">Featured Layouts</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -45,7 +64,6 @@ export function SidebarPanel({
               </div>
             </div>
 
-            {/* 🧱 Template Content */}
             <TemplatePanelContent
               onSelect={(template: DualTemplate) => {
                 resetDesign();
@@ -58,18 +76,39 @@ export function SidebarPanel({
           </PanelContainer>
         );
 
+
+        case 'elements':
+  return (
+    <>
+
+    <GenerateImagePanel onGenerate={()=>{}}/>
+    <div className="px-3 pt-4">
+  <h2 className="text-base font-semibold text-foreground mb-2">Browse Categories</h2>
+</div>
+    <PanelContainer tone={'primary'} PanelRef={PanelRef}>
+      <ElementPanelContent
+        tone={'primary'}
+        
+      />
+    </PanelContainer></>
+  );
+
       case 'text':
-        return <PanelContainer tone={tone as tone}>Text presets, fonts, and tone-aware styles will go here.</PanelContainer>;
       case 'images':
-        return <PanelContainer tone={tone as tone}>Image search, tone-aware filters, and previews will go here.</PanelContainer>;
       case 'uploads':
-        return <PanelContainer tone={tone as tone}>Uploaded assets and drag-to-canvas logic will go here.</PanelContainer>;
-      case 'elements':
-        return <PanelContainer tone={tone as tone}>Shapes, icons, and modular components will go here.</PanelContainer>;
       case 'tools':
-        return <PanelContainer tone={tone as tone}>Paint, Draw and the like previews and layout suggestions will go here.</PanelContainer>;
+        return (
+          <PanelContainer tone={tone as tone} PanelRef={PanelRef}>
+            {tab.charAt(0).toUpperCase() + tab.slice(1)} presets and layout suggestions will go here.
+          </PanelContainer>
+        );
+
       default:
-        return null;
+        return (
+          <div className="text-sm text-red-500 italic">
+            Unknown tab: {tab}. Unable to render panel content.
+          </div>
+        );
     }
   };
 
@@ -116,10 +155,9 @@ export function SidebarPanel({
           marginBottom: '1rem'
         }}
       >
-        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+        {tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Panel'}
       </h3>
 
-      {/* ✅ Modular content */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
         {renderContent()}
       </div>

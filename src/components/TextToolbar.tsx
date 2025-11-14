@@ -51,6 +51,7 @@ interface TextToolbarProps {
   onRemoveText?: () => void;
   toggleCommentModal: () => void;
   selectedTextId?: string | null;
+  offset:number;
   
 }
 
@@ -69,7 +70,7 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   tone,
   onAddText,
   onRemoveText,
-  toggleCommentModal,
+  offset = 0,
   selectedTextId,
   isMultiline,
   isUnderlined,
@@ -77,17 +78,22 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   onAlignChange,
   onToggleMultiline,
   onToggleUnderline,
-  textWidth,
-  onWidthChange,
-  lineHeight,
-  onLineHeightChange,
+  
 }) => {
 
   const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+
+  let shift=0;
+  if(offset > 0) {
+    shift = Math.round(offset / window.innerWidth);
+  }
+
+  const offsetClass= offset == 0 ? 'left-1/2' : 'left-2/3' 
+
   
   return (
     <div
-    className={`absolute z-50 left-1/2 top-20 -translate-x-1/2 
+    className={`absolute z-50 ${offsetClass} top-20 -translate-x-1/2 
       flex items-center gap-1 px-1 py-1 bg-white rounded-xl shadow-xl border border-gray-200 
       whitespace-nowrap overflow-x-auto max-w-[90vw] ${backgroundClass}`}
   >

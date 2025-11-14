@@ -4,7 +4,7 @@ import { JSX } from 'react';
 
 export type Tab = 'templates' | 'saved' | 'archive' | 'guided'| 'import'| null;
 
-export type SidebarTab = 'text' | 'images' | 'uploads' | 'elements' | 'templates' |'tools';
+export type SidebarTab = 'text' | 'images' | 'uploads' | 'elements' | 'templates' |'tools' | null;
 
 export const tabs: { id: SidebarTab; icon: JSX.Element; label: string }[] = [
     { id: 'templates', icon: <LayoutTemplate size={18} />, label: 'Templates' },

@@ -1,8 +1,9 @@
 // src/canvas/hooks/useCanvasActions.tsx
 
 import { useCallback } from "react";
+
 import { useCanvasState } from "./useCanvasState";
-import { DualTemplate, TemplateElement } from "@/src/types/template";
+import { DualTemplate, TemplateElement, TemplateElementType } from "@/src/types/template";
 import { SnapshotEntry } from "@/src/types/SnapshotEntry";
 import { HistoryEntry } from "@/src/types/HistoryEntry";
 import { CanvasMode } from "@/src/types/CanvasMode";
@@ -16,6 +17,7 @@ import { getInjectionSideFromIndex, InjectableAsset, injectAssetIntoTemplate } f
 import { captureCardFaceSnapshot } from "@/src/utils/captureCardFaceSnapshot";
 import { printSnapshots } from "@/src/components/printSnapshots";
 import { supportedShapes } from "@/src/components/elements/shapeRegistry";
+
 import isEqual from 'lodash.isequal';
 
 import Konva from "konva";
@@ -141,8 +143,8 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     thumbValue,
     setThumbValue,
     hasInitialized,
-    setInitialPosition,
     initailPosition,
+    setInitailPosition,
     positionRef,
     setPreviewEntry, 
     setIsPreviewing,
@@ -163,7 +165,13 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     hasInitializedZoom,
     activeTab,
     PANEL_WIDTH,
-    SIDEBAR_WIDTH
+    SIDEBAR_WIDTH,
+    computePosition,
+    setIsTransitioningTemplate,
+    setTemplateReady,
+    setTemplateSelected,
+    setTemplateRendering,
+    setSelectedDualTemplate,
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -438,6 +446,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     const currentKonvaPosition = konvaGroup.position();
     let center = { x: stageSize.width / 2, y: stageSize.height / 2 };
     if(activeTab){
+      console.log('active tab...xxx ', activeTab);
       center = { x:(stageSize.width-(PANEL_WIDTH+SIDEBAR_WIDTH)) / 2, y: stageSize.height / 2 };
     }
   
@@ -457,8 +466,10 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     if (isDefaultZoom) {
       setPosition(initailPosition);
       setScrollPosition({ x: 0, y: 0 });
+     
     } else {
       setPosition(newPosition);
+      
     }
   
     setCanvasSize({
@@ -481,7 +492,15 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
       if(konvaText){
 
-        const pos=computeOverlayPosition(konvaText, stageRef.current, newZoom)
+        
+          const pos = computePosition({
+          textNode: konvaText,
+          stageRef,
+          zoom: newZoom,
+          tabActive: true,
+          offset: 0 // ✅ no sidebar offset during zoom
+        });
+        
         setInputPosition(pos);
 
       }
@@ -554,7 +573,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
 
 const createPrimitiveId = useCallback(
-  (type: 'text' | 'shape' | 'image') => {
+  (type: TemplateElementType) => {
     if (!template || !template[side]) return `${side}-${type}-1`;
 
     const prefix = `${side}-${type}`;
@@ -1404,7 +1423,7 @@ const setDesignElement = useCallback(
     if (!snapshots.front || !snapshots.back || !template) return;
     archiveSnapshots(mode);
     console.log("Design saved to archive ✨");
-    setLastSavedTemplate(template);
+    //setLastSavedTemplate(template);
     setTemplate(null);
   }, [snapshots, template, card]);
 
@@ -1620,6 +1639,7 @@ const setDesignElement = useCallback(
     setZoom(1);
     setInitialZoomedOutValue(1);
     setTemplate(null);
+    setStageSize({width:window.innerWidth, height:window.innerHeight});
     
   }, []);
 
@@ -1762,7 +1782,7 @@ const setDesignElement = useCallback(
   
 
 
-  const _handleTextClick = useCallback((textNode: Konva.Text)=>{
+  const _handleTextClick = useCallback((textNode: Konva.Text, tabActive:boolean)=>{
 
     const {
       text,
@@ -1789,13 +1809,26 @@ const setDesignElement = useCallback(
     // 2. Set editing state
     setEditingText(text);
     setSelectedTextId(textNode.id());
-    setInputPosition({ x, y });
+    //setInputPosition({ x, y });
 
-    const pos = computeOverlayPosition(textNode, stageRef.current, zoom)
+    //const pos = computeOverlayPosition(textNode, stageRef.current, zoom)
 
-     pos.x += activeTab ? PANEL_WIDTH + SIDEBAR_WIDTH : 0;
+    // pos.x += tabActive ? PANEL_WIDTH + SIDEBAR_WIDTH : 0;
+    //console.log('activeTab', activeTab);
 
-    setInputPosition(pos)
+
+    //const computePosition = useOverlayPosition();
+
+    const pos = computePosition({
+      textNode: textNode,
+      stageRef:stageRef,
+      zoom:zoom,
+      tabActive: tabActive,
+      offset: PANEL_WIDTH + SIDEBAR_WIDTH
+    });
+    
+
+    setInputPosition(pos);
   
     setOverlayProps({
       selectedFont: fontFamily,
@@ -1860,7 +1893,7 @@ const setDesignElement = useCallback(
     //const centerY = bounds.y + (bounds.height - scaledHeight) / 2
     setPosition({x:position.x-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:position.y});
 
-    setInitialPosition({x:position.x-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:position.y})
+    setInitailPosition({x:position.x-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:position.y})
 
    
 
@@ -2000,7 +2033,6 @@ const setDesignElement = useCallback(
     handleHorizontalScroll,
     clamp,
     triggerFade,
-    setInitialPosition,
     closePreview,
     handlePreview,
     setIsPreviewMode,
@@ -2014,6 +2046,13 @@ const setDesignElement = useCallback(
     computeOverlayPosition,
     setPreviewSrc,
     setActiveTab,
-    recenterCanvas
+    recenterCanvas,
+    setIsTransitioningTemplate,
+    setTemplateReady,
+    setTemplateSelected,
+    setTemplateRendering,
+    setSelectedDualTemplate,
+    setInitailPosition,
+    createPrimitiveId
   };
 }

@@ -23,6 +23,7 @@ export interface TextToolbarOverlayProps {
   isItalic: boolean;
   editingText: string;
   tone: string;
+  offset: number;
   onFontChange: (font: string) => void;
   onColorChange: (color: string) => void;
   onFontSizeChange: (size: number) => void;
@@ -66,6 +67,7 @@ export default function TextToolbarOverlay({
   isMultiline,
   isUnderline,
   textAlign,
+  offset
 }: TextToolbarOverlayProps) {
   if (!showToolbar || !inputPosition || mode !== "card") return null;
 
@@ -78,6 +80,7 @@ export default function TextToolbarOverlay({
           selectedFontSize={selectedFontSize}
           isBold={isBold}
           isItalic={isItalic}
+          offset={offset}
           
           tone={tone}
           toggleCommentModal={()=>{setShowCommentModal(true);}}

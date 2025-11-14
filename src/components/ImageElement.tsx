@@ -10,6 +10,8 @@ import { supportedShapes } from './elements/shapeRegistry';
 import { tone } from '../types/tone';
 import { toneColorMap } from '../types/tone';
 import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
+import { Text } from 'react-konva';
+
 
 interface ImageElementProps {
   id: string;
@@ -156,15 +158,15 @@ const ImageElement: React.FC<ImageElementProps> = ({
     const clampedX = Math.max(minX, Math.min(rawX, maxX));
     const clampedY = Math.max(minY, Math.min(rawY, maxY));
 
-    node.position({ x: rawX, y: rawY });
+    node.position({ x: clampedX, y: clampedY });
     node.getLayer()?.batchDraw();
 
     if (setGhostLines) setGhostLines({});
 
     handleImageUpdate({
       target: {
-        x: () => rawX,
-        y: () => rawY,
+        x: () => clampedX,
+        y: () => clampedY,
         width: () => node.width(),
         height: () => node.height()
       }

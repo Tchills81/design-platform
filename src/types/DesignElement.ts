@@ -1,9 +1,9 @@
-export type ElementType = 'text' | 'shape' | 'image';
-import { shapeType } from '@/src/types/template';
+
+import { shapeType, TemplateElementType } from '@/src/types/template';
 
 export interface DesignElement {
   id: string;
-  type: ElementType;
+  type: TemplateElementType
   label?: string;
   x: number;
   y: number;
@@ -25,6 +25,14 @@ export interface DesignElement {
 
   // Image-specific
   src?: string;
+  rotation?:number,
+  opacity?:number;
+  visible?:boolean;
+  locked?:boolean;
+  name?:string;
+  emoji?:string;
+  text?:string;
+  role?: 'frame' | 'divider' | 'accent' | 'inside-frame' | 'symbol' | 'message' | 'container';
 
   // Shape-specific
   shapeType: shapeType;

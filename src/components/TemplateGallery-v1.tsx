@@ -9,10 +9,12 @@ import { toneClasses } from '../types/tone';
 import { TemplateSize } from '../enumarations/TemplateSize';
 import CategoryStrip from './CategoryStrip';
 import { TemplateCategoryMap } from '../enumarations/TemplateSize';
+import { useRouter } from 'next/navigation';
 
 type TemplateGalleryProps = {
   onSelect: (template: DualTemplate) => void;
   setDualFaces: (docs: DualTemplate[]) => void;
+  
   importedAsset?: {
     src: string;
     role: 'background' | 'element';
@@ -21,11 +23,15 @@ type TemplateGalleryProps = {
 
 const templateTones = Object.keys(toneClasses);
 
+
 export default function TemplateGalleryV2({
+  
   onSelect,
   setDualFaces,
-  importedAsset
+  importedAsset,
+ 
 }: TemplateGalleryProps) {
+  
   const [templates, setTemplates] = useState<UnifiedTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedTypeRaw] = useState<string>('all');
@@ -135,6 +141,9 @@ export default function TemplateGalleryV2({
                     const dual = toDualTemplate(enriched);
                     setDualFaces([dual]);
                     onSelect(dual);
+                    
+
+                    
                   };
 
                   return (

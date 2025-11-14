@@ -9,9 +9,10 @@ import { CardSideLayer } from "@/src/components/CardSideLayer";
 import RulerLayer from "@/src/components/RulerLayer";
 import { PrintGuidesOverlay } from '@/src/components/PrintGuidesOverlay';
 import GhostLines from "@/src/components/GhostLines";
-import { useCanvasState } from '../hooks/useCanvasState';
 import { useCanvasActions } from '../hooks/useCanvasActions';
 import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
+
+import { useCanvasState } from '../hooks/useCanvasState';
 
 import { Line } from 'react-konva';
 import { Text } from 'react-konva';
@@ -99,19 +100,16 @@ export default function CanvasStage({
     stageStyle,
     showPages,
     stripHeight,
-    verticalOffset,
-    scrollContainerRef,
-    largeContainerRef,
-    largeContainerSize,
+   
     scrollPosition,
     canvasSize,
     thumbValue,
     isPreviewMode,
     elementRef,
     konvaText,
-    SIDEBAR_WIDTH
-  
-
+    SIDEBAR_WIDTH,
+    activeTab,
+    isTransitioningTemplate
   } = state;
   
   const {
@@ -133,7 +131,8 @@ export default function CanvasStage({
     handleHorizontalScroll,
     handleVerticalScroll,
     _handleTextClick,
-    setKonvaText
+    setKonvaText,
+    setActiveTab
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -152,7 +151,8 @@ export default function CanvasStage({
 
     
     <CanvasViewport
-   
+   setActiveTab={setActiveTab}
+   tab={activeTab}
   template={template}
   side={side}
   mode={mode}
@@ -202,6 +202,7 @@ export default function CanvasStage({
   pendingStyle={pendingStyle}
   isPreviewMode={isPreviewMode}
   konvaText={konvaText}
+  isTransitioningTemplate={isTransitioningTemplate}
   SIDEBAR_WIDTH={SIDEBAR_WIDTH}
   handlers={{
     setImageRef: updateImageRef,
@@ -216,6 +217,7 @@ export default function CanvasStage({
     setSelectedTextId: setSelectedTextId,
     _handleTextClick:_handleTextClick,
     setKonvaText:setKonvaText,
+    
     
     setGhostLines,
     setSelectedFont,

@@ -3,7 +3,8 @@ import { TemplateCategoryMap, TemplateSize } from '../enumarations/TemplateSize'
 import { TemplateSizeLabel } from '../enumarations/TemplateSizeLabel';
 import { toneClasses } from '../types/tone';
 import { useSeasonalTone } from '../themes/useSeasonalTone';
-import { ChevronLeft, ChevronRight, Icon, StepBackIcon, StepForwardIcon } from 'lucide-react';
+import { StepBackIcon, StepForwardIcon } from 'lucide-react';
+import React from 'react';
 
 const categoryImages: Partial<Record<TemplateSize, string>> = {
   [TemplateSize.CARD_LANDSCAPE]: '/images/categories/card.jpg',
@@ -11,18 +12,17 @@ const categoryImages: Partial<Record<TemplateSize, string>> = {
   [TemplateSize.INVITE_A6]: '/images/categories/invite.jpg',
   [TemplateSize.POSTER_PORTRAIT]: '/images/categories/poster.jpg',
   [TemplateSize.GREETING_SQUARE]: '/images/categories/greeting.jpg'
-  // Add more as needed
 };
 
-export default function CategoryStrip({
-    selectedType,
-    setSelectedType,
-    toneBySize = {}
-  }: {
-    selectedType: string;
-    setSelectedType: (type: string) => void;
-    toneBySize?: Record<string, string>;
-  }) {
+export const CategoryStrip = React.memo(function CategoryStrip({
+  selectedType,
+  setSelectedType,
+  toneBySize = {}
+}: {
+  selectedType: string;
+  setSelectedType: (type: string) => void;
+  toneBySize?: Record<string, string>;
+}) {
   const { backgroundClass } = useSeasonalTone();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -33,15 +33,14 @@ export default function CategoryStrip({
   };
 
   return (
-    <div className={`relative w-full`}>
+    <div className="relative w-full">
       <div className="relative w-full max-w-screen-xl mx-auto overflow-hidden px-4">
         {/* ⬅️ Left Arrow */}
         <button 
           onClick={() => scrollBy(-200)}
           className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white text-gray-700 rounded-full shadow px-2 py-1 hover:bg-gray-100"
         >
-            <StepBackIcon />
-          
+          <StepBackIcon />
         </button>
 
         {/* ➡️ Right Arrow */}
@@ -49,7 +48,7 @@ export default function CategoryStrip({
           onClick={() => scrollBy(200)}
           className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white text-gray-700 rounded-full shadow px-2 py-1 hover:bg-gray-100"
         >
-          <StepForwardIcon/>
+          <StepForwardIcon />
         </button>
 
         {/* Scrollable Strip */}
@@ -69,40 +68,37 @@ export default function CategoryStrip({
             }
           `}</style>
 
-{Object.entries(TemplateSizeLabel).map(([key, label]) => {
-  const typedKey = key as TemplateSize;
-  const imageUrl = categoryImages[typedKey];
-  const categoryKey = TemplateCategoryMap[typedKey] ?? key.split('-')[0];
+          {Object.entries(TemplateSizeLabel).map(([key, label]) => {
+            const typedKey = key as TemplateSize;
+            const imageUrl = categoryImages[typedKey];
+            const categoryKey = TemplateCategoryMap[typedKey] ?? key.split('-')[0];
+            const tone = toneBySize?.[categoryKey] ?? 'neutral';
+            const toneClass = toneClasses[tone] ?? 'bg-gray-300 text-white';
 
-  const tone = toneBySize?.[categoryKey] ?? 'neutral';
+            console.log('Rendering category', categoryKey, 'with toneClass:', toneClass, 'and categoryKey:', categoryKey);
 
-  const toneClass = toneClasses[tone] ?? 'bg-gray-300 text-white';
-
-
-  console.log('Rendering category', categoryKey, 'with toneClass:', toneClass, 'and categoryKey:',  categoryKey);
-
-  return (
-    <button
-      key={key}
-      onClick={() => setSelectedType(key)}
-      className={`inline-block mr-4 rounded-l-full overflow-hidden shadow-2xs transition transform hover:scale-105 ${
-        selectedType === key ? 'ring-2 ring-white' : ''
-      } ${toneClass}`}
-      style={{
-        width: '25%',
-        height: '100px',
-        
-      }}
-    >
-      <div className={`${toneClass}`}>
-        {label}
-      </div>
-    </button>
-  );
-})}
-
+            return (
+              <button
+                key={key}
+                onClick={() => setSelectedType(key)}
+                className={`inline-block mr-4 rounded-l-full overflow-hidden shadow-2xs transition transform hover:scale-105 ${
+                  selectedType === key ? 'ring-2 ring-white' : ''
+                } ${toneClass}`}
+                style={{
+                  width: '25%',
+                  height: '100px'
+                }}
+              >
+                <div className={toneClass}>
+                  {label}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default CategoryStrip;

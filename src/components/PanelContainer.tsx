@@ -1,16 +1,17 @@
-import { ReactNode } from 'react';
+import { ReactNode, RefObject } from 'react';
 import { tone, toneBackgroundClasses } from '../types/tone';
 
 type PanelContainerProps = {
   tone: tone;
   children: ReactNode;
+  PanelRef: RefObject<HTMLDivElement | null>
 };
 
-export function PanelContainer({ tone, children }: PanelContainerProps) {
+export function PanelContainer({PanelRef, tone, children }: PanelContainerProps) {
   const backgroundClass = toneBackgroundClasses[tone] || toneBackgroundClasses['ceremonial'];
 
   return (
-    <div
+    <div ref={PanelRef} id='panel-container'
       className={`sidebar-scroll ${backgroundClass}`}
       style={{
         flex: 1,

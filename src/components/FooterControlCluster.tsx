@@ -52,7 +52,7 @@ interface FooterControlClusterProps {
   hasChanged: boolean;
   isPreviewMode:boolean;
   isCollapsed:boolean;
-  setActiveTimestamp: React.Dispatch<React.SetStateAction<string | null>>;
+  setActiveTimestamp: React.Dispatch<React.SetStateAction<string>>;
   setCavansReady: React.Dispatch<React.SetStateAction<boolean>>;
   setHasChanged: React.Dispatch<React.SetStateAction<boolean>>;
   captureFrontAndBack(): Promise<{ front: string; back: string }>;
@@ -237,6 +237,8 @@ export default function FooterControlCluster({
   tone={tone}
   disabled={bleedToggleDisabled}
 />
+
+
  
 
 {mode === 'painting' && (

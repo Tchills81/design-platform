@@ -2,7 +2,7 @@ import React, { RefObject, useState } from 'react';
 import { ToggleCheckbox } from './ToggleCheckbox';
 import { ToneButton } from './ToneButton';
 import { AddImageButton } from './AddImageButton';
-import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon, ImageUpscaleIcon, TrashIcon} from 'lucide-react';
+import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon, ImageUpscaleIcon, TrashIcon, MessageCircleHeartIcon} from 'lucide-react';
 import { ImageTools, TemplateSideKey } from '../utils/imageTools';
 import { DualTemplate } from '../types/template';
 import Konva from 'konva';
@@ -11,6 +11,8 @@ import { supportedShapeTypes } from './elements/shapes/types';
 import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 import { Group } from 'konva/lib/Group';
 import ImagePreviewModal from './ImagePreviewModal';
+import TonePalette from './TonePalette';
+import { tone } from '../types/tone';
 
 type ImageToolbarProps = {
   selectedElementId: string | null;
@@ -164,7 +166,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     recordSnapshot();
   };
 
-  console.log('shapeType', (imageRef?.current.getClassName()));
+  console.log(imageRef.current.getClassName(), 'isElementSelected', isElementSelected);
 
  
   const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
@@ -172,7 +174,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   const showColorPicker =
   isElementSelected &&
   imageRef?.current &&
-  supportedShapeTypes.includes(imageRef.current.getClassName());
+  imageRef.current.getClassName() != 'Image'
+
   const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
 
 
@@ -247,17 +250,10 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
         />
       )}
   
-      <ToneButton
-        label="Add Reflection"
-        icon={<ListPlusIcon size={18} />}
-        tone={tone}
-        fontSize="text-sm"
-        isActive={false}
-        onClick={toggleCommentModal}
-        disabled={!isElementSelected}
-      />
+     
   
       {showColorPicker && (
+        <>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Fill Color:</label>
           <input
@@ -267,8 +263,56 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
             className="w-8 h-8 border rounded cursor-pointer"
           />
         </div>
+        
+
+        <TonePalette
+      tone={tone as tone}
+      selectedColor={color}
+      onSelect={(newColor) => {
+        setColor(newColor);
+        if (!selectedElementId) return;
+
+        setTemplate(prev => {
+          if (!prev) return prev;
+          const updatedElements = prev[side]?.elements.map(el => {
+            if (el.id === selectedElementId) {
+              return {
+                ...el,
+                fill: newColor
+              };
+            }
+            return el;
+          });
+
+          return {
+            ...prev,
+            [side]: {
+              ...prev[side],
+              elements: updatedElements,
+            },
+          };
+        });
+
+        recordSnapshot();
+      }}
+    />
+        </>
       )}
+
+
+<ToneButton
+        label="Add Reflection"
+        icon={<MessageCircleHeartIcon size={18} />}
+        tone={tone}
+        fontSize="text-sm"
+        isActive={false}
+        onClick={toggleCommentModal}
+        disabled={!isElementSelected}
+      />
     </div>
+
+
+   
 
     <div>
 

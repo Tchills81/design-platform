@@ -1,9 +1,10 @@
 // src/canvas/hooks/useCanvasEffects.ts
 
 import { useEffect, useRef, useState } from "react";
-import { useCanvasState } from "./useCanvasState";
 import { useCanvasActions } from "./useCanvasActions";
 import { SnapshotEntry } from "@/src/types/SnapshotEntry";
+
+import { useCanvasState } from "./useCanvasState";
 
 import { DualTemplate, isTextElement } from "@/src/types/template";
 
@@ -18,6 +19,7 @@ import { renderToCanvas } from "@/src/utils/renderToCanvas";
 import { hashTemplateFace } from "@/src/utils/hashTemplateFace";
 import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
 import { TemplateSize } from "@/src/enumarations/TemplateSize";
+import { useFadeInLayer } from "./useFadeInLayer";
 export function useCanvasEffects(
   state: ReturnType<typeof useCanvasState>,
   actions: ReturnType<typeof useCanvasActions>
@@ -93,7 +95,11 @@ export function useCanvasEffects(
     SIDEBAR_WIDTH,
     TOPBAR_OFFSET,
     PANEL_WIDTH,
-    activeTab
+    activeTab,
+    SidebarTabsRef,
+    PanelRef,
+    selectedDualTemplate,
+    
     
   } = state;
 
@@ -134,20 +140,42 @@ export function useCanvasEffects(
     scrollByWheel,
     clamp,
     setPosition,
+    setInitailPosition,
     triggerFade,
-    setInitialPosition,
     handleFullScreenChange,
     computeOverlayPosition,
     setActiveIndex,
-    recenterCanvas
+    recenterCanvas,
+    setIsTransitioningTemplate,
+    
 
   } = actions;
+
+
+
+
+  useEffect(() => {
+    if (selectedDualTemplate && !template) {
+      handleTemplateSelect(selectedDualTemplate);
+    }
+  }, [selectedDualTemplate, template]);
+
+
+  useFadeInLayer({
+    groupRef: cardGridGroupRef,
+    templateId: template?.id,
+    setIsTransitioningTemplate,
+    hasInitializedZoom
+  });
+  
 
 
 
 useEffect(() => {
   if (hasInitializedZoom.current) return;
   if (!template || !containerRef.current || mode === "painting" ) return;
+
+  
 
   const container = containerRef.current;
 
@@ -189,28 +217,33 @@ useEffect(() => {
 
   if(activeTab){
 
+    
 
     setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:(PANEL_WIDTH+SIDEBAR_WIDTH)});
 
     setPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
 
-    setInitialPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
+    setInitailPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
     
   }else{
 
     setPosition({ x: initialKonvaX, y: initialKonvaY });
-    setInitialPosition({ x: initialKonvaX, y: initialKonvaY});
+    setInitailPosition({ x: (stageSize.width - scaledWidth) / 2, y: (stageSize.height - scaledHeight) / 2});
+
+    console.log()
     setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:0});
-    setInputPosition(null);
-   
+ 
     
   }
     
 
+  
  
 
   hasInitializedZoom.current = true;
 }, [template, mode, activeTab]);
+
+
 
 
 
@@ -252,7 +285,9 @@ useEffect(() => {
 
     konvaGroup.position({ x: clampedKonvaX, y: clampedKonvaY });
 
-    if (konvaText) {
+    const isKonvaText=konvaText && konvaText.visible;
+
+    if (isKonvaText ) {
       konvaText.visible(true);
       konvaText.getLayer()?.batchDraw();
       setSelectedTextId(null);
@@ -336,7 +371,7 @@ useEffect(() => {
       transition: 'opacity 0.3s ease-in-out',
       pointerEvents: 'auto',
       cursor: 'crosshair',
-      Draggable:true
+      
     });
   }
 }, [position, template, mode, zoom]); // Add `template` to dependencies
@@ -534,7 +569,7 @@ useEffect(() => {
     });
 
     handleZoom(zoom, false); // restore previous zoom
-    setInitialPosition(initailPosition)
+    setInitailPosition(initailPosition)
     setScrollPosition({x:0, y:0})
     setAllow(true);
   }
@@ -615,11 +650,15 @@ useEffect(() => {
   // 🧠 Global click to deselect text
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
+      
+      
       const clickedInsideToolbar = textToolbarRef.current?.contains(e.target as Node);
       const clickedOnTextOverlay = toolbarRef.current?.contains(e.target as Node);
       const clickedOnTopBar = topBarRef.current?.contains(e.target as Node);
       const clickedOnSideBar = sideBarRef.current?.contains(e.target as Node);
       const clickedOnFooterCluster = footerClusterRef.current?.contains(e.target as Node);
+      const clickedOnTabs = SidebarTabsRef.current?.contains(e.target as Node);
+      const clickedOnPanel = PanelRef.current?.contains(e.target as Node);
 
       console.log("handleGlobalClick", 
                   'clickedInsideToolbar', 
@@ -630,11 +669,21 @@ useEffect(() => {
           clickedOnTextOverlay || 
           clickedOnTopBar      || 
           clickedOnSideBar     || 
-          clickedOnFooterCluster
+          clickedOnFooterCluster ||
+          clickedOnTabs         ||
+          clickedOnPanel   
+
         ) return;
 
-      konvaText?.visible(true);
-      konvaText?.getLayer()?.batchDraw();
+
+        if(konvaText?.visible){
+
+          konvaText?.visible(true);
+          konvaText?.getLayer()?.batchDraw();
+
+        }
+         
+
       setSelectedTextId(null);
       setShowToolbar(false);
       setInputPosition(null);
@@ -730,6 +779,7 @@ useEffect(() => {
   
       setShowGallery(false);
       setCanvasReady(false);
+      //setInitialPosition(position);
     };
   
     runCapture();

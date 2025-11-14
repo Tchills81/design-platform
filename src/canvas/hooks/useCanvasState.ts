@@ -1,212 +1,343 @@
 // src/canvas/hooks/useCanvasState.ts
 
-import { useState, useRef, useMemo } from "react";
-import { DualTemplate, Template, TemplateDocument } from "../../types/template";
-import { HistoryEntry } from "../../types/HistoryEntry";
-import { SnapshotEntry } from "../../types/SnapshotEntry";
-import { CanvasMode } from "@/src/types/CanvasMode";
+
+
+import { useMemo, useRef, useState } from "react";
+import { useCanvasStore } from "../store/createCanvasStore";
 import useImage from "use-image";
-import Konva from "konva";
-import { useTransformMode } from "@/src/utils/useTransformMode";
+import { useOverlayPosition } from "./useOverlayPosition";
 import { DesignElement } from "@/src/types/DesignElement";
-import { ELEMENT_LIBRARY } from "@/lib/elements";
-import { AccessLevel } from "@/src/types/access";
 import { usePageLimiter } from "@/src/utils/usePageLimiter";
-import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
-import { TextToolbarOverlayProps } from "../overlays/TextToolbarOverlay";
-import { SidebarTab } from "@/src/types/Tab";
+import { useTransformMode } from "@/src/utils/useTransformMode";
+import { shallow } from 'zustand/shallow';
+
+import Konva from "konva";
+
+
+
+
+
 export function useCanvasState() {
+  // Get the entire store object
+  const store = useCanvasStore();
 
-//
-  const [width, setWidth] = useState(window.innerWidth);
-  // 🎨 Core template and history
-  const [template, setTemplate] = useState<DualTemplate | null>(null);
-  const [templateDocuments, setDocumentTemplates] = useState<TemplateDocument[]>([]);
-  const [dualFaces, setDualFaces]=useState<DualTemplate[]>([])
+  // Destructure all your variables from the store object
+  const {
+    template,
+    setTemplate,
+    lastSavedTemplate,
+    setLastSavedTemplate,
+    templateDocuments,
+    setDocumentTemplates,
+    dualFaces,
+    setDualFaces,
+    history,
+    setHistory,
+    future,
+    setFuture,
+    hasChanged,
+    setHasChanged,
+    maxPageCount,
+    setMaxPageCount,
+
+
+    //Chunk 2: 🧭 Modes and Navigation
+    mode,
+  setMode,
+  side,
+  setSide,
+  faceMode,
+  setFaceMode,
+  viewMode,
+  setViewMode,
+  designInside,
+  setDesignInside,
+  designComplete,
+  setDesignComplete,
+  prepareForPrint,
+  setPrepareForPrint,
+  animatedCells,
+  setAnimatedCells,
+
+
+    //Chunk 3: 🖋️ Text Editing
+
+
+    selectedTextId,
+    setSelectedTextId,
+    selectedFont,
+    setSelectedFont,
+    selectedFontSize,
+    setSelectedFontSize,
+    editingText,
+    setEditingText,
+    editingTextId,
+    setEditingTextId,
+    inputPosition,
+    setInputPosition,
+    pendingStyle,
+    setPendingStyle,
+    textAlign,
+    setTextAlign,
+    isMultiline,
+    setIsMultline,
+    isUnderline,
+    setIsUnderline,
+    showOverlayInput,
+    setShowOverlayInput,
+
+
+     //Chunk 4: 🖼️ Image Editing
+  selectedImageId,
+  setSelectedImageId,
+  cropRegion,
+  setCropRegion,
+  cropModeActive,
+  setCropModeActive,
+  brushSize,
+  setBrushSize,
+  brushColor,
+  setBrushColor,
+  selectedColor,
+  setSelectedColor,
+  previewSrc,
+  setPreviewSrc,
+  previewRole,
+  setPreviewRole,
+
+
+  // Chunk 5: 🧰 UI Overlays and Toolbars
+  showGuides,
+  setShowGuides,
+  showToolbar,
+  setShowToolbar,
+  isImageToolbar,
+  setIsImageToolbar,
+  portalTarget,
+  setPortalTarget,
+  showReflectionModal,
+  setShowReflectionModal,
+  showCommentModal,
+  setShowCommentModal,
+  showShareModal,
+  setShowShareModal,
+
+
+  //Chunk 6: 📐 Layout and Geometry
+  zoom,
+  setZoom,
+  initialZoomedOutValue,
+  setInitialZoomedOutValue,
+  scrollPosition,
+  setScrollPosition,
+  stageSize,
+  setStageSize,
+  cellSize,
+  setCellSize,
+  position,
+  setPosition,
+  gridPosition,
+  setGridPosition,
+  showRulers,
+  setShowRulers,
+  showBleeds,
+  setShowBleeds,
+  showGrids,
+  setShowGrids,
+  bleedToggleDisabled,
+  setBleedToggleDisabled,
+  dynamicBackground,
+  setDynamicBackground,
+  showBackground,
+  setShowBackground,
+  canvasReady,
+  setCanvasReady,
+  canvasBounds,
+
+
+  //Chunk 7: 📸 Snapshots and Export
+  snapshots,
+  setSnapshots,
+  snapshotArchive,
+  setSnapshotArchive,
+
+  showGallery,
+  setShowGallery,
+  showExportModal,
+  setShowExportModal,
+  showPages,
+  setShowPages,
+  insideMessage,
+  setInsideMessage,
+  ghostLines,
+  ghostOpacity,
+  setGhostLines,
+
+  //Chunk 8: 🧠 Context and Panel State
+
+  konvaText,
+  setKonvaText,
+  activeTab,
+  setActiveTab,
+  isCollapsed,
+  setIsCollapsed,
+  activeIndex,
+  setActiveIndex,
+  isTransitioningTemplate,
+  setIsTransitioningTemplate,
+  setAccessLevel,
+
+
+      // 🧠 Layout Memory and Flow
+lastFaceHash,
+setLastFaceHash,
+activeTimestamp,
+setActiveTimestamp,
+pageAdded,
+setPageAdded,
+stripHeight,
+setStripHeight,
+largeContainerSize,
+setLargeContainerSize,
+canvasSize,
+setCanvasSize,
+hasInitialized,
+setHasInitialized,
+designElements,
+setDesignElements,
+
+
+
+
+designElement,
+setDesignElement,
+
+initialPosition,
+setInitailPosition,
+
+
+
+// 🧠 Snapshot & Preview
+previewEntry,
+setPreviewEntry,
+isPreviewing,
+setIsPreviewing,
+
+// 🧠 Overlay Style
+overlayStyle,
+setOverlayStyle,
+overlayProps,
+setOverlayProps,
+setIsFullScreen,
+
+// 🧠 Template Rendering Flags
+templateReady,
+setTemplateReady,
+templateSelected,
+setTemplateSelected,
+templateRendering,
+setTemplateRendering,
+setActivePageId,
+// 🧠 Reflections
+reflections,
+setReflections,
+
+// 🧠 Layout Timeout
+//fadeTimeout,
+setFadeTimeout,
+
+setElementId,
+stageStyle,
+thumbValue,
+isPreviewMode,
+//hasInitializedZoom,
+initailPosition,
+scrollOffset,
+
+setScrollOffset,
+verticalOffset,
+
+
+setStageStyle,
+
+accessLevel,
+setGhostOpacity,
+
+setVisible,
+setThumbValue,
+
+setIsPreviewMode,
+
+setVerticalOffset,
+
+
+setModes,
+modes,
+elementId,
+
+selectedDualTemplate,
+setSelectedDualTemplate
+
   
-  const [activePageId, setActivePageId] = useState<string>('front');
-  
-  const [pageAdded, setPageAdded]=useState<boolean>(false);
-
-  const [lastSavedTemplate, setLastSavedTemplate] = useState<DualTemplate | null>(null);
-  
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [future, setFuture] = useState<HistoryEntry[]>([]);
-
-  const [lastFaceHash, setLastFaceHash] = useState<string | null>(null);
-  const [hasChanged, setHasChanged] = useState(false);
-  const [maxPageCount, setMaxPageCount]=useState<number>(2);
-  const [previewEntry, setPreviewEntry] = useState<SnapshotEntry | null>(null);
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
 
+  } = store;
 
-  //refelections...
-  const [showCommentModal, setShowCommentModal] = useState(false);
-  const [reflections, setReflections] = useState([]);
-  const [showReflectionModal, setShowReflectionModal]=useState<boolean>(false);
-  const [showShareModal, setShowShareModal]=useState<boolean>(false);
-  const [elementId, setElementId]=useState<string>('');
-  const [designElements, setDesignElements] = useState<DesignElement[]>([]);
-  const [designElement, setDesignElement]= useState<DesignElement>()
-
-  // 🧭 Mode and navigation
-  const [mode, setMode] = useState<CanvasMode>("card");
-  const [side, setSide] = useState<"front" | "back">("front");
-  const [activeTimestamp, setActiveTimestamp] = useState<string | null>(null);
-  const [faceMode, setFaceMode] = useState<CanvasMode>("front");
-  const [viewMode, setViewMode] = useState<"default" | "spread">("default");
-  const [designInside, setDesignInside] = useState<boolean>(false);
-  const [designComplete, setDesignComplete] = useState<boolean>(false);
-  const [prepareForPrint, setPrepareForPrint] = useState<boolean>(false);
-  const [animatedCells, setAnimatedCells] = useState<Set<string>>(new Set());
-
-  // 🖋️ Text editing
-  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
-  const [selectedFont, setSelectedFont] = useState<string>("--font-inter");
-  const [selectedFontSize, setSelectedFontSize] = useState<number>(8);
-  const [editingText, setEditingText] = useState<string>("");
-  const [inputPosition, setInputPosition] = useState<{ x: number; y: number } | null>(null);
-  const [pendingStyle, setPendingStyle] = useState<{ isBold?: boolean; isItalic?: boolean }>({});
-  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
-  const [isMultiline, setIsMultline] = useState<boolean>(false);
-  const [isUnderline, setIsUnderline] = useState<boolean>(false)
-
-  // 🖼️ Image editing
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [cropModeActive, setCropModeActive] = useState<boolean>(false);
-  const [cropRegion, setCropRegion] = useState<{ x: number; y: number; width: number; height: number }>({
-    x: 0,
-    y: 0,
-    width: 100,
-    height: 100,
-  });
-
-  // 🎨 Painting and color
-  const [brushSize, setBrushSize] = useState<number>(12);
-  const [brushColor, setBrushColor] = useState<string>("#ff0000");
-  const [selectedColor, setSelectedColor] = useState<string>("#ff595e");
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-   const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
-
-
-  // 🧰 UI overlays and toolbars
-  const [showToolbar, setShowToolbar] = useState<boolean>(false);
-  const [isImageToolbar, setIsImageToolbar] = useState<boolean>(false);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
-  // 📐 Layout and guides
-  const [showRulers, setShowRulers] = useState<boolean>(false);
-  const [showBleeds, setShowBleeds] = useState<boolean>(false);
-  const [showGrids, setShowGrids] = useState<boolean>(false);
-  const [bleedToggleDisabled, setBleedToggleDisabled] = useState<boolean>(false);
-  const [showGuides, setShowGuides] = useState<boolean>(true);
-  const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
-  const hasInitializedZoom = useRef(false);
-  const [initailPosition, setInitialPosition]=useState({x:0, y:0})
-
-
-  // 🧭 Zoom and stage
-  const [zoom, setZoom] = useState<number>(1);
-  const [initialZoomedOutValue, setInitialZoomedOutValue] = useState(1);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const elementRef = useRef<HTMLDivElement>(null);
-
-  const SIDEBAR_WIDTH = 60; // or 280 if panel is open
-  const TOPBAR_OFFSET = 30; // or 280 if panel is open
-  const PANEL_WIDTH = 385;
  
-  const [stageSize, setStageSize] = useState<{ width: number; height: number }>({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  // 🧩 Grid and geometry
-  const [cellSize, setCellSize] = useState<number>(20);
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [ghostLines, setGhostLines] = useState<{ x?: number; y?: number }>({});
-  const [ghostOpacity, setGhostOpacity] = useState<number>(0);
-  const [dynamicBackground, setDynamicBackground] = useState<string>("#ffffff");
-  const [showBackground, setShowBackground] = useState<boolean>(false);
-  const scrollContainerRef =  useRef<HTMLDivElement>(null)
-  const largeContainerRef =  useRef<HTMLDivElement>(null)
-  const [largeContainerSize, setLargeContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-
-  const [canvasSize, setCanvasSize] = useState<{scaleX:number; scaleY:number; width: number; height: number }>({scaleX:0, scaleY:0, width: 0, height: 0 });
-  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const [visible, setVisible] = useState(true);
-  const [thumbValue, setThumbValue]= useState<number>(0)
-  const [editingTextId, setEditingTextId] = useState<string | null>(null);
-  const [overlayProps, setOverlayProps] = useState<Partial<TextToolbarOverlayProps> | null>(null);
-  const [showOverlayInput, setShowOverlayInput] = useState(false);
-  const [konvaText, setKonvaText] = useState<Konva.Text| null>(null);
+const toolbarRef = useRef<HTMLDivElement | null>(null);
+const sideBarRef = useRef<HTMLDivElement | null>(null);
+const topBarRef = useRef<HTMLDivElement | null>(null);
+const footerClusterRef = useRef<HTMLDivElement | null>(null);
+const imageRef = useRef<Konva.Image>(null);
+const containerRef = useRef<HTMLDivElement | null>(null);
+const cardGridGroupRef = useRef<any>(null);
+const stageRef = useRef<any>(null);
+const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+const positionRef = useRef<{ x: number; y: number } | null>(null);
+const textToolbarRef = useRef<HTMLDivElement | null>(null);
+const SidebarTabsRef = useRef<HTMLDivElement | null>(null);
+const PanelRef = useRef<HTMLDivElement | null>(null);
+const stripRef = useRef<HTMLDivElement | null>(null);
+const elementRef = useRef<HTMLDivElement>(null);
+const hasInitializedZoom = useRef(false);
+const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
+const imagebarRef = useRef<HTMLDivElement>(null);
 
 
+ const SIDEBAR_WIDTH = 60; // or 280 if panel is open
+ const TOPBAR_OFFSET = 30; // or 280 if panel is open
+ const PANEL_WIDTH = 385;
 
-
-  const hasInitialized = useRef(false);
-
-  const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
-  
-
-  // 📸 Snapshots and export
-  const [snapshots, setSnapshots] = useState<{ front: string | null; back: string | null }>({
-    front: null,
-    back: null,
-  });
-  const [canvasReady, setCanvasReady] = useState(false);
-  const [snapshotArchive, setSnapshotArchive] = useState<SnapshotEntry[]>([]);
-  const [showGallery, setShowGallery] = useState<boolean>(false);
-  const [showExportModal, setShowExportModal] = useState<boolean>(false);
-  const [showPages , setShowPages]=useState<boolean>(false);
-  const [insideMessage, setInsideMessage] = useState<string | null>(null);
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
-  const stripRef = useRef<HTMLDivElement>(null);
-  const [stripHeight, setStripHeight] = useState(0);
-  const [activeTab, setActiveTab] = useState<SidebarTab| null>(null);
-
-  
-  const [verticalOffset, setVerticalOffset] = useState(0);
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
-  const [activeIndex, setActiveIndex] = useState<number | null>(0);
+  const canvasWidth = canvasBounds?.width ?? 0;
+  const canvasHeight = canvasBounds?.height ?? 0;
 
 
 
+  const computePosition = useOverlayPosition();
 
-  // 🧠 Refs
-  const imageRef = useRef<Konva.Image>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const textToolbarRef = useRef<HTMLDivElement>(null);
-  const footerClusterRef = useRef<HTMLDivElement>(null);
-  const topBarRef = useRef<HTMLDivElement>(null);
-  const sideBarRef = useRef<HTMLDivElement>(null);
-  const imagebarRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const cardGridGroupRef = useRef<Konva.Group>(null);
-
-  // State to store the calculated style for the DOM overlay
-  const [overlayStyle, setOverlayStyle] = useState({});
-  const [stageStyle, setStageStyle] = useState({});
  
-  // 🧠 Derived values
+  
+
+
+
+
+
+  // 🧠 Chunk 9: Derived Values and Geometry
   const activeFace = template?.[side];
   const card = activeFace?.card;
   const elements = activeFace?.elements ?? [];
-  const tone = template?.tone ?? "light";
+  const tone = template?.tone ?? 'light';
 
   const selectedElement = selectedTextId
-    ? elements.find(el => el.id === selectedTextId)
+    ? elements.find((el) => el.id === selectedTextId)
     : undefined;
 
-  const isBold = selectedElement?.type === "text" ? selectedElement.isBold ?? false : false;
-  const isItalic = selectedElement?.type === "text" ? selectedElement.isItalic ?? false : false;
+  const isBold = selectedElement?.type === 'text' ? selectedElement.isBold ?? false : false;
+  const isItalic = selectedElement?.type === 'text' ? selectedElement.isItalic ?? false : false;
 
-  const [bgImage] = useImage(card?.backgroundImage || "");
-  const [frontImage] = useImage(template?.front?.card.backgroundImage || "");
-  const [backImage] = useImage(template?.back?.card.backgroundImage || "");
+  const [bgImage] = useImage(card?.backgroundImage || '');
+  const [frontImage] = useImage(template?.front?.card.backgroundImage || '');
+  const [backImage] = useImage(template?.back?.card.backgroundImage || '');
 
   const gridColors = card?.gridColors ?? [];
   const cardX = (stageSize.width - (card?.width ?? 0)) / 2;
@@ -215,12 +346,13 @@ export function useCanvasState() {
   const cols = Math.floor((card?.width ?? 0) / (cellSize ?? 1));
   const rows = Math.floor((card?.height ?? 0) / (cellSize ?? 1));
 
+
   const {
     maxCount,
     currentPageCount,
     canAddPage,
     isMaxReached,
-    limitStatus // 'available' | 'full' | 'blocked'
+    limitStatus
   } = usePageLimiter(template, snapshotArchive);
 
 
@@ -229,28 +361,8 @@ export function useCanvasState() {
     if (stageSize.width < 1024) return 'scroll';
     return 'grid';
   }, [stageSize.width]);
-  
-  
 
-  const canvasWidth = stageSize.width;
-  const canvasHeight = stageSize.height;
-  const [modes, setModes] = useState<CanvasMode[]>(['front','back'])
 
-  const [gridPosition, setGridPosition] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
-  
-
-  const canvasBounds = useMemo(() => ({
-    x: 0,
-    y: 0,
-    width: template ? template.width * zoom : card?.width ?? 0,
-    height: template ? template.height * zoom : card?.height ?? 0,
-  }), [template, zoom, card?.width, card?.height]);
-  
   const getCanvasOffset = (): { x: number; y: number } => ({
     x: 0,
     y: 0,
@@ -258,114 +370,52 @@ export function useCanvasState() {
   
 
 
-
   
-
+  
   const offsetBounds = getCanvasOffset();
 
 
-
-
   const {
-      transformModeActive,
-      activateTransformMode,
-      resetTransformMode,
-    } = useTransformMode();
+    transformModeActive,
+    activateTransformMode,
+    resetTransformMode,
+  } = useTransformMode();
   
-  
-  
-  
-  const setTransformModeActive =(bool:boolean)=>
-      {
-          activateTransformMode(selectedImageId ?? '', 'image')
-      }
+  const setTransformModeActive = (bool: boolean) => {
+    activateTransformMode(selectedImageId ?? '', 'image');
+  };
+
 
   const updateImageRef = (ref: Konva.Image | null) => {
     imageRef.current = ref;
   };
-
-
-  const positionRef = useRef(position);
-
+  
+  
+  
+  
+  
 
   return {
-
-    previewEntry, 
-    setPreviewEntry,
-
-    isPreviewing, 
-    setIsPreviewing,
-    isPreviewMode, 
-    setIsPreviewMode,
-
-    scrollContainerRef, 
-    largeContainerRef, 
-    largeContainerSize, 
-    setLargeContainerSize,
-    scrollPosition, 
-    setScrollPosition,
-    canvasSize, 
-    setCanvasSize,
-
-    width, 
-    setWidth,
-    layoutMode,
-    // 🖼️ Images
-    frontImage,
-    backImage,
-    bgImage,
-
-
-    // 🎨 Template and history
+    // 🎨 Template and History
     template,
     setTemplate,
-    templateDocuments,
-    setDocumentTemplates,
-    dualFaces, 
-    setDualFaces,
-    activePageId, 
-    setActivePageId,
-    pageAdded, 
-    setPageAdded,
-    elements,
     lastSavedTemplate,
     setLastSavedTemplate,
+    templateDocuments,
+    setDocumentTemplates,
+    dualFaces,
+    setDualFaces,
     history,
     setHistory,
     future,
     setFuture,
-
-    modes, 
-    setModes,
-
-    animatedCells, 
-    setAnimatedCells,
-
-    transformModeActive,
-    activateTransformMode,
-    resetTransformMode,
-    gridColors,
-
-    //reflections
-
-    reflections,
-    setReflections,
-    showReflectionModal, 
-    setShowReflectionModal,
-    showCommentModal, 
-    setShowCommentModal,
-    elementId, 
-    setElementId,
-    designElements, 
-    setDesignElements,
-    showShareModal, 
-    setShowShareModal,
-    designElement,
-    setDesignElement,
-    activeTimestamp, 
-    setActiveTimestamp,
-
-    // 🧭 Modes and navigation
+    hasChanged,
+    setHasChanged,
+    maxPageCount,
+    setMaxPageCount,
+    setIsFullScreen,
+  
+    // 🧭 Modes and Navigation
     mode,
     setMode,
     side,
@@ -380,8 +430,10 @@ export function useCanvasState() {
     setDesignComplete,
     prepareForPrint,
     setPrepareForPrint,
-
-    // 🖋️ Text
+    animatedCells,
+    setAnimatedCells,
+  
+    // 🖋️ Text Editing
     selectedTextId,
     setSelectedTextId,
     selectedFont,
@@ -390,176 +442,266 @@ export function useCanvasState() {
     setSelectedFontSize,
     editingText,
     setEditingText,
+    editingTextId,
+    setEditingTextId,
     inputPosition,
     setInputPosition,
     pendingStyle,
     setPendingStyle,
-    textAlign, 
+    textAlign,
     setTextAlign,
     isMultiline,
     setIsMultline,
     isUnderline,
     setIsUnderline,
+    showOverlayInput,
+    setShowOverlayInput,
 
-    // 🖼️ Image
+    setInitailPosition,
+    initialPosition,
+  
+    // 🖼️ Image Editing
     selectedImageId,
     setSelectedImageId,
-    cropModeActive,
-    setCropModeActive,
     cropRegion,
     setCropRegion,
-    setTransformModeActive,
-
-    // 🎨 Painting
+    cropModeActive,
+    setCropModeActive,
     brushSize,
     setBrushSize,
     brushColor,
     setBrushColor,
     selectedColor,
     setSelectedColor,
-    showBackground, 
-    setShowBackground,
-    previewSrc, setPreviewSrc,
-    previewRole, setPreviewRole,
-
-    // 🧰 UI
-    toolbarRef,
-    textToolbarRef,
-    footerClusterRef,
-    topBarRef,
-    sideBarRef,
+    previewSrc,
+    setPreviewSrc,
+    previewRole,
+    setPreviewRole,
+  
+    // 🧰 UI Overlays and Toolbars
+    showGuides,
+    setShowGuides,
     showToolbar,
     setShowToolbar,
     isImageToolbar,
     setIsImageToolbar,
     portalTarget,
     setPortalTarget,
+    showReflectionModal,
+    setShowReflectionModal,
+    showCommentModal,
+    setShowCommentModal,
+    showShareModal,
+    setShowShareModal,
+  
+    // 📐 Layout and Geometry
+    zoom,
+    setZoom,
+    initialZoomedOutValue,
+    setInitialZoomedOutValue,
+    scrollPosition,
+    setScrollPosition,
+    stageSize,
+    setStageSize,
+    cellSize,
+    setCellSize,
+    position,
+    setPosition,
+    gridPosition,
+    setGridPosition,
+    showRulers,
+    setShowRulers,
+    showBleeds,
+    setShowBleeds,
+    showGrids,
+    setShowGrids,
+    bleedToggleDisabled,
+    setBleedToggleDisabled,
+    dynamicBackground,
+    setDynamicBackground,
+    showBackground,
+    setShowBackground,
+    canvasReady,
+    setCanvasReady,
+    canvasBounds,
+  
+    // 📸 Snapshots and Export
+    snapshots,
+    setSnapshots,
+    snapshotArchive,
+    setSnapshotArchive,
+    showGallery,
+    setShowGallery,
+    showExportModal,
+    setShowExportModal,
+    showPages,
+    setShowPages,
+    insideMessage,
+    setInsideMessage,
+  
+    // 🧠 Context and Panel State
+    konvaText,
+    setKonvaText,
+    activeTab,
+    setActiveTab,
+    isCollapsed,
+    setIsCollapsed,
+    activeIndex,
+    setActiveIndex,
+    isTransitioningTemplate,
+    setIsTransitioningTemplate,
+  
+    // 🧠 Derived Values and Geometry
+    activeFace,
+    card,
+    elements,
+    tone,
+    selectedElement,
+    isBold,
+    isItalic,
+    bgImage,
+    frontImage,
+    backImage,
+    gridColors,
+    cardX,
+    cardY,
+    cols,
+    rows,
 
-  // 📐 Layout
-  showRulers,
-  setShowRulers,
-  showBleeds,
-  setShowBleeds,
-  showGrids, 
-  setShowGrids,
-  bleedToggleDisabled,
-  setBleedToggleDisabled,
-  showGuides,
-  setShowGuides,
-  scrollOffset, 
-  setScrollOffset,
-  zoom,
-  setZoom,
-  initialZoomedOutValue, 
-  setInitialZoomedOutValue,
-  isFullScreen, 
-  setIsFullScreen,
-  stageSize,
-  setStageSize,
-  canvasBounds,
-  cellSize,
-  setCellSize,
-  position,
-  setPosition,
+
+    // 🧠 Layout Memory and Flow
+lastFaceHash,
+setLastFaceHash,
+activeTimestamp,
+setActiveTimestamp,
+pageAdded,
+setPageAdded,
+stripHeight,
+setStripHeight,
+largeContainerSize,
+setLargeContainerSize,
+canvasSize,
+setCanvasSize,
+hasInitialized,
+setHasInitialized,
+designElements,
+setDesignElements,
+
+
+// 🧠 Canvas Dimensions
+canvasWidth,
+canvasHeight,
+
+// 🧠 Refs
+toolbarRef,
+sideBarRef,
+topBarRef,
+footerClusterRef,
+imageRef,
+containerRef,
+cardGridGroupRef,
+stageRef,
+scrollContainerRef,
+positionRef,
+textToolbarRef,
+SidebarTabsRef,
+PanelRef,
+stripRef,
+
+
+designElement,
+setDesignElement,
+
+
+
+// 🧠 Constants
+SIDEBAR_WIDTH,
+TOPBAR_OFFSET,
+PANEL_WIDTH,
+
+// 🧠 Utilities
+computePosition,
+maxCount,
+    currentPageCount,
+    canAddPage,
+    isMaxReached,
+    limitStatus ,
+    layoutMode,
+    offsetBounds,
+    transformModeActive,
+    activateTransformMode,
+    resetTransformMode,
+    setTransformModeActive,
+    updateImageRef,
+    elementRef,
+
+    // 🧠 Snapshot & Preview
+previewEntry,
+setPreviewEntry,
+isPreviewing,
+setIsPreviewing,
+
+// 🧠 Overlay Style
+overlayStyle,
+setOverlayStyle,
+overlayProps,
+setOverlayProps,
+
+// 🧠 Template Rendering Flags
+templateReady,
+setTemplateReady,
+templateSelected,
+setTemplateSelected,
+templateRendering,
+setTemplateRendering,
+
+// 🧠 Reflections
+reflections,
+setReflections,
+
+// 🧠 Layout Timeout
+fadeTimeout,
+setFadeTimeout,
+
   ghostLines,
-  setGhostLines,
   ghostOpacity,
-  setGhostOpacity,
-  dynamicBackground,
-  setDynamicBackground,
-  gridPosition, 
-  setGridPosition,
-  viewportSize, 
-  setViewportSize,
-  visible, 
-  setVisible,
-  fadeTimeout,
+  setGhostLines,
+  setElementId,
+stageStyle,
+thumbValue,
+isPreviewMode,
+hasInitializedZoom,
+initailPosition,
+scrollOffset,
 
-  // 🧠 Text styling
-  isBold,
-  isItalic,
+setScrollOffset,
+verticalOffset,
 
-  // 🎨 Grid and geometry
-  card,
-  cardX,
-  cardY,
-  cols,
-  rows,
-  canvasWidth,
-  canvasHeight,
-  offsetBounds,
 
-  // 📸 Snapshots and export
-  snapshots,
-  setSnapshots,
-  snapshotArchive,
-  setSnapshotArchive,
-  canvasReady, 
-  setCanvasReady,
-  showGallery,
-  setShowGallery,
-  showExportModal,
-  setShowExportModal,
-  insideMessage,
-  setInsideMessage,
-  accessLevel, 
-  setAccessLevel,
+setStageStyle,
 
-  // 🧠 Refs and transform logic
-  imageRef,
-  imagebarRef,
-  stageRef,
-  containerRef,
-  cardGridGroupRef,
-  hasInitializedZoom,
-  elementRef,
+accessLevel,
+setGhostOpacity,
 
-  updateImageRef,
-  overlayStyle, 
-  setOverlayStyle,
-  stageStyle, 
-  setStageStyle,
+setVisible,
+setThumbValue,
 
-  lastFaceHash, 
-  setLastFaceHash,
+setIsPreviewMode,
+setAccessLevel,
 
-  hasChanged, 
-  setHasChanged,
-  activeTab, 
-  setActiveTab,
+setVerticalOffset,
+setActivePageId,
 
-  maxPageCount, 
-  setMaxPageCount,
-  showPages , 
-  setShowPages,
-  stripRef,
-  stripHeight, 
-  setStripHeight,
-  verticalOffset, 
-  setVerticalOffset,
-  thumbValue, 
-  setThumbValue,
-  hasInitialized,
-  initailPosition, 
-  setInitialPosition,
-  positionRef,
-  isCollapsed, 
-  setIsCollapsed,
-  activeIndex, 
-  setActiveIndex,
-  editingTextId, 
-  setEditingTextId,
-  overlayProps, 
-  setOverlayProps,
-  showOverlayInput, 
-  setShowOverlayInput,
+imagebarRef,
 
-  konvaText, 
-  setKonvaText,
-  SIDEBAR_WIDTH,
-  TOPBAR_OFFSET,
-  PANEL_WIDTH,
+setModes,
+modes,
+elementId,
 
-  // 🧠 Derived tone
-  tone,
-}}
+selectedDualTemplate,
+setSelectedDualTemplate
+
+
+  };
+  
+}

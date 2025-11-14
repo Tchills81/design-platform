@@ -12,7 +12,7 @@ export default function TonePalette({ tone, selectedColor, onSelect }: TonePalet
   const colors = palettes[tone] ?? palettes.minimal;
 
   return (
-    <div className="absolute bottom-40 right-40 z-50 bg-white shadow-lg p-3 rounded grid grid-cols-4 gap-2 animate-fadeIn">
+    <div className=" shadow-lg p-3 rounded  gap-2 animate-fadeIn">
       {colors.map(color => (
         <button
           key={color}
