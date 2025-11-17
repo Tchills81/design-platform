@@ -1,7 +1,25 @@
 import { TextToolbarOverlayProps } from '@/src/canvas/overlays/TextToolbarOverlay';
+import { DesignElement } from '@/src/types/DesignElement';
 import { StateCreator } from 'zustand';
 
 export interface TextSlice {
+  // 🔒 Locking
+  lockedTextIds: Set<string>;
+  setLockedTextIds: (
+    updater: Set<string> | ((prev: Set<string>) => Set<string>)
+  ) => void;
+  toggleTextLock: (id: string) => void;
+  isTextLocked: (id: string) => boolean;
+
+  // 🗑️ Element control
+  designElements: DesignElement[];
+  setDesignElements: (
+    updater: DesignElement[] | ((prev: DesignElement[]) => DesignElement[])
+  ) => void;
+  deleteTextById: (id: string) => void;
+  duplicateTextById: (id: string) => void;
+
+  // ✏️ Text editing
   editingTextId: string | null;
   setEditingTextId: (id: string | null | ((prev: string | null) => string | null)) => void;
 
@@ -56,87 +74,127 @@ export interface TextSlice {
 }
 
 export const createTextSlice: StateCreator<TextSlice> = (set) => ({
+  // 🔒 Locking
+  lockedTextIds: new Set(),
+  setLockedTextIds: (updater) =>
+    set((state) => ({
+      lockedTextIds: typeof updater === 'function' ? updater(state.lockedTextIds) : updater
+    })),
+  toggleTextLock: (id) =>
+    set((state) => {
+      const updated = new Set(state.lockedTextIds);
+      updated.has(id) ? updated.delete(id) : updated.add(id);
+      return { lockedTextIds: updated };
+    }),
+  isTextLocked: (id) => false, // This will be overridden by selector logic
+
+  // 🗑️ Element control
+  designElements: [],
+  setDesignElements: (updater) =>
+    set((state) => ({
+      designElements: typeof updater === 'function' ? updater(state.designElements) : updater
+    })),
+  deleteTextById: (id) =>
+    set((state) => ({
+      designElements: state.designElements.filter((el) => el.id !== id)
+    })),
+  duplicateTextById: (id) =>
+    set((state) => {
+      const original = state.designElements.find((el) => el.id === id);
+      if (!original) return {};
+      const duplicate: DesignElement = {
+        ...original,
+        id: `${id}-copy-${Date.now()}`,
+        x: original.x + 20,
+        y: original.y + 20
+      };
+      return {
+        designElements: [...state.designElements, duplicate]
+      };
+    }),
+
+  // ✏️ Text editing
   editingTextId: null,
   setEditingTextId: (id) =>
     set((state) => ({
-      editingTextId: typeof id === 'function' ? id(state.editingTextId) : id,
+      editingTextId: typeof id === 'function' ? id(state.editingTextId) : id
     })),
 
   editingText: '',
   setEditingText: (text) =>
     set((state) => ({
-      editingText: typeof text === 'function' ? text(state.editingText) : text,
+      editingText: typeof text === 'function' ? text(state.editingText) : text
     })),
 
   selectedTextId: null,
   setSelectedTextId: (id) =>
     set((state) => ({
-      selectedTextId: typeof id === 'function' ? id(state.selectedTextId) : id,
+      selectedTextId: typeof id === 'function' ? id(state.selectedTextId) : id
     })),
 
   selectedFont: '--font-inter',
   setSelectedFont: (font) =>
     set((state) => ({
-      selectedFont: typeof font === 'function' ? font(state.selectedFont) : font,
+      selectedFont: typeof font === 'function' ? font(state.selectedFont) : font
     })),
 
   selectedFontSize: 8,
   setSelectedFontSize: (size) =>
     set((state) => ({
-      selectedFontSize: typeof size === 'function' ? size(state.selectedFontSize) : size,
+      selectedFontSize: typeof size === 'function' ? size(state.selectedFontSize) : size
     })),
 
   inputPosition: null,
   setInputPosition: (pos) =>
     set((state) => ({
-      inputPosition: typeof pos === 'function' ? pos(state.inputPosition) : pos,
+      inputPosition: typeof pos === 'function' ? pos(state.inputPosition) : pos
     })),
 
   textAlign: 'left',
   setTextAlign: (align) =>
     set((state) => ({
-      textAlign: typeof align === 'function' ? align(state.textAlign) : align,
+      textAlign: typeof align === 'function' ? align(state.textAlign) : align
     })),
 
   isMultiline: false,
   setIsMultline: (b) =>
     set((state) => ({
-      isMultiline: typeof b === 'function' ? b(state.isMultiline) : b,
+      isMultiline: typeof b === 'function' ? b(state.isMultiline) : b
     })),
 
   isUnderline: false,
   setIsUnderline: (b) =>
     set((state) => ({
-      isUnderline: typeof b === 'function' ? b(state.isUnderline) : b,
+      isUnderline: typeof b === 'function' ? b(state.isUnderline) : b
     })),
 
   isBold: false,
   setIsBold: (b) =>
     set((state) => ({
-      isBold: typeof b === 'function' ? b(state.isBold) : b,
+      isBold: typeof b === 'function' ? b(state.isBold) : b
     })),
 
   isItalic: false,
   setIsItalic: (b) =>
     set((state) => ({
-      isItalic: typeof b === 'function' ? b(state.isItalic) : b,
+      isItalic: typeof b === 'function' ? b(state.isItalic) : b
     })),
 
   showOverlayInput: false,
   setShowOverlayInput: (b) =>
     set((state) => ({
-      showOverlayInput: typeof b === 'function' ? b(state.showOverlayInput) : b,
+      showOverlayInput: typeof b === 'function' ? b(state.showOverlayInput) : b
     })),
 
   overlayProps: null,
   setOverlayProps: (props) =>
     set((state) => ({
-      overlayProps: typeof props === 'function' ? props(state.overlayProps) : props,
+      overlayProps: typeof props === 'function' ? props(state.overlayProps) : props
     })),
 
   pendingStyle: {},
   setPendingStyle: (updater) =>
     set((state) => ({
-      pendingStyle: typeof updater === 'function' ? updater(state.pendingStyle) : updater,
-    })),
+      pendingStyle: typeof updater === 'function' ? updater(state.pendingStyle) : updater
+    }))
 });

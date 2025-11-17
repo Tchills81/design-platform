@@ -1,6 +1,8 @@
 import FloatingToolbar from "@/src/components/FloatingToolbar";
 import TextToolbar from "@/src/components/TextToolbar";
 import { CanvasMode } from "@/src/types/CanvasMode";
+import { useSelectedElement } from '@/src/components/elements/useSelectedElement';
+import { DualTemplate } from "@/src/types/template";
 
 export interface TextToolbarOverlayProps {
   toolbarRef: React.RefObject<HTMLDivElement | null>;
@@ -19,6 +21,9 @@ export interface TextToolbarOverlayProps {
   selectedFont: string;
   selectedColor: string;
   selectedFontSize: number;
+  selectedTextId?: string | null;
+  template:DualTemplate | null;
+  side:'front' | 'back';
   isBold: boolean;
   isItalic: boolean;
   editingText: string;
@@ -49,7 +54,9 @@ export default function TextToolbarOverlay({
   isItalic,
   editingText,
   tone,
-
+  side,
+  template,
+  selectedTextId,
   setShowCommentModal,
   onFontChange,
   onColorChange,
@@ -71,6 +78,13 @@ export default function TextToolbarOverlay({
 }: TextToolbarOverlayProps) {
   if (!showToolbar || !inputPosition || mode !== "card") return null;
 
+  const { selectedElement, role } = useSelectedElement({
+    selectedImageId: null,
+    selectedTextId: selectedTextId,
+    template:template,
+    side: side
+  });
+
   return (
     <FloatingToolbar position={inputPosition}>
       <div id="text-toolbar" ref={toolbarRef}>
@@ -81,7 +95,7 @@ export default function TextToolbarOverlay({
           isBold={isBold}
           isItalic={isItalic}
           offset={offset}
-          
+          role={role ?? undefined}
           tone={tone}
           toggleCommentModal={()=>{setShowCommentModal(true);}}
           onFontChange={onFontChange}

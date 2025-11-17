@@ -20,6 +20,9 @@ import { hashTemplateFace } from "@/src/utils/hashTemplateFace";
 import { getMaxPageCount } from "@/src/utils/getMaxPageCount";
 import { TemplateSize } from "@/src/enumarations/TemplateSize";
 import { useFadeInLayer } from "./useFadeInLayer";
+import { computeOverlayControlPosition } from "./useOverlayControlPosition";
+
+import { computeOverlayControlPositionFromDOM } from "./computeOverlayControlPositionFromDOM";
 export function useCanvasEffects(
   state: ReturnType<typeof useCanvasState>,
   actions: ReturnType<typeof useCanvasActions>
@@ -99,7 +102,13 @@ export function useCanvasEffects(
     SidebarTabsRef,
     PanelRef,
     selectedDualTemplate,
-    
+
+    textControlsRef,
+   
+    computePosition,
+    setTextControlPosition,
+    textControlPosition,
+    textAreaRef
     
   } = state;
 
@@ -147,6 +156,7 @@ export function useCanvasEffects(
     setActiveIndex,
     recenterCanvas,
     setIsTransitioningTemplate,
+    
     
 
   } = actions;
@@ -635,6 +645,32 @@ useEffect(() => {
     }
   }, [prepareForPrint]);
 
+
+  useEffect(() => {
+
+    const overlayControls = textControlsRef.current;
+
+    if(!konvaText || !stageRef.current || ! textControlsRef.current?.offsetWidth) return;
+
+
+    const controlPosition = computeOverlayControlPosition({
+      textNode: konvaText,
+      stageRef,
+      zoom,
+      tabActive: activeTab? true : false,
+      offset: PANEL_WIDTH + SIDEBAR_WIDTH,
+      overlayWidth: overlayControls?.offsetWidth // or measure dynamically
+    });
+
+   setTextControlPosition(controlPosition);
+
+
+   //console.log("Computing text control position offsetWidth...", overlayControls?.offsetWidth, 'controlPosition', controlPosition);
+
+
+
+  }, [setShowToolbar, textControlsRef.current?.offsetWidth, konvaText, stageRef, zoom, activeTab]);
+
  
 
  
@@ -660,9 +696,11 @@ useEffect(() => {
       const clickedOnTabs = SidebarTabsRef.current?.contains(e.target as Node);
       const clickedOnPanel = PanelRef.current?.contains(e.target as Node);
 
+      const control = textControlsRef.current;
+
       console.log("handleGlobalClick", 
                   'clickedInsideToolbar', 
-                  clickedInsideToolbar, 'offsetHeight',  ); 
+                  clickedInsideToolbar, 'control....',  control); 
 
 
       if (clickedInsideToolbar ||  
@@ -676,22 +714,31 @@ useEffect(() => {
         ) return;
 
 
-        if(konvaText?.visible){
+        if (konvaText?.visible) {
+          // 🧠 Sync Konva height to overlay before dismissal
+          if (textAreaRef.current) {
+            const overlayHeight = textAreaRef.current.offsetHeight;
+            konvaText.height(overlayHeight);
+            console.log("Syncing konvaText height to toolbarRef.current:", 
+              toolbarRef.current?.offsetHeight, 'konvaText height before:', konvaText.height());
+          }
+        
+          konvaText.visible(true);
+          konvaText.getLayer()?.batchDraw();
 
-          konvaText?.visible(true);
-          konvaText?.getLayer()?.batchDraw();
-
+          setSelectedTextId(null);
+          setShowToolbar(false);
+          setInputPosition(null);
         }
+        
          
 
-      setSelectedTextId(null);
-      setShowToolbar(false);
-      setInputPosition(null);
+      
     };
 
     document.addEventListener("mousedown", handleGlobalClick);
     return () => document.removeEventListener("mousedown", handleGlobalClick);
-  }, [konvaText]);
+  }, [konvaText, textAreaRef.current]);
 
   // 🧠 Portal target setup
   useEffect(() => {

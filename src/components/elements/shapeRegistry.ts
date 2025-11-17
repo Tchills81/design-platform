@@ -105,7 +105,7 @@ export type ShapeMeta = {
           y: element.y,
           width: element.width ?? 240,
           height: element.height ?? 180,
-          fill: 'transparent',
+          fill: '#00f0ff',
           stroke: props.isSelected ? '#00f0ff' : element.stroke ?? '#334155',
           strokeWidth: props.isSelected ? 2 : element.strokeWidth ?? 2,
           hitStrokeWidth: 12, // or 16 for extra forgiveness

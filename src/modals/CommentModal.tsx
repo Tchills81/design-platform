@@ -3,11 +3,18 @@ import { Dialog } from '../components/Dialog';
 import { DialogTitle } from '../components/DialogTitle';
 import { DialogContent } from '../components/DialogContent';
 import { DialogActions } from '../components/DialogActions';
+import { DualTemplate } from '../types/template';
+import { useSelectedElement } from '../components/elements/useSelectedElement';
+import { getGlyphForRole } from '../components/elements/getGlyphForRole';
+import { useElementTone } from '../components/elements/useElementTone';
 
 interface CommentModalProps {
   isOpen: boolean;
   designId: string;
-  elementId?: string | null;
+  elementId: string | null;
+  selectedTextId?: string | null;
+  template: DualTemplate | null;
+  side: 'front' | 'back';
   createdBy: string;
   onClose: () => void;
   onSubmitSuccess: () => void;
@@ -18,13 +25,29 @@ export default function CommentModal({
   designId,
   elementId,
   createdBy,
+  selectedTextId,
+  side,
+  template,
   onClose,
   onSubmitSuccess
 }: CommentModalProps) {
+  const {
+    selectedElement,
+    isText,
+    isShape,
+    isFrame,
+    role,
+    shapeType,
+    type
+  } = useSelectedElement({ selectedImageId: elementId, selectedTextId, template, side });
+
+  const glyph = getGlyphForRole(role);
   const [message, setMessage] = useState('');
   const [tone, setTone] = useState<'celebration' | 'concern' | 'suggestion' | 'question'>('suggestion');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { color, highlight, textColor, border } = useElementTone({ role, tone, shapeType });
 
   async function handleSubmit() {
     setLoading(true);
@@ -54,15 +77,38 @@ export default function CommentModal({
   return (
     <Dialog open={isOpen} onClose={onClose}>
       <DialogTitle>
-        <div className="flex items-center gap-2 text-blue-600 text-lg font-semibold">
-          🪞 Reflecting on <span className="italic text-gray-700">{elementId?.toLowerCase()}</span>
+        <div
+          className="flex items-center gap-2 text-lg font-semibold px-2 py-1 rounded"
+          style={{
+            color,
+            borderColor: color,
+            borderStyle: border,
+            borderWidth: '1px'
+          }}
+        >
+          {glyph} Reflecting on{' '}
+          <span className="italic text-gray-700">
+            {isText && 'Text'}
+            {isFrame && 'Frame'}
+            {isShape && !isFrame && shapeType}
+            {type === 'image' && 'Image'}
+            {role && ` (${role})`}
+          </span>
         </div>
       </DialogTitle>
 
       <DialogContent>
-        <div className="flex flex-col gap-4 animate-fade-in rounded-lg p-1">
+        <div
+          className="flex flex-col gap-4 animate-fade-in rounded-lg p-1"
+          style={{
+            backgroundColor: highlight,
+            color: textColor
+          }}
+        >
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Tone</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: textColor }}>
+              Tone
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { value: 'celebration', label: '🎉 Celebration' },
@@ -85,13 +131,22 @@ export default function CommentModal({
             </div>
           </div>
 
+          {selectedElement && (
+            <p className="text-sm italic mb-2" style={{ color: textColor }}>
+              What does this {role} express? How might it evolve?
+            </p>
+          )}
+
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Message</label>
+            <label className="text-sm font-medium mb-1 block" style={{ color: textColor }}>
+              Message
+            </label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
               placeholder="Share your thoughts with clarity and care..."
               className="w-full rounded border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300 h-28"
+              style={{ color: '#111827', backgroundColor: '#fff' }}
             />
           </div>
 

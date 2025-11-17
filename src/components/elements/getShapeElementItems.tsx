@@ -1,4 +1,5 @@
-import { ElementItem } from '../ElementPanel';
+
+import { ElementItem } from '@/src/types/template';
 import { supportedShapeTypes } from './shapes/types';
 
 import { getElementSubcategory } from '@/src/utils/getElementSubcategory';

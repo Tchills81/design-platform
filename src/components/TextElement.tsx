@@ -122,9 +122,9 @@ const TextElement: React.FC<TextElementProps> = ({
         dragBoundFunc={dragBoundFunc}
         onDragEnd={handleDragEnd}
         cursor={selected ? 'move' : 'default'}
-        wrap={isMultiline ? 'word' : undefined}
+        wrap={isMultiline ? 'word' : 'none'}
         width={isMultiline ? textWidth ?? 240 : undefined}
-        lineHeight={isMultiline ? lineHeight ?? 1.4 : undefined}
+        lineHeight={isMultiline ? lineHeight ?? 1 : undefined}
         textDecoration={isUnderline ? 'underline' : undefined}
       />
     </Group>

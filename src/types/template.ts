@@ -27,6 +27,7 @@ export type TemplateElement =
       position: { x: number; y: number };
       size: { width: number; height: number };
       tone: string;
+      shapeType?:shapeType;
       role?: 'decoration' | 'logo' | 'background' | 'motif' | 'inside-decoration';
     }
   | {
@@ -55,6 +56,7 @@ export type TemplateElement =
       stroke?: string;
       strokeWidth?: number;
       tone: string;
+    
       role?: 'frame' | 'divider' | 'accent' | 'inside-frame';
     }
   | {
@@ -65,6 +67,7 @@ export type TemplateElement =
       position: { x: number; y: number };
       size: { width: number; height: number };
       tone: string;
+      shapeType?:shapeType;
       role?: 'symbol' | 'motif' | 'inside-icon';
     }
   | {
@@ -75,6 +78,7 @@ export type TemplateElement =
       position: { x: number; y: number };
       size: { width: number; height: number };
       tone: string;
+      shapeType?:shapeType;
       role?: 'celebration' | 'seasonal' | 'inside-sticker';
     }
   | {
@@ -87,6 +91,7 @@ export type TemplateElement =
       stroke?: string;
       strokeWidth?: number;
       tone: string;
+   
       role?: 'border' | 'container' | 'inside-frame';
     };
 

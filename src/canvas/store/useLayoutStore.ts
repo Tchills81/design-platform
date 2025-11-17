@@ -2,6 +2,8 @@ import { DesignElement } from '@/src/types/DesignElement';
 import { StateCreator } from 'zustand';
 
 export interface LayoutSlice {
+
+  
   isFullScreen: boolean;
   setIsFullScreen: (b: boolean | ((prev: boolean) => boolean)) => void;
 
@@ -157,6 +159,16 @@ setStageSize: (
 
   position: { x: number; y: number };
   setPosition: (
+    updater:
+      | { x: number; y: number }
+      | ((prev: { x: number; y: number }) => { x: number; y: number })
+  ) => void;
+
+
+
+
+  textControlPosition: { x: number; y: number };
+  setTextControlPosition: (
     updater:
       | { x: number; y: number }
       | ((prev: { x: number; y: number }) => { x: number; y: number })
@@ -385,6 +397,13 @@ export const createLayoutSlice: StateCreator<LayoutSlice> = (set) => ({
     set((state) => ({
       position: typeof updater === 'function' ? updater(state.position) : updater,
     })),
+
+
+    textControlPosition: { x: 0, y: 0 },
+    setTextControlPosition: (updater) =>
+      set((state) => ({
+        textControlPosition: typeof updater === 'function' ? updater(state.textControlPosition) : updater,
+      })),
 
   zoom: 1,
   setZoom: (z) =>

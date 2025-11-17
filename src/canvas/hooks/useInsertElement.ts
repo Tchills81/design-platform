@@ -10,9 +10,13 @@ import { useCanvasStore } from '../store/createCanvasStore';
 import { getToneDefaults } from '@/src/utils/getToneDefaults';
 
 type InsertOptions = {
-  tone?: tone;
+  tone: tone | null
   x?: number;
   y?: number;
+  role?: string; // ✅ Add this line
+  shapeType?: string; // (optional) if you want to support shapeType too
+  toneColor?: string; // ✅ new field
+  font?: string; // ✅ new field
 };
 
 export function useInsertElement() {
@@ -71,8 +75,8 @@ export function useInsertElement() {
       y: options?.y ?? 200,
       width: 200,
       height: 60,
-      font: '--font-inter',
-      fill,
+      font: options?.font || '--font-inter',
+      fill: options?.toneColor ?? fill,
       isBold: false,
       isItalic: false,
       shapeType: 'text'

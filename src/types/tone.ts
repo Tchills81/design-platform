@@ -2,16 +2,18 @@
 export type tone ="festive"| "neutral" | "primary" | "accent" | "ceremonial"|"reflective" |"elegant" | "minimal"
 
 
-export const palettes: Record<tone, string[]> = {
-    neutral:['#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6'],
-    primary:['#2563eb', '#dc2626', '#16a34a', '#f59e0b', '#7c3aed', '#0ea5e9'],
-    accent:['#f43f5e', '#22d3ee', '#a3e635', '#e879f9', '#fb923c', '#38bdf8'],
-    ceremonial:['#78350f', '#fef3c7', '#fde68a', '#fcd34d', '#eab308', '#92400e'],
-    festive: ['#b91c1c', '#fbbf24', '#c2410c', '#fcd34d'],
-    reflective: ['#1e3a8a', '#60a5fa', '#f0f9ff', '#94a3b8'],
-    elegant: ['#4f46e5', '#6366f1', '#eef2ff', '#a5b4fc'],
-    minimal: ['#111827', '#6b7280', '#d1d5db', '#f9fafb']
-  };
+export const palettes: Record<string, string[]> = {
+  neutral: ['#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6'],
+  primary: ['#2563eb', '#dc2626', '#16a34a', '#f59e0b', '#7c3aed', '#0ea5e9'],
+  accent: ['#f43f5e', '#22d3ee', '#a3e635', '#e879f9', '#fb923c', '#38bdf8'],
+  ceremonial: ['#78350f', '#fef3c7', '#fde68a', '#fcd34d', '#eab308', '#92400e'],
+  festive: ['#b91c1c', '#fbbf24', '#c2410c', '#fcd34d'],
+  reflective: ['#1e3a8a', '#60a5fa', '#f0f9ff', '#94a3b8'],
+  elegant: ['#4f46e5', '#6366f1', '#eef2ff', '#a5b4fc'],
+  minimal: ['#111827', '#6b7280', '#d1d5db', '#f9fafb'],
+  soft: ['#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0', '#f1f5f9']
+};
+
 
   export const toneColorMap: Record<string, string> = {
     festive: 'text-red-600',
@@ -96,3 +98,20 @@ export const tonePromptSuggestions: Record<tone, string[]> = {
   elegant: ['a fashion editorial in muted purples', 'a ballroom with chandeliers'],
   minimal: ['a white canvas with one black dot', 'a sparse grid of icons']
 };
+
+
+export const toneToFont: Record<string, string> = {
+  playful: 'Comic Neue',       // whimsical, bouncy
+  quiet: 'IBM Plex Sans',      // soft, restrained
+  bold: 'Anton',               // loud, declarative
+  elegant: 'Cormorant Garamond', // refined, ceremonial
+  minimal: 'Inter',            // neutral, modern
+  reflective: 'Literata',      // thoughtful, literary
+  festive: 'Fredoka One',      // joyful, rounded
+  celebration: 'Baloo 2',      // exuberant, chunky
+  suggestion: 'Quicksand',     // friendly, informal
+  concern: 'Crimson Text',     // serious, serifed
+  question: 'Spectral',        // contemplative, balanced
+  promo: 'Bebas Neue'          // promotional, bold sans
+};
+

@@ -1,14 +1,11 @@
-import React, { RefObject, useEffect, useRef } from 'react';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
 import Konva from 'konva';
 import { tone } from '../types/tone';
-
 import { useFontDrivenOverlay } from '../canvas/hooks/useFontDrivenOverlay';
-
+import { DualTemplate } from '../types/template';
 
 interface TextOverlayInputProps {
   inputPosition?: { x: number; y: number } | null | undefined;
-  width?: number;
-  height?: number;
   editingText?: string;
   onTextChange?: (val: string) => void;
   onTextBlur?: ((e: React.FocusEvent<HTMLTextAreaElement>) => void) | undefined;
@@ -25,6 +22,9 @@ interface TextOverlayInputProps {
   zoom?: number;
   konvaText?: Konva.Text | null;
   toolbarRef: RefObject<HTMLDivElement | null>;
+  textAreaRef: RefObject<HTMLTextAreaElement | null>;
+  template?: DualTemplate | null;
+  height: number;
 }
 
 const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
@@ -40,26 +40,34 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
   isBold,
   isItalic,
   textAlign = 'left',
-  lineHeight = 1.4,
+  lineHeight = 1,
   tone,
   zoom,
   konvaText,
   toolbarRef,
+  textAreaRef,
+  template,
+  height
 }) => {
-  const ref = useRef<HTMLTextAreaElement>(null);
+  if (!template) return null;
+
   const isResizing = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
   const scale = zoom ?? 1;
+  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
 
   const fontFamily = selectedFont ?? 'Arial';
   const fontSize = selectedFontSize ?? 16;
   const fontWeight = isBold ? 'bold' : 'normal';
   const fontStyle = isItalic ? 'italic' : 'normal';
+  const maxTextWidth = template.width - 36 * 2;
+  const singleLineHeight = fontSize * lineHeight;
 
   const {
     size,
     updateSize,
     canvasRef,
+    setSize,
   } = useFontDrivenOverlay({
     text: editingText ?? '',
     fontFamily,
@@ -68,10 +76,12 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
     fontStyle,
     lineHeight,
     konvaText,
+    template,
   });
 
   useEffect(() => {
-    ref.current?.focus();
+    textAreaRef.current?.focus();
+    syncText(editingText ?? '');
   }, []);
 
   const toneBorderMap: Record<tone, string> = {
@@ -87,6 +97,65 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
 
   const borderStyle = tone ? toneBorderMap[tone] : '2px solid #3498db';
 
+  const measureLongestLine = (text: string): number => {
+    const canvas = canvasRef.current;
+    if (!canvas) return template.width;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return template.width;
+    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+    const lines = text.split('\n');
+    return Math.max(...lines.map(line => ctx.measureText(line).width));
+  };
+
+  const syncText = (value: string) => {
+    const longestLineWidth = measureLongestLine(value);
+    const unclampedWidth = longestLineWidth + 20;
+    const width = Math.min(unclampedWidth, maxTextWidth);
+    const lineCount = value.split('\n').length;
+    const height = lineCount * singleLineHeight;
+
+    console.log(`🧮 Line count: ${lineCount}, Height: ${height}px`);
+
+    setSize({ width, height });
+
+    if (konvaText) {
+      konvaText.text(value);
+      konvaText.width(width);
+      konvaText.height(height);
+      konvaText.lineHeight(isMultiline ? lineHeight : undefined);
+      konvaText.wrap('none');
+      konvaText.getLayer()?.batchDraw();
+    }
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    onTextChange?.(value);
+    updateSize(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const value = e.currentTarget.value;
+    const isEnter = e.key === 'Enter';
+
+    if (lockedHeight === null) {
+      setLockedHeight(size.height); // lock height
+    }
+
+    if (isEnter) {
+      syncText(value); // allow height update on Enter
+    }
+
+    onTextChange?.(value);
+    updateSize(value);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const value = e.currentTarget.value;
+    syncText(value); // finalize layout
+    setLockedHeight(null); // release lock
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     isResizing.current = true;
     startPos.current = { x: e.clientX, y: e.clientY };
@@ -99,7 +168,7 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
     const dy = e.clientY - startPos.current.y;
 
     const newWidth = Math.max(50, size.width + dx);
-    const newHeight = Math.max(30, size.height + dy);
+    const newHeight = Math.max(singleLineHeight, size.height + dy);
 
     if (konvaText) {
       konvaText.width(newWidth);
@@ -124,19 +193,6 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
     };
   }, []);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    onTextChange?.(value);
-    updateSize(value);
-
-    window.dispatchEvent(new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      clientX: window.innerWidth / 2,
-      clientY: window.innerHeight / 2,
-    }));
-  };
-
   return (
     <div
       ref={toolbarRef}
@@ -145,21 +201,23 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
         position: 'absolute',
         top: inputPosition?.y,
         left: inputPosition?.x,
-        width: size.width,
-        height: size.height,
+        width: `${size.width}px`,
+        height: `${lockedHeight ?? size.height}px`,
         transform: `scale(${scale})`,
         transformOrigin: 'top left',
         zIndex: 10,
       }}
     >
       <textarea
-        ref={ref}
+        ref={textAreaRef}
         value={editingText}
         onChange={handleTextChange}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
         onBlur={onTextBlur}
         style={{
-          width: '100%',
-          height: '100%',
+          width: `${size.width}px`,
+          height: `${lockedHeight ?? size.height}px`,
           fontFamily,
           fontSize,
           color: selectedColor,
@@ -168,13 +226,15 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
           fontStyle,
           textAlign,
           lineHeight,
-          background: '#ffffff',
-          border: borderStyle,
-          borderRadius: 2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
           resize: 'none',
           outline: 'none',
           pointerEvents: 'auto',
-          boxSizing: 'content-box',
+          boxSizing: 'border-box',
+          background: '#ffffff',
+          border: borderStyle,
+          borderRadius: 2,
           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
           transition: 'box-shadow 0.2s ease, border 0.2s ease',
         }}

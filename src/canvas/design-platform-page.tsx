@@ -45,6 +45,7 @@ import { SidebarTabs } from "@/src/components/SidebarTabs";
 import { SidebarPanel } from "@/src/components/SidebarPanel";
 
 import { TabContext } from "@/src/canvas/hooks/TabContext";
+import { TextOverlayControls } from "../components/text/TextOverlayControls";
 
 
 export default function DesignPlatformPage() {
@@ -151,7 +152,13 @@ export default function DesignPlatformPage() {
     templateReady,
     selectedDualTemplate,
     canvasReady,
-    
+    isTextLocked,
+    toggleTextLock,
+    duplicateTextById,
+    deleteTextById,
+    textControlsRef,
+    textControlPosition,
+    textAreaRef
     
   } = state;
 
@@ -227,7 +234,8 @@ export default function DesignPlatformPage() {
     setStageSize,
     setPosition,
     setStageStyle,
-    recenterCanvas
+    recenterCanvas,
+    
     
   } = actions;
 
@@ -591,7 +599,9 @@ export default function DesignPlatformPage() {
 {showToolbar && inputPosition && mode === 'card' && (
   <div ref={textToolbarRef} id="text-toolbar">
     <TextToolbarOverlay
-      
+      template={template}
+      side={side}
+      selectedTextId={selectedTextId}
       toolbarRef={textToolbarRef}
       selectedFont={selectedFont}
       onFontChange={onFontChange}
@@ -628,7 +638,10 @@ export default function DesignPlatformPage() {
 )}
 
 {showToolbar && (
+  <>
   <TextOverlayInput
+  textAreaRef={textAreaRef}
+  template={template}
   toolbarRef={toolbarRef}
   inputPosition={inputPosition}
   editingText={editingText}
@@ -651,7 +664,19 @@ export default function DesignPlatformPage() {
   
 />
 
+
+<TextOverlayControls
+      textControlsRef={textControlsRef}
+      elementId={selectedTextId}
+      position={inputPosition || { x: 0, y: 0 }}
+      locked={selectedTextId ? isTextLocked(selectedTextId) : false}
+      onToggleLock={toggleTextLock}
+      onDuplicate={duplicateTextById}
+      onDelete={deleteTextById}
+    />
+</>
 )}
+
 
 
 
@@ -683,6 +708,9 @@ export default function DesignPlatformPage() {
 
 {showCommentModal && (
   <CommentModal
+  template={template}
+  side={side}
+  selectedTextId={selectedTextId}
     isOpen={true}
     designId={template.id}
     elementId={elementId}
@@ -711,6 +739,7 @@ export default function DesignPlatformPage() {
       selectedImageId={selectedImageId}
       handleOnUploadImage={handleOnUploadImage}
       tone={template.tone}
+      template={template}
       setTemplate={setTemplate}
       side={side}
       recordSnapshot={recordSnapshot}

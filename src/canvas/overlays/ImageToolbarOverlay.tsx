@@ -18,7 +18,7 @@ export interface ImageToolbarOverlayProps {
   canvasBounds: { x: number; y: number; width: number; height: number };
   imagebarRef: RefObject<HTMLDivElement | null>;
   cardGridGroupRef: RefObject<Group | null>;
-
+  template:DualTemplate | null;
   handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   setShowCommentModal:React.Dispatch<React.SetStateAction<boolean>>;
@@ -40,6 +40,7 @@ export default function ImageToolbarOverlay({
   canvasBounds,
   imagebarRef,
   handleOnUploadImage,
+  template,
   setTemplate,
   recordSnapshot,
   setTransformModeActive,
@@ -65,6 +66,7 @@ export default function ImageToolbarOverlay({
           selectedElementId={selectedImageId}
           handleOnUploadImage={handleOnUploadImage}
           tone={tone}
+          template={template}
           setTemplate={setTemplate}
           side={side}
           recordSnapshot={recordSnapshot}

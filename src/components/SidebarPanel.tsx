@@ -1,4 +1,4 @@
-import { ReactNode, RefObject, useEffect } from 'react';
+import { ReactNode, RefObject, useEffect, useState } from 'react';
 import { SidebarTab } from '../types/Tab';
 import { TEMPLATE_PRESETS } from '../enumarations/TemplateGeometry';
 import { TemplatePanelContent } from './TemplatePanelContent';
@@ -8,6 +8,9 @@ import { tone } from '../types/tone';
 import { useTabContext } from '../canvas/hooks/TabContext';
 import { ElementPanelContent } from './ElementPanel';
 import { GenerateImagePanel } from './elements/renderGenerateImage';
+import { TextContent } from './TextContent';
+import { TonePaletteSelector } from './text/TonePaletteSelector';
+import { TextRoleButtons } from './text/TextRoleButtons';
 
 type SidebarPanelProps = {
     tone: string;
@@ -33,6 +36,8 @@ type SidebarPanelProps = {
   useEffect(() => {
     console.log('SidebarPanel mounted with tab:', tab);
   }, [tab]);
+
+  const [selectedTone, setSelectedTone] = useState<string>('ceremonial');
 
   const renderContent = (): ReactNode => {
     if (!tab) {
@@ -94,6 +99,11 @@ type SidebarPanelProps = {
   );
 
       case 'text':
+        
+        return <PanelContainer tone={'primary'} PanelRef={PanelRef}>
+          <TextContent />;
+        </PanelContainer>
+
       case 'images':
       case 'uploads':
       case 'tools':

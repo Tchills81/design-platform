@@ -4,7 +4,7 @@ import { ToneButton } from './ToneButton';
 import { AddImageButton } from './AddImageButton';
 import { Crop, XIcon, Type, Check, PlusIcon, ListPlusIcon, ImageUpscaleIcon, TrashIcon, MessageCircleHeartIcon} from 'lucide-react';
 import { ImageTools, TemplateSideKey } from '../utils/imageTools';
-import { DualTemplate } from '../types/template';
+import { DualTemplate, TemplateElement } from '../types/template';
 import Konva from 'konva';
 import { cropRenderedRegion } from '../utils/cropRenderedRegion';
 import { supportedShapeTypes } from './elements/shapes/types';
@@ -14,12 +14,15 @@ import ImagePreviewModal from './ImagePreviewModal';
 import TonePalette from './TonePalette';
 import { tone } from '../types/tone';
 
+import { useSelectedElement } from './elements/useSelectedElement';
+
 type ImageToolbarProps = {
   selectedElementId: string | null;
   handleOnUploadImage: (src: string, role: 'background' | 'element') => void;
   setTransformModeActive?: (enabled: boolean) => void;
   tone: string;
   side: TemplateSideKey;
+  template:DualTemplate | null;
   setTemplate: React.Dispatch<React.SetStateAction<DualTemplate | null>>;
   toggleCommentModal:()=>void;
   recordSnapshot: () => void;
@@ -41,6 +44,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   handleOnUploadImage,
   tone,
   side,
+  template,
   setTemplate,
   recordSnapshot,
   onToggleCropMode,
@@ -56,6 +60,24 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   setPreviewSrc
   
 }) => {
+
+
+
+  
+  const {
+    selectedElement,
+    isFrame,
+    isShape,
+    isImage,
+    isText,
+    role,
+    shapeType
+  } = useSelectedElement({
+    selectedImageId: selectedElementId,
+    template,
+    side
+  });
+  
   const isElementSelected = !!selectedElementId;
   const [isCropMode, setIsCropMode] = useState(false);
   const [color, setColor] = useState('#f43f5e');
@@ -166,7 +188,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     recordSnapshot();
   };
 
-  console.log(imageRef.current.getClassName(), 'isElementSelected', isElementSelected);
+  console.log('selectedElement', selectedElement);
 
  
   const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
@@ -182,7 +204,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   return (
     <>
     <div ref={imagebarRef}  id='image-tool-bar'
-    className={` pointer-events-auto cursor-grab absolute z-100 left-1/2 top-20 -translate-x-1/2 
+    className={` pointer-events-auto cursor-grab absolute z-100 left-1/2 top-12 -translate-x-1/2 
       flex items-center gap-1 px-1 py-1 bg-white rounded-xl shadow-xl border border-gray-200 
       whitespace-nowrap overflow-x-auto max-w-[90vw] ${backgroundClass}`}
     >

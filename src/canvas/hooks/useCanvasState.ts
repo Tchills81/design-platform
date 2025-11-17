@@ -12,6 +12,7 @@ import { useTransformMode } from "@/src/utils/useTransformMode";
 import { shallow } from 'zustand/shallow';
 
 import Konva from "konva";
+import { computeOverlayControlPosition } from "./useOverlayControlPosition";
 
 
 
@@ -20,6 +21,7 @@ import Konva from "konva";
 export function useCanvasState() {
   // Get the entire store object
   const store = useCanvasStore();
+  
 
   // Destructure all your variables from the store object
   const {
@@ -39,6 +41,14 @@ export function useCanvasState() {
     setHasChanged,
     maxPageCount,
     setMaxPageCount,
+    isTextLocked,
+    toggleTextLock,
+    duplicateTextById,
+    deleteTextById,
+
+
+    
+    
 
 
     //Chunk 2: 🧭 Modes and Navigation
@@ -214,6 +224,8 @@ setDesignElement,
 
 initialPosition,
 setInitailPosition,
+setTextControlPosition,
+textControlPosition,
 
 
 
@@ -302,6 +314,11 @@ const elementRef = useRef<HTMLDivElement>(null);
 const hasInitializedZoom = useRef(false);
 const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
 const imagebarRef = useRef<HTMLDivElement>(null);
+const textControlsRef = useRef<HTMLDivElement | null >(null);
+
+const textAreaRef = useRef<HTMLTextAreaElement | null >(null);
+
+
 
 
  const SIDEBAR_WIDTH = 60; // or 280 if panel is open
@@ -314,6 +331,7 @@ const imagebarRef = useRef<HTMLDivElement>(null);
 
 
   const computePosition = useOverlayPosition();
+  
 
  
   
@@ -699,7 +717,16 @@ modes,
 elementId,
 
 selectedDualTemplate,
-setSelectedDualTemplate
+setSelectedDualTemplate,
+
+isTextLocked,
+toggleTextLock,
+duplicateTextById,
+deleteTextById,
+textControlsRef,
+setTextControlPosition,
+textControlPosition,
+textAreaRef
 
 
   };

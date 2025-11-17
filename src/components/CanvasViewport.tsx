@@ -270,12 +270,15 @@ const overlayEl = document.getElementById('text-overlay');
   console.log('nodeName:', nodeName);
 
   const shouldShowTransform = isImage || isShape || isFrame;
-  const shouldDismiss = isRect || isStage;
+
+  // ✅ Refined dismissal logic: only dismiss if it's a Rect AND NOT a frame
+  const shouldDismiss = (isRect && !isFrame && !isShape) || isStage;
+
   const isUnknown =
     !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect;
 
   if (shouldDismiss || isUnknown) {
-    handlers.setSelectedImageId(null); // ✅ Deselect image-wrapped shapes and frames
+    handlers.setSelectedImageId(null);
     resetTransformMode();
     setModeActive(false);
     return;
@@ -304,7 +307,7 @@ const overlayEl = document.getElementById('text-overlay');
   if (shouldShowTransform) {
     const selectedId = clickedNode.id?.();
     if (selectedId) {
-      handlers.setSelectedImageId(selectedId); // ✅ Select shape or frame by ID
+      handlers.setSelectedImageId(selectedId);
     }
 
     konvaText?.visible(true);

@@ -24,6 +24,7 @@ import Konva from "konva";
 import { DesignElement } from "@/src/types/DesignElement";
 import { number } from "framer-motion";
 import { SidebarTab } from "@/src/types/Tab";
+import { computeOverlayControlPosition } from "./useOverlayControlPosition";
 
 export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
@@ -172,6 +173,8 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setTemplateSelected,
     setTemplateRendering,
     setSelectedDualTemplate,
+    setTextControlPosition,
+    textControlsRef
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -503,6 +506,23 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
         
         setInputPosition(pos);
 
+
+
+        const overlayControls= textControlsRef.current as HTMLDivElement;
+
+       
+
+        const controlPosition = computeOverlayControlPosition({
+          textNode: konvaText,
+          stageRef,
+          zoom,
+          tabActive: true,
+          offset: PANEL_WIDTH + SIDEBAR_WIDTH,
+          overlayWidth: overlayControls.offsetWidth // or measure dynamically
+        });
+
+        setTextControlPosition(controlPosition);
+
       }
      
 
@@ -833,6 +853,8 @@ const setDesignElement = useCallback(
   }, []);
 
   const onTextChange = useCallback((text: string) => {
+
+    let newText = text;
     setEditingText(text);
     if (!selectedTextId || !template || !template[side]) return;
     const updatedElements = template[side].elements.map(el =>
@@ -1639,6 +1661,7 @@ const setDesignElement = useCallback(
     setZoom(1);
     setInitialZoomedOutValue(1);
     setTemplate(null);
+    setActiveTab(null)
     setStageSize({width:window.innerWidth, height:window.innerHeight});
     
   }, []);
@@ -1829,6 +1852,13 @@ const setDesignElement = useCallback(
     
 
     setInputPosition(pos);
+
+
+    const overlayControls= textControlsRef.current;
+
+    //console.log('textControlsRef.current ',textControlsRef.current);
+
+    
   
     setOverlayProps({
       selectedFont: fontFamily,
