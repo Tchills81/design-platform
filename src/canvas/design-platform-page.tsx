@@ -255,6 +255,7 @@ export default function DesignPlatformPage() {
   
   return (
     <>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
 
 <TabContext.Provider value={[activeTab, setActiveTab]}>
       {/* 🧭 Sidebar Tabs + Panel */}
@@ -649,14 +650,16 @@ export default function DesignPlatformPage() {
   onTextBlur={()=>{}}
   selectedFont={selectedFont}
   selectedFontSize={selectedFontSize}
+  setSelectedFontSize={actions.setSelectedFontSize}
+  onFontSizeChange={onFontSizeChange}
   selectedColor={selectedColor}
   isMultiline={isMultiline}
   isUnderline={isUnderline}
   isBold={isBold}
   isItalic={isItalic}
   textAlign={textAlign}
-  width={konvaText?.width()}
-  height={konvaText?.height()}
+  width={konvaText?.width() ?? 0}
+  height={konvaText?.height() ?? 0}
   lineHeight={konvaText?.lineHeight()}
   zoom={zoom}
   tone={template.tone as tone}
@@ -769,7 +772,7 @@ export default function DesignPlatformPage() {
 
 
 
-   
+   </div>
 
     </>
   );

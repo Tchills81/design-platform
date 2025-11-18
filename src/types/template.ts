@@ -36,6 +36,10 @@ export type TemplateElement =
       label: string;
       shapeType: shapeType;
       text: string;
+      textWidth?: number;
+      textAlign?: 'left' | 'center' | 'right';
+      lineHeight?: number;
+      textHeight?: number;
       font: string;
       size: number;
       color: string;

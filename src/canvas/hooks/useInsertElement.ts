@@ -17,6 +17,9 @@ type InsertOptions = {
   shapeType?: string; // (optional) if you want to support shapeType too
   toneColor?: string; // ✅ new field
   font?: string; // ✅ new field
+  fonstSize?:number
+  textWidth?:number;
+  textHeight?:number;
 };
 
 export function useInsertElement() {
@@ -75,6 +78,9 @@ export function useInsertElement() {
       y: options?.y ?? 200,
       width: 200,
       height: 60,
+      textWidth:options?.textWidth ?? 200,
+      textHeight:options?.textHeight ?? 200,
+      fontSize:options?.fonstSize ?? 24,
       font: options?.font || '--font-inter',
       fill: options?.toneColor ?? fill,
       isBold: false,

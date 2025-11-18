@@ -888,6 +888,8 @@ const setDesignElement = useCallback(
   }, [selectedTextId, template, side]);
 
   const onFontSizeChange = useCallback((newSize: number) => {
+
+    console.log("Font size changed to:", newSize);
     setSelectedFontSize(newSize);
     if (!selectedTextId || !template || !template[side]) return;
     commitHistoryEntry();

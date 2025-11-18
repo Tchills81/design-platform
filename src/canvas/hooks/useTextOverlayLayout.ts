@@ -19,8 +19,8 @@ export const useTextOverlayLayout = ({
   fontWeight: string;
   fontStyle: string;
   lineHeight: number;
-  canvasRef: RefObject<HTMLCanvasElement>;
-  konvaText: Konva.Text | null;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  konvaText?: Konva.Text | null;
   template: DualTemplate;
   isMultiline: boolean;
   setSize: (size: { width: number; height: number }) => void;

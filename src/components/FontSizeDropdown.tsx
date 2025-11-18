@@ -7,7 +7,8 @@ type FontSizeDropdownProps = {
   onChange: (size: number) => void;
 };
 
-const fontSizes = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64];
+const fontSizes = Array.from({ length: 93 }, (_, i) => i + 8); // 8 to 100 inclusive
+
 
 export const FontSizeDropdown: React.FC<FontSizeDropdownProps> = ({ selectedSize, onChange }) => {
   return (

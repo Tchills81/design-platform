@@ -32,6 +32,8 @@ export interface DesignElement {
   name?:string;
   emoji?:string;
   text?:string;
+  textWidth?:number;
+  textHeight?:number;
   role?: 'frame' | 'divider' | 'accent' | 'inside-frame' | 'symbol' | 'message' | 'container';
 
   // Shape-specific

@@ -8,6 +8,7 @@ interface UseFontDrivenOverlayProps {
   fontSize?: number;
   fontWeight?: string;
   fontStyle?: string;
+  overrideFontSize?: number; // ✅ new
   lineHeight?: number;
   konvaText?: Konva.Text | null;
   template?:DualTemplate | null;
@@ -17,6 +18,7 @@ export function useFontDrivenOverlay({
   text,
   fontFamily = 'Arial',
   fontSize = 16,
+  overrideFontSize,
   fontWeight = 'normal',
   fontStyle = 'normal',
   lineHeight = 1,
@@ -26,6 +28,9 @@ export function useFontDrivenOverlay({
 }: UseFontDrivenOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ width: 200, height: 100 });
+
+  const effectiveFontSize = overrideFontSize ?? fontSize;
+
 
   const measure = (content: string) => {
 
@@ -37,8 +42,9 @@ export function useFontDrivenOverlay({
     const ctx = canvas.getContext('2d');
     if (!ctx) return size;
   
-    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-    const lineHeightPx = fontSize * lineHeight;
+    ctx.font = `${fontStyle} ${fontWeight} ${effectiveFontSize}px ${fontFamily}`;
+    const lineHeightPx = effectiveFontSize * lineHeight;
+    
     const maxWidth = template.width-72; // your width cap
   
     const lines = content.split('\n');
@@ -66,14 +72,17 @@ export function useFontDrivenOverlay({
       visualLineCount++; // count final line
     }
   
-    const width = Math.max(50, Math.min(widestLine + 20, maxWidth));
+    const padding = 5; // smaller, tunable
+    const width = Math.min(Math.ceil(widestLine + padding), maxWidth);
+    
     const height = visualLineCount * lineHeightPx + 10;
 
 
     //console.log('Measured lines:', visualLineCount, 'Height:', height);
 
   
-    return { width, height };
+    return { width, height, measuredWidth: widestLine };
+
   };
   
   
@@ -85,7 +94,7 @@ export function useFontDrivenOverlay({
 
     if (konvaText) {
       konvaText.fontFamily(fontFamily);
-      konvaText.fontSize(fontSize);
+      konvaText.fontSize(effectiveFontSize);
       konvaText.fontStyle(fontStyle);
       konvaText.fontVariant(fontWeight);
       konvaText.width(newSize.width);
@@ -100,5 +109,5 @@ export function useFontDrivenOverlay({
     updateSize(text);
   }, [text, fontFamily, fontSize, fontWeight, fontStyle, lineHeight]);
 
-  return { size, updateSize, setSize, canvasRef };
+  return { size, updateSize, setSize, canvasRef, effectiveFontSize, measure };
 }
