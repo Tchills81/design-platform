@@ -29,6 +29,7 @@ export type TemplateElement =
       tone: string;
       shapeType?:shapeType;
       role?: 'decoration' | 'logo' | 'background' | 'motif' | 'inside-decoration';
+      locked?:boolean;
     }
   | {
       type: 'text';
@@ -38,6 +39,8 @@ export type TemplateElement =
       text: string;
       textWidth?: number;
       textAlign?: 'left' | 'center' | 'right';
+      isUnderline?: boolean;
+      isMultiline?: boolean;
       lineHeight?: number;
       textHeight?: number;
       font: string;
@@ -48,6 +51,7 @@ export type TemplateElement =
       position: { x: number; y: number };
       tone: string;
       role?: 'frame' | 'divider' | 'accent' | 'inside-frame' | 'symbol' | 'message' | 'container';
+      locked?:boolean;
     }
   | {
       type: 'shape';
@@ -62,6 +66,7 @@ export type TemplateElement =
       tone: string;
     
       role?: 'frame' | 'divider' | 'accent' | 'inside-frame';
+      locked?:boolean;
     }
   | {
       type: 'icon';
@@ -73,6 +78,7 @@ export type TemplateElement =
       tone: string;
       shapeType?:shapeType;
       role?: 'symbol' | 'motif' | 'inside-icon';
+      locked?:boolean;
     }
   | {
       type: 'sticker';
@@ -84,6 +90,7 @@ export type TemplateElement =
       tone: string;
       shapeType?:shapeType;
       role?: 'celebration' | 'seasonal' | 'inside-sticker';
+      locked?:boolean;
     }
   | {
       type: 'frame';
@@ -97,6 +104,7 @@ export type TemplateElement =
       tone: string;
    
       role?: 'border' | 'container' | 'inside-frame';
+      locked?:boolean;
     };
 
 

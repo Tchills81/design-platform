@@ -8,6 +8,11 @@ export interface ContextSlice {
     k: Konva.Text | null | ((prev: Konva.Text | null) => Konva.Text | null)
   ) => void;
 
+  elementInserted: boolean;
+  setElementInserted: (
+    b: boolean | ((prev: boolean) => boolean)
+  ) => void;
+
   activeTab: SidebarTab | null;
   setActiveTab: (
     tab: SidebarTab | null | ((prev: SidebarTab | null) => SidebarTab | null)
@@ -66,6 +71,12 @@ export const createContextSlice: StateCreator<ContextSlice> = (set) => ({
   setIsTransitioningTemplate: (b) =>
     set((state) => ({
       isTransitioningTemplate: typeof b === 'function' ? b(state.isTransitioningTemplate) : b,
+    })),
+
+    elementInserted: false,
+  setElementInserted: (b) =>
+    set((state) => ({
+      elementInserted: typeof b === 'function' ? b(state.elementInserted) : b,
     })),
 
   transformMode: null,

@@ -6,9 +6,10 @@ import { DualTemplate } from "@/src/types/template";
 
 export interface TextToolbarOverlayProps {
   toolbarRef: React.RefObject<HTMLDivElement | null>;
-  setTextAlign: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
-  setIsMultline: React.Dispatch<React.SetStateAction<boolean>>
-  setIsUnderline: React.Dispatch<React.SetStateAction<boolean>>
+  //setTextAlign: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
+  kovaTextAlign: (align: "left" | "center" | "right") => void;
+  toggleMultiline: () => void;
+  toggleUnderline: () => void;
   textAlign:"left" | "center" | "right";
   isMultiline:boolean;
   isUnderline:boolean;
@@ -68,9 +69,10 @@ export default function TextToolbarOverlay({
   onAddText,
   onRemoveText,
   exitEditingMode,
-  setTextAlign,
-  setIsUnderline,
-  setIsMultline,
+  //setTextAlign,
+  kovaTextAlign,
+  toggleMultiline,
+  toggleUnderline,
   isMultiline,
   isUnderline,
   textAlign,
@@ -84,6 +86,8 @@ export default function TextToolbarOverlay({
     template:template,
     side: side
   });
+
+  
 
   return (
     <FloatingToolbar position={inputPosition}>
@@ -108,9 +112,9 @@ export default function TextToolbarOverlay({
           onAddText={onAddText}
           onRemoveText={onRemoveText}
           exitEditingMode={exitEditingMode}
-          onAlignChange={(align: 'left' | 'center' | 'right')=>{ setTextAlign(align); }}
-          onToggleMultiline={()=>{setIsMultline(prev=>!prev)}}
-          onToggleUnderline={()=>{ setIsUnderline(prev=>!prev)}}
+          onAlignChange={(align: 'left' | 'center' | 'right')=>{ kovaTextAlign(align); }}
+          onToggleMultiline={()=>{toggleMultiline()}}
+          onToggleUnderline={()=>{ toggleUnderline()}}
           onLineHeightChange={()=>{}}
           onWidthChange={()=>{ }}
           isMultiline={isMultiline}

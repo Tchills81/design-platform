@@ -62,6 +62,12 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
   const startPos = useRef({ x: 0, y: 0 });
   const scale = zoom ?? 1;
   const [lockedHeight, setLockedHeight] = useState<number | null>(null);
+  const [measured, setMeasured] = useState< {
+    width: number;
+    height: number;
+    measuredWidth: number;
+}>({ width: 0, height: 0, measuredWidth: 0 });
+
   const manualSizeRef = useRef<{ width: number; height: number } | null>(null);
   const [isManuallyResized, setIsManuallyResized] = useState(false);
   const initialSizeRef = useRef<{ width: number; height: number }>({ width: 200, height: 100 });
@@ -270,6 +276,8 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
       template,
       canvas: canvasRef.current,
     });
+
+    setMeasured(measured);
   
     const newHeight = measured.height;
   
@@ -324,6 +332,14 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
   const renderWidth = manualSizeRef.current?.width ?? size.width;
   const renderHeight = lockedHeight ?? manualSizeRef.current?.height ?? size.height;
 
+  //const widthDelta = renderWidth - measured.measuredWidth;
+  const widthDelta = renderWidth - measured.width;
+
+  const leftPadding = textAlign === 'left' ? Math.max(0, Math.min(widthDelta / 2, 24)) : 0;
+  const adjustedWidth = renderWidth - leftPadding;
+
+
+
   return (
     <div
       ref={toolbarRef}
@@ -348,16 +364,17 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
         onKeyUp={handleKeyUp}
         onBlur={onTextBlur}
         style={{
-          width: `${renderWidth}px`,
+          width: `${renderWidth}px`, // ✅ Keep full width
+         
           height: `${renderHeight}px`,
           fontFamily,
           fontSize: dynamicFontSize,
-          color: selectedColor,
-          textDecoration: isUnderline ? 'underline' : 'none',
+          color: (konvaText?.fill())?.toString() ??  '#000000',
+          textDecoration: konvaText?.textDecoration() ?? 'none',
           fontWeight,
-          fontStyle,
-          textAlign,
-          lineHeight,
+          textAlign: konvaText?.attrs?.align ?? 'left',
+          lineHeight: konvaText?.attrs?.lineHeight ?? 1.2,
+          fontStyle: konvaText?.attrs?.fontStyle ?? 'normal',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           resize: 'none',
@@ -368,7 +385,7 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
           border: borderStyle,
           borderRadius: 2,
           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
-          transition: 'box-shadow 0.2s ease, border 0.2s ease, height 120ms ease-in-out',
+          transition: 'box-shadow 0.2s ease, border 0.2s ease, height 120ms ease-in-out, padding-left 0.2s ease',
         }}
       />
 

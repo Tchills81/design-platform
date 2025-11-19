@@ -20,6 +20,8 @@ interface CardSideLayerProps {
     backgroundImage?: string;
     gridColors?: string[];
   };
+  setKonvaText: (k: Konva.Text | null) => void;
+  konvaText: Konva.Text | null;
 
   isTransitioningTemplate: boolean;
   isPreviewMode?: boolean;
@@ -138,6 +140,8 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   isPreviewMode,
   setActiveTab,
   isTransitioningTemplate,
+  setKonvaText,
+  konvaText,
   tab
 }) => {
 
@@ -237,9 +241,12 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
             .filter(isTextElementForTextComponent)
             .map(el => (
               <TextElement
+                setKonvaText={setKonvaText}
+                konvaText={konvaText}
                 zoom={zoom}
                 key={el.id}
                 id={el.id}
+                locked={el.locked ?? false}
                 index={Number(el.id)}
                 el={el}
                 text={el.label}
@@ -247,9 +254,12 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   x: el.position.x,
                   y: el.position.y
                 }}
-                textAlign={textAlign}
-                isMultiline={isMultiline}
-                isUnderline={isUnderline}
+                textWidth={el.textWidth ?? undefined}
+                textHeight={el.textHeight ?? undefined}
+                lineHeight={el.lineHeight ?? undefined}
+                textAlign={el.textAlign ?? 'left'}
+                isMultiline={el.isMultiline || false}
+                isUnderline={el.isUnderline || false}
                 fontFamily={el.font}
                 fontStyle={resolveFontStyle(el.isBold, el.isItalic)}
                 fontWeight={el.isBold ? 'bold' : 'normal'}

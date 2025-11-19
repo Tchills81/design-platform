@@ -19,6 +19,7 @@ type SidebarPanelProps = {
     handleTemplateSelect: (tpl?: DualTemplate) => void;
     resetDesign: () => void;
     PanelRef: RefObject<HTMLDivElement | null>;
+    
 
   };
   

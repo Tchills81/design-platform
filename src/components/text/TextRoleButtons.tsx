@@ -8,6 +8,7 @@ import { SparkleIcon } from 'lucide-react';
 
 interface TextRoleButtonsProps {
   tone: tone | null;
+  
 }
 
 export function TextRoleButtons({ tone }: TextRoleButtonsProps) {

@@ -112,7 +112,7 @@ interface CanvasViewportProps {
     handleVerticalScroll:(e: React.ChangeEvent<HTMLInputElement>)=>void;
     //setSelectedTextId: (value: React.SetStateAction<string | null>) => void;
     setSelectedTextId: (id: string | null) => void
-    setKonvaText: (node:Konva.Text)=>void;
+    setKonvaText: (node:Konva.Text | null)=>void;
      _handleTextClick: (textNode: Konva.Text, tabActive:boolean) => void;
 
   };
@@ -319,6 +319,8 @@ const overlayEl = document.getElementById('text-overlay');
       >
         {/* Canvas layer */}
         <CardSideLayer
+          konvaText={konvaText}
+          setKonvaText={handlers.setKonvaText}
           setActiveTab={setActiveTab}
           isTransitioningTemplate={isTransitioningTemplate}
           tab={tab}

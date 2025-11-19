@@ -22,7 +22,9 @@ export interface DesignElement {
   font?:string;
   isBold?:boolean;
   isItalic?:boolean;
-
+  isMultiline?:boolean;
+  isUnderline?:boolean;
+  textAlign?: 'left' | 'center' | 'right';
   // Image-specific
   src?: string;
   rotation?:number,
@@ -35,6 +37,7 @@ export interface DesignElement {
   textWidth?:number;
   textHeight?:number;
   role?: 'frame' | 'divider' | 'accent' | 'inside-frame' | 'symbol' | 'message' | 'container';
+  selected?:boolean;
 
   // Shape-specific
   shapeType: shapeType;

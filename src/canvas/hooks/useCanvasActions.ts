@@ -49,6 +49,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setShowGallery,
     setSelectedTextId,
     setSelectedImageId,
+    setElementInserted,
     setCropRegion,
     setInputPosition,
     setStageSize,
@@ -174,7 +175,10 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setTemplateRendering,
     setSelectedDualTemplate,
     setTextControlPosition,
-    textControlsRef
+    textControlsRef,
+    isUnderline,
+    setLockedTextIds,
+    lockedTextIds
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -1809,6 +1813,8 @@ const setDesignElement = useCallback(
 
   const _handleTextClick = useCallback((textNode: Konva.Text, tabActive:boolean)=>{
 
+    console.log('_handleTextClick', 'textNode', textNode); 
+
     const {
       text,
       x,
@@ -1930,6 +1936,140 @@ const setDesignElement = useCallback(
    
 
   },[template])
+
+  const kovaTextAlign = useCallback((align: 'left' | 'center' | 'right') => {
+    if (!selectedTextId || !template || !template[side] || !konvaText) return;
+  
+    // Update the Konva node directly
+    konvaText.align(align);
+    konvaText.getLayer()?.batchDraw();
+  
+    // Commit history for undo/redo
+    commitHistoryEntry();
+   
+  
+    // Update the template element
+    const updatedElements = template[side].elements.map(el => {
+      if (el.id === selectedTextId && el.type === 'text') {
+        return {
+          ...el,
+          textAlign: align, // ✅ update alignment
+        };
+      }
+      return el;
+    });
+  
+    // Apply the updated template
+    setTemplate(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    });
+  }, [konvaText, selectedTextId, template, side]);
+
+
+
+  const toggleUnderline = useCallback(() => {
+    if (!selectedTextId || !template || !template[side]) return;
+    
+    setIsUnderline(prev => !prev);
+
+    console.log('toggling underline', isUnderline);
+  
+    commitHistoryEntry();
+  
+    const updatedElements = template[side].elements.map(el =>
+      el.id === selectedTextId && el.type === 'text'
+        ? { ...el, isUnderline: !el.isUnderline }
+        : el
+    );
+  
+    setTemplate(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    });
+  }, [selectedTextId, template, side]);
+
+  const toggleMultiline = useCallback(() => {
+    if (!selectedTextId || !template || !template[side]) return;
+
+    setIsMultline(prev => !prev);
+  
+    commitHistoryEntry();
+  
+    const updatedElements = template[side].elements.map(el =>
+      el.id === selectedTextId && el.type === 'text'
+        ? { ...el, isMultiline: !el.isMultiline }
+        : el
+    );
+  
+    setTemplate(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    });
+  }, [selectedTextId, template, side]);
+
+
+  const toggleTextLock = useCallback((id: string) => {
+    if (!template || !template[side]) return;
+  
+    commitHistoryEntry();
+  
+    const updatedElements = template[side].elements.map(el =>
+      el.id === id
+        ? { ...el, locked: !el.locked }
+        : el
+    );
+  
+    setTemplate(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    });
+  
+    setLockedTextIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, [template, side]);
+  
+  
+  const isTextLocked = (id: string): boolean => {
+    if (lockedTextIds.has(id)) return true;
+    const el = template?.[side]?.elements.find(el => el.id === id);
+    return !!el?.locked;
+  };
+  
+  
+  
+  
   
 
 
@@ -1966,6 +2106,7 @@ const setDesignElement = useCallback(
     setShowGallery,
     setSelectedTextId,
     setSelectedImageId,
+    setElementInserted,
     setCropRegion,
     setInputPosition,
     setStageSize,
@@ -2085,6 +2226,11 @@ const setDesignElement = useCallback(
     setTemplateRendering,
     setSelectedDualTemplate,
     setInitailPosition,
-    createPrimitiveId
+    createPrimitiveId,
+    kovaTextAlign,
+    toggleUnderline,
+    toggleMultiline,
+    toggleTextLock,
+    isTextLocked
   };
 }

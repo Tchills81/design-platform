@@ -23,6 +23,7 @@ import { useFadeInLayer } from "./useFadeInLayer";
 import { computeOverlayControlPosition } from "./useOverlayControlPosition";
 
 import { computeOverlayControlPositionFromDOM } from "./computeOverlayControlPositionFromDOM";
+import Konva from "konva";
 export function useCanvasEffects(
   state: ReturnType<typeof useCanvasState>,
   actions: ReturnType<typeof useCanvasActions>
@@ -104,11 +105,15 @@ export function useCanvasEffects(
     selectedDualTemplate,
 
     textControlsRef,
+ 
    
     computePosition,
     setTextControlPosition,
     textControlPosition,
-    textAreaRef
+    textAreaRef,
+    elementInserted,
+    setKonvaText,
+    setLockedTextIds
     
   } = state;
 
@@ -123,6 +128,7 @@ export function useCanvasEffects(
     setGhostOpacity,
     setEditingText,
     setSelectedTextId,
+    setElementInserted,
     setShowToolbar,
     setInputPosition,
     setPortalTarget,
@@ -156,7 +162,7 @@ export function useCanvasEffects(
     setActiveIndex,
     recenterCanvas,
     setIsTransitioningTemplate,
-    
+    _handleTextClick,
     
 
   } = actions;
@@ -673,6 +679,22 @@ useEffect(() => {
 
  
 
+
+  useEffect(() => {
+    if (!template || !template[side]) return;
+  
+    const lockedIds = new Set(
+      template[side].elements
+        .filter(el => el.type === 'text' && el.locked)
+        .map(el => el.id)
+    );
+  
+    setLockedTextIds(lockedIds);
+
+    console.log("Locked text IDs updated:", Array.from(lockedIds), template[side].elements);
+  }, [template, side]);
+  
+
  
 
 
@@ -695,12 +717,13 @@ useEffect(() => {
       const clickedOnFooterCluster = footerClusterRef.current?.contains(e.target as Node);
       const clickedOnTabs = SidebarTabsRef.current?.contains(e.target as Node);
       const clickedOnPanel = PanelRef.current?.contains(e.target as Node);
+      const clickedOntextControls = textControlsRef.current?.contains(e.target as Node);
 
-      const control = textControlsRef.current;
+      
 
       console.log("handleGlobalClick", 
                   'clickedInsideToolbar', 
-                  clickedInsideToolbar, 'control....',  control); 
+                  clickedInsideToolbar, 'control....',  ); 
 
 
       if (clickedInsideToolbar ||  
@@ -709,7 +732,8 @@ useEffect(() => {
           clickedOnSideBar     || 
           clickedOnFooterCluster ||
           clickedOnTabs         ||
-          clickedOnPanel   
+          clickedOnPanel   || 
+          clickedOntextControls
 
         ) return;
 
@@ -729,6 +753,7 @@ useEffect(() => {
           setSelectedTextId(null);
           setShowToolbar(false);
           setInputPosition(null);
+          setKonvaText(null);
         }
         
          
@@ -740,18 +765,40 @@ useEffect(() => {
     return () => document.removeEventListener("mousedown", handleGlobalClick);
   }, [konvaText, textAreaRef.current]);
 
+
+
+  // 🧠 Element inserted effect
+
+
+
+useEffect(() => {
+
+  if(!konvaText ||  !selectedTextId || !elementInserted) return;
+
+    if(konvaText){
+
+      console.log('elementInserted', elementInserted, 'selectedTextId', selectedTextId, 'konvaText', konvaText);
+
+      _handleTextClick(konvaText!, activeTab ? true : false);
+      setElementInserted(false);
+
+    }
+
+    
+  
+}, [elementInserted, konvaText, selectedTextId]);
+
+
+
+
   // 🧠 Portal target setup
   useEffect(() => {
     const el = document.getElementById("canvas-portal");
     if (el) setPortalTarget(el);
   }, []);
 
-  // 🧠 Log template changes
-  useEffect(() => {
-    if (template) {
-      console.log("🔍 template", template);
-    }
-  }, [side]);
+  
+
 
   // 🧠 Compute dynamic background from gridColors
  

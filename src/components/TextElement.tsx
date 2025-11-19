@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { Text, Group } from 'react-konva';
 import Konva from 'konva';
-import SelectionFrame from './SelectionFrame';
 import { TemplateElement } from '../types/template';
 import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
 
@@ -18,6 +17,7 @@ interface TextElementProps {
   isMultiline: boolean;
   isUnderline: boolean;
   textWidth?: number;
+  textHeight?: number;
   lineHeight?: number;
   fontStyle?: 'normal' | 'bold' | 'italic' | 'italic bold';
   fontWeight?: 'normal' | 'bold';
@@ -31,7 +31,10 @@ interface TextElementProps {
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
   index: number;
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  setKonvaText: (k: Konva.Text | null) => void;
+  konvaText: Konva.Text | null;
   zoom: number;
+  locked?: boolean;
 }
 
 const TextElement: React.FC<TextElementProps> = ({
@@ -55,8 +58,12 @@ const TextElement: React.FC<TextElementProps> = ({
   isMultiline,
   isUnderline,
   textWidth,
+  textHeight,
   lineHeight,
-  zoom
+  setKonvaText,
+  konvaText,
+  zoom,
+  locked,
 }) => {
   const textRef = useRef<Konva.Text>(null);
   const padding = 2;
@@ -103,7 +110,34 @@ const TextElement: React.FC<TextElementProps> = ({
     );
   }, [cardBounds, zoom, textRef.current?.width(), textRef.current?.height()]);
 
-  return (
+  const hasHydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      selected &&
+      textRef.current instanceof Konva.Text &&
+      textRef.current !== konvaText
+    ) {
+      const node = textRef.current;
+  
+      // ✅ Manually hydrate expected attributes
+      node.setAttrs({
+        align: node.attrs.align ?? 'left',
+        lineHeight: node.attrs.lineHeight ?? 1.2,
+        fontSize: node.attrs.fontSize ?? 16,
+        fontFamily: node.attrs.fontFamily ?? 'Arial',
+        text: node.attrs.text ?? '',
+        width: node.attrs.width ?? 200,
+        height: node.attrs.height ?? 100,
+      });
+  
+      setKonvaText(node);
+    }
+  }, [selected, konvaText]);
+  
+
+
+    return (
     <Group>
      
       <Text
@@ -117,13 +151,17 @@ const TextElement: React.FC<TextElementProps> = ({
         align={textAlign}
         fontStyle={fontStyle}
         fill={color}
-        draggable
+
+        draggable={!locked}
         onClick={handleClick}
+        onDragEnd={locked ? undefined : handleDragEnd}
+
         dragBoundFunc={dragBoundFunc}
-        onDragEnd={handleDragEnd}
+       
         cursor={selected ? 'move' : 'default'}
         wrap={isMultiline ? 'word' : 'none'}
         width={isMultiline ? textWidth ?? 240 : undefined}
+        height={isMultiline ? textHeight ?? undefined : undefined}
         lineHeight={isMultiline ? lineHeight ?? 1 : undefined}
         textDecoration={isUnderline ? 'underline' : undefined}
       />

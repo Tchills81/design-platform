@@ -46,6 +46,7 @@ import { SidebarPanel } from "@/src/components/SidebarPanel";
 
 import { TabContext } from "@/src/canvas/hooks/TabContext";
 import { TextOverlayControls } from "../components/text/TextOverlayControls";
+import { useTextLock } from "./hooks/useTextLock";
 
 
 export default function DesignPlatformPage() {
@@ -152,13 +153,14 @@ export default function DesignPlatformPage() {
     templateReady,
     selectedDualTemplate,
     canvasReady,
-    isTextLocked,
-    toggleTextLock,
+   
     duplicateTextById,
     deleteTextById,
     textControlsRef,
     textControlPosition,
-    textAreaRef
+    textAreaRef,
+    lockedTextIds,
+    setLockedTextIds,
     
   } = state;
 
@@ -235,7 +237,11 @@ export default function DesignPlatformPage() {
     setPosition,
     setStageStyle,
     recenterCanvas,
-    
+    kovaTextAlign,
+    toggleMultiline,
+    toggleUnderline,
+    isTextLocked,
+    toggleTextLock
     
   } = actions;
 
@@ -243,7 +249,26 @@ export default function DesignPlatformPage() {
   if(!selectedDualTemplate || !template) return;
 
 
+  const canUseTextLock =
+  selectedTextId !== null &&
+  template !== null &&
+  typeof side === 'string';
 
+const { locked, toggle } = canUseTextLock
+  ? useTextLock({
+      id: selectedTextId,
+      lockedTextIds,
+      setLockedTextIds,
+      template,
+      side,
+      setTemplate
+    })
+  : { locked: false, toggle: () => {} };
+
+
+
+
+  
 
   if (!selectedDualTemplate) {
     return <div className="loader text-center pt-32 text-muted">Preparing design ritual…</div>;
@@ -501,6 +526,7 @@ export default function DesignPlatformPage() {
         setCropRegion={actions.setCropRegion}
         state={state}
         actions={actions}
+        
 
       />
 
@@ -624,9 +650,9 @@ export default function DesignPlatformPage() {
       exitEditingMode={exitEditingMode}
       showToolbar={showToolbar}
       inputPosition={inputPosition}
-      setTextAlign={setTextAlign}
-      setIsMultline={setIsMultline}
-      setIsUnderline={setIsUnderline}
+      kovaTextAlign={kovaTextAlign}
+      toggleMultiline={toggleMultiline}
+      toggleUnderline={toggleUnderline}
       isMultiline={isMultiline}
       isUnderline={isUnderline}
       textAlign={textAlign}
@@ -657,7 +683,7 @@ export default function DesignPlatformPage() {
   isUnderline={isUnderline}
   isBold={isBold}
   isItalic={isItalic}
-  textAlign={textAlign}
+  textAlign={konvaText?.align() as 'left' | 'center' | 'right'}
   width={konvaText?.width() ?? 0}
   height={konvaText?.height() ?? 0}
   lineHeight={konvaText?.lineHeight()}
@@ -672,10 +698,11 @@ export default function DesignPlatformPage() {
       textControlsRef={textControlsRef}
       elementId={selectedTextId}
       position={inputPosition || { x: 0, y: 0 }}
-      locked={selectedTextId ? isTextLocked(selectedTextId) : false}
-      onToggleLock={toggleTextLock}
+      locked={locked}
+      onToggleLock={toggle}
       onDuplicate={duplicateTextById}
       onDelete={deleteTextById}
+      tone={template.tone as tone}
     />
 </>
 )}

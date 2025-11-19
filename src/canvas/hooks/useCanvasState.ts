@@ -45,7 +45,10 @@ export function useCanvasState() {
     toggleTextLock,
     duplicateTextById,
     deleteTextById,
-
+    elementInserted,
+    setElementInserted,
+    setLockedTextIds,
+    lockedTextIds,
 
     
     
@@ -726,7 +729,11 @@ deleteTextById,
 textControlsRef,
 setTextControlPosition,
 textControlPosition,
-textAreaRef
+textAreaRef,
+elementInserted,
+setElementInserted,
+setLockedTextIds,
+lockedTextIds,
 
 
   };

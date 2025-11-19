@@ -20,6 +20,9 @@ type InsertOptions = {
   fonstSize?:number
   textWidth?:number;
   textHeight?:number;
+  isUnderline?:boolean;
+  isMultiline?:boolean;
+  textAlign?: 'left' | 'center' | 'right';
 };
 
 export function useInsertElement() {

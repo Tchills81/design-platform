@@ -9,6 +9,8 @@ export function useInsertElementFromDesign() {
   const template = useCanvasStore((s) => s.template);
   const setTemplate = useCanvasStore((s) => s.setTemplate);
   const setSelectedTextId = useCanvasStore((s) => s.setSelectedTextId);
+  const setElementInserted = useCanvasStore((s) => s.setElementInserted);
+ 
   const side = useCanvasStore((s) => s.side);
 
   const state = useCanvasState();
@@ -138,6 +140,9 @@ export function useInsertElementFromDesign() {
     if (el.type === 'text') {
       setSelectedTextId(newId);
     }
+
+
+    setElementInserted(true);
 
     return newId;
   }, [template, side, setTemplate, setSelectedTextId, recordSnapshot, createPrimitiveId]);
