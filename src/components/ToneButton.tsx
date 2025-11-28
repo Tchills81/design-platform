@@ -30,6 +30,9 @@ export const ToneButton: React.FC<ToneButtonProps> = ({
   const fontSizeClass = fontSize;
   const disabledClass = disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "";
 
+  // Elegant pulse only when active or hovered
+  const pulseClass = isActive || isHovered ? "pulseElegant" : "";
+
   return (
     <div
       className="relative flex flex-col items-center"
@@ -41,14 +44,12 @@ export const ToneButton: React.FC<ToneButtonProps> = ({
         disabled={disabled}
         className={`flex items-center gap-2 px-3 py-1.5 ${fontSizeClass} 
           font-medium rounded-md transition duration-200 ease-in-out focus:outline-none 
-          focus:ring-2 focus:ring-offset-2 animate-fadeIn pulseSave 
-          ${toneClass} ${focusClass} ${disabledClass}`}
+          focus:ring-2 focus:ring-offset-2 animate-fadeIn 
+          ${toneClass} ${focusClass} ${disabledClass} ${pulseClass}`}
       >
         {icon}
         {label && <span>{label}</span>}
       </button>
-
-      
     </div>
   );
 };

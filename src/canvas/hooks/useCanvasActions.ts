@@ -25,6 +25,7 @@ import { DesignElement } from "@/src/types/DesignElement";
 import { number } from "framer-motion";
 import { SidebarTab } from "@/src/types/Tab";
 import { computeOverlayControlPosition } from "./useOverlayControlPosition";
+import { useSelectedElement } from "@/src/components/elements/useSelectedElement";
 
 export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
@@ -178,7 +179,19 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     textControlsRef,
     isUnderline,
     setLockedTextIds,
-    lockedTextIds
+    lockedTextIds,
+    currentSelectedElement,
+    selectedIds,
+    boundingBox,
+     setTemplateElement,
+     onGroupUpdate,
+     setIsolationMode,
+     setMarqueeActive,
+     setElementId,
+     elementsGrouped,
+     setElementsGrouped,
+     setSelectedGroupId
+
   } = state;
 
   const commitHistoryEntry = useCallback(() => {
@@ -1668,6 +1681,9 @@ const setDesignElement = useCallback(
     setInitialZoomedOutValue(1);
     setTemplate(null);
     setActiveTab(null)
+    setIsolationMode(false)
+    setMarqueeActive(false)
+    setElementsGrouped(false)
     setStageSize({width:window.innerWidth, height:window.innerHeight});
     
   }, []);
@@ -1813,8 +1829,7 @@ const setDesignElement = useCallback(
 
   const _handleTextClick = useCallback((textNode: Konva.Text, tabActive:boolean)=>{
 
-    console.log('_handleTextClick', 'textNode', textNode); 
-
+    
     const {
       text,
       x,
@@ -1835,7 +1850,7 @@ const setDesignElement = useCallback(
     
     textNode.visible(false);
 
-    textNode.getLayer()?.batchDraw();
+    //textNode.getLayer()?.batchDraw();
   
     // 2. Set editing state
     setEditingText(text);
@@ -1897,9 +1912,9 @@ const setDesignElement = useCallback(
     setShowOverlayInput(true);
   
     // 5. Activate transform mode
-    activateTransformMode(textNode.id(), "text");
+   // activateTransformMode(textNode.id(), "text");
   
-    console.log("🖋️ Text selected with ID:", textNode.id(), "label:", text);
+   // console.log("🖋️ Text selected with ID:", textNode.id(), "label:", text);
   }, [])
   
 
@@ -2066,18 +2081,183 @@ const setDesignElement = useCallback(
     const el = template?.[side]?.elements.find(el => el.id === id);
     return !!el?.locked;
   };
+
+
+  const duplicatedElement= useCallback((id:string)=>{
+
+   
+    if (!template || !template[side]) return;
+
+  
+    
+    const elementToDuplicate = template[side].elements.find(el => el.id ===id);
+
+    //sconsole.log('duplicatedElement....', 'currentSelectedElement...',currentSelectedElement,  );
+
+    if (!elementToDuplicate) return;
+
+    const newId = `${elementToDuplicate.id}-dup-${Date.now()}`;
+    const duplicatedElement = {
+      ...elementToDuplicate,
+      id: newId,
+      position: {
+        x: elementToDuplicate.position.x + 20,
+        y: elementToDuplicate.position.y + 20,
+      },
+    };
+
+    setTemplate(prev => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: [...(prev && prev[side]?.elements || []), duplicatedElement],
+      },
+    }));
+
+
+    commitHistoryEntry();
+
+  }, [template, side, commitHistoryEntry]);
+  
+  const deleteElementById = useCallback((id: string) => {
+    if (!template || !template[side]) return;
+
+
+
+   
+
+    console.log('deleteElementById', 'selectedElement', currentSelectedElement);
+
+    commitHistoryEntry();
+
+    const updatedElements = template[side].elements.filter(el => el.id !== id);
+
+    setTemplate(prev => ({
+      ...prev!,
+      [side]: {
+        ...prev![side],
+        elements: updatedElements
+      }
+    }));
+
+    if(currentSelectedElement?.type=='text' && currentSelectedElement.id===id){
+      setInputPosition(null);
+    }
+    setShowToolbar(false);
+    setSelectedTextId(null);
+    setSelectedImageId(null);
+
+  }, [template, side, currentSelectedElement, commitHistoryEntry]);
   
   
+  const groupSelectedElements = useCallback(() => {
+    if (!template || !side || !selectedIds || selectedIds.length <= 1 || !boundingBox) return;
   
+    setElementsGrouped(true);
   
+    const cloned: DualTemplate = structuredClone(template);
+    const section = cloned[side];
+    if (!section || !section.elements) return;
+  
+    // Compute layer-local top-left of the bounding box
+    let localTopLeft = { x: 0, y: 0 };
+    if (boundingBox?.stage && cardGridGroupRef.current) {
+      const inv = cardGridGroupRef.current.getAbsoluteTransform().copy().invert();
+      localTopLeft = inv.point({
+        x: boundingBox.stage.x,
+        y: boundingBox.stage.y,
+      });
+    }
+  
+    // Partition root elements
+    const selectedEls = section.elements.filter(el => selectedIds.includes(el.id));
+    const remainingEls = section.elements.filter(el => !selectedIds.includes(el.id));
+  
+    // Normalize children relative to group origin
+    const normalizedChildren = selectedEls.map(el => {
+      const pos = el.position ?? { x: 0, y: 0 };
+      return {
+        ...el,
+        position: {
+          x: pos.x - localTopLeft.x,
+          y: pos.y - localTopLeft.y,
+        },
+      };
+    });
+  
+    // Create group with embedded children
+    const groupEl: TemplateElement = {
+      id: `group-${Date.now()}`,
+      type: 'group',
+      position: { x: boundingBox.group.x, y: boundingBox.group.y },
+      size: { width: boundingBox.group.width, height: boundingBox.group.height },
+      locked: false,
+      lockType: 'none',
+      rotation: 0,
+      children: normalizedChildren,
+    };
+  
+    // Replace root elements with remaining + group
+    section.elements = [...remainingEls, groupEl];
+  
+    // ✅ Commit to template state
+    setTemplate(cloned);
+    commitHistoryEntry();
+  
+    // ✅ Notify listeners AFTER commit
+    onGroupUpdate(groupEl);
+  
+    // ✅ Optionally select the new group immediately
+    setSelectedGroupId(groupEl.id);
+  
+    console.log('Grouped into...', groupEl, setElementsGrouped, elementsGrouped);
+  }, [template, side, selectedIds, boundingBox, cardGridGroupRef, setElementsGrouped, setTemplate, onGroupUpdate, commitHistoryEntry]);
   
 
 
 
 
+  const commitGroupUpdate = useCallback(
+    (updatedGroupElement: TemplateElement) => {
+      if (!template || !template[side]) return;
   
+
+      
+      // ✅ Track history
+      commitHistoryEntry();
   
+      // ✅ Replace the matching group element immutably
+      const updatedElements = template[side].elements.map(el => {
+        if (el.id === updatedGroupElement.id && el.type === 'group') {
+          // Replace with the fully rebuilt group element
+         
+          return updatedGroupElement;
+        }
+        return el;
+      });
   
+      // ✅ Commit to template state
+      setTemplate(prev => {
+        if (!prev) return prev;
+       
+        return {
+          ...prev,
+          [side]: {
+            ...prev[side],
+            elements: updatedElements,
+          },
+        };
+      });
+    
+      onGroupUpdate(updatedGroupElement);
+
+
+     
+    },
+
+   
+    [template, side, commitHistoryEntry, onGroupUpdate]
+  );
   
 
   // You can now export all these methods in your return block
@@ -2231,6 +2411,9 @@ const setDesignElement = useCallback(
     toggleUnderline,
     toggleMultiline,
     toggleTextLock,
-    isTextLocked
+    duplicatedElement,
+    deleteElementById,
+    groupSelectedElements,
+    commitGroupUpdate
   };
 }

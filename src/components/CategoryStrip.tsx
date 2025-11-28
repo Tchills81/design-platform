@@ -75,7 +75,7 @@ export const CategoryStrip = React.memo(function CategoryStrip({
             const tone = toneBySize?.[categoryKey] ?? 'neutral';
             const toneClass = toneClasses[tone] ?? 'bg-gray-300 text-white';
 
-            console.log('Rendering category', categoryKey, 'with toneClass:', toneClass, 'and categoryKey:', categoryKey);
+           // console.log('Rendering category', categoryKey, 'with toneClass:', toneClass, 'and categoryKey:', categoryKey);
 
             return (
               <button

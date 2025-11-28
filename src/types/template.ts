@@ -1,7 +1,8 @@
+import { LockType } from "./access";
 import { CanvasMode } from "./CanvasMode";
 
 export  type shapeType = 'rectangle' | 'circle' | 'line' | 'regularPolygon' |'ring' |'star' |
-                         'arrow'|'heart' | 'heading' |'body'|'image' |'flower' |'text' | 'frame_basic' | 'frame_dashed' | 'frame_rounded';
+                         'arrow'|'heart' | 'heading' |'body'|'image' |'flower' |'text' | 'frame_basic' | 'frame_dashed' | 'frame_rounded' | 'group';
 
 
 export type TemplateElementType='shape' | 'icon' | 'sticker' | 'frame' | 'text' | 'image';
@@ -30,7 +31,24 @@ export type TemplateElement =
       shapeType?:shapeType;
       role?: 'decoration' | 'logo' | 'background' | 'motif' | 'inside-decoration';
       locked?:boolean;
+      lockType?:LockType;
     }
+
+    | {
+      type: 'group'; // ✅ new
+      id: string;
+      label?: string;
+      children: TemplateElement[]; // IDs of elements inside the group
+      position: { x: number; y: number, };
+      size: { width: number; height: number }; // optional bounding box
+      tone?: string;
+      role?: 'container' | 'layer' | 'composite' |'group';
+      locked?: boolean;
+      lockType?: LockType;
+      rotation?:number;
+      shapeType?:shapeType;
+    }
+    
   | {
       type: 'text';
       id: string;
@@ -52,6 +70,7 @@ export type TemplateElement =
       tone: string;
       role?: 'frame' | 'divider' | 'accent' | 'inside-frame' | 'symbol' | 'message' | 'container';
       locked?:boolean;
+      lockType?:LockType;
     }
   | {
       type: 'shape';
@@ -67,6 +86,7 @@ export type TemplateElement =
     
       role?: 'frame' | 'divider' | 'accent' | 'inside-frame';
       locked?:boolean;
+      lockType?:LockType;
     }
   | {
       type: 'icon';
@@ -79,6 +99,7 @@ export type TemplateElement =
       shapeType?:shapeType;
       role?: 'symbol' | 'motif' | 'inside-icon';
       locked?:boolean;
+      lockType?:LockType;
     }
   | {
       type: 'sticker';
@@ -91,7 +112,10 @@ export type TemplateElement =
       shapeType?:shapeType;
       role?: 'celebration' | 'seasonal' | 'inside-sticker';
       locked?:boolean;
+      lockType?:LockType;
     }
+
+    
   | {
       type: 'frame';
       id: string;
@@ -105,7 +129,11 @@ export type TemplateElement =
    
       role?: 'border' | 'container' | 'inside-frame';
       locked?:boolean;
+      lockType?:LockType;
     };
+
+
+    
 
 
 

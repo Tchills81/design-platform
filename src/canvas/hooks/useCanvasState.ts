@@ -13,6 +13,11 @@ import { shallow } from 'zustand/shallow';
 
 import Konva from "konva";
 import { computeOverlayControlPosition } from "./useOverlayControlPosition";
+import { useSelectedElement } from "@/src/components/elements/useSelectedElement";
+import { useOverlayDomPosition } from "./useOverlayDomPosition";
+import { useShiftClickSelection } from "./useShiftClickSelection";
+import { useClearSelection } from "./useClearSelection";
+import { useBoundingBox } from "./useBoundingBox";
 
 
 
@@ -42,6 +47,7 @@ export function useCanvasState() {
     maxPageCount,
     setMaxPageCount,
     isTextLocked,
+    
     toggleTextLock,
     duplicateTextById,
     deleteTextById,
@@ -49,6 +55,8 @@ export function useCanvasState() {
     setElementInserted,
     setLockedTextIds,
     lockedTextIds,
+    
+   
 
     
     
@@ -199,6 +207,9 @@ export function useCanvasState() {
   isTransitioningTemplate,
   setIsTransitioningTemplate,
   setAccessLevel,
+  isIsolationMode,
+  setIsolationMode,
+  groupElement,
 
 
       // 🧠 Layout Memory and Flow
@@ -229,6 +240,14 @@ initialPosition,
 setInitailPosition,
 setTextControlPosition,
 textControlPosition,
+setTemplateElement,
+templateElement,
+onGroupUpdate,
+selectedGroupId,
+setSelectedGroupId,
+setBoundsRect,
+boundsRect,
+
 
 
 
@@ -256,6 +275,25 @@ setActivePageId,
 // 🧠 Reflections
 reflections,
 setReflections,
+toggleSelection,
+selectOnly,
+// selection state
+   selectedIds,
+   clearSelection,
+
+   
+   
+   addSelection,
+   removeSelection,
+
+   // marquee (optional for later steps)
+   isMarqueeActive,
+   marqueeRect,
+   startMarquee,
+   updateMarquee,
+   finalizeMarquee,
+   setMarqueeActive,
+   setMarqueeRect,
 
 // 🧠 Layout Timeout
 //fadeTimeout,
@@ -291,10 +329,9 @@ modes,
 elementId,
 
 selectedDualTemplate,
-setSelectedDualTemplate
-
-  
-
+setSelectedDualTemplate,
+elementsGrouped,
+setElementsGrouped,
 
   } = store;
 
@@ -334,10 +371,22 @@ const textAreaRef = useRef<HTMLTextAreaElement | null >(null);
 
 
   const computePosition = useOverlayPosition();
+  const { handleElementClick } = useShiftClickSelection({
+    addSelection,
+    selectOnly,
+    selectedIds,
+
+  });
   
 
  
+
+  const boundingBox = useBoundingBox(stageRef, selectedIds, cardGridGroupRef);
+
+
+ 
   
+  //console.log('boundingBox:',boundingBox);
 
 
 
@@ -411,7 +460,51 @@ const textAreaRef = useRef<HTMLTextAreaElement | null >(null);
     imageRef.current = ref;
   };
   
+
+
+  const computeDomPos = useOverlayDomPosition();
+
+const domPos = computeDomPos({
+  selectedImageId,
+  selectedTextId, // will be ignored for non-text
+  selectedGroupId,
+  template:template ?? null,
+  side:side,
+  stageRef,
   
+});
+
+
+
+const { clearAll } = useClearSelection({
+  setShowToolbar,
+  setInputPosition,
+  setKonvaText,
+  textAreaRef: textAreaRef,
+  konvaText,
+  clearSelection,
+  setSelectedImageId,
+  setSelectedTextId,
+  resetTransformMode,
+  setIsolationMode,
+  setSelectedGroupId
+  
+
+});
+
+
+
+const { selectedElement:currentSelectedElement, role } = useSelectedElement({
+  selectedImageId: selectedImageId ?? null,
+  selectedTextId: selectedTextId ?? null,
+  selectedGroupId:selectedGroupId ?? null,
+  template:template,
+  side: side
+});
+
+
+
+
   
   
   
@@ -514,7 +607,7 @@ const textAreaRef = useRef<HTMLTextAreaElement | null >(null);
     setShowCommentModal,
     showShareModal,
     setShowShareModal,
-  
+    
     // 📐 Layout and Geometry
     zoom,
     setZoom,
@@ -734,7 +827,39 @@ elementInserted,
 setElementInserted,
 setLockedTextIds,
 lockedTextIds,
+domPos,
+currentSelectedElement,
+handleElementClick,
+clearAll,
 
+addSelection,
+removeSelection,
+
+// marquee (optional for later steps)
+isMarqueeActive,
+marqueeRect,
+startMarquee,
+updateMarquee,
+finalizeMarquee,
+setMarqueeActive,
+setMarqueeRect,
+toggleSelection,
+selectOnly,
+selectedIds,
+boundingBox,
+setTemplateElement,
+templateElement,
+groupElement,
+
+onGroupUpdate,
+selectedGroupId,
+setSelectedGroupId,
+isIsolationMode,
+setIsolationMode,
+setBoundsRect,
+boundsRect,
+elementsGrouped,
+setElementsGrouped,
 
   };
   

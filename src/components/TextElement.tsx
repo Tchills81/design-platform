@@ -3,13 +3,18 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Text, Group } from 'react-konva';
 import Konva from 'konva';
-import { TemplateElement } from '../types/template';
+import { DualTemplate } from '../types/template';
 import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
+import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
+import { LockType } from '../types/access';
+import { KonvaEventObject } from 'konva/lib/Node';
+import { BoundsRect } from '../canvas/store/useContextStore';
 
 interface TextElementProps {
   id: string;
   templateId: string;
-  el?: TemplateElement;
+  template: DualTemplate;
+  currentLock?: LockType;
   text: string;
   position: { x: number; y: number };
   fontFamily: string;
@@ -24,8 +29,10 @@ interface TextElementProps {
   size: number;
   color: string;
   selected?: boolean;
+  grouped?:boolean;
+  isIsolationMode?:boolean;
   transformModeActive?: boolean;
-  cardBounds: { x: number; y: number; width: number; height: number };
+  cardBounds: { x: number; y: number; width: number; height: number } | BoundsRect;
   onUpdate: (updated: { id: string; text: string; position: { x: number; y: number } }) => void;
   onEdit: (text: string, position: { x: number; y: number }, align: 'left' | 'center' | 'right') => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
@@ -34,22 +41,25 @@ interface TextElementProps {
   setKonvaText: (k: Konva.Text | null) => void;
   konvaText: Konva.Text | null;
   zoom: number;
-  locked?: boolean;
+  selectedIds?: string[];
+ 
+  // Selection context
+  selectedTextId?: string | null;
+  selectedImageId?: string | null;
+  side: 'front' | 'back';
 }
 
 const TextElement: React.FC<TextElementProps> = ({
   id,
-  templateId,
+  template,
   text,
   position,
   fontFamily,
   textAlign,
   fontStyle,
-  fontWeight,
   size,
   color,
   selected,
-  transformModeActive,
   cardBounds,
   onUpdate,
   onEdit,
@@ -63,12 +73,41 @@ const TextElement: React.FC<TextElementProps> = ({
   setKonvaText,
   konvaText,
   zoom,
-  locked,
+  selectedTextId,
+  selectedImageId,
+  side,
+  currentLock,
+  selectedIds,
+  grouped,
+  isIsolationMode,
 }) => {
   const textRef = useRef<Konva.Text>(null);
   const padding = 2;
 
+  // ✅ Live lock state from hook
+  const {
+    currentLock: liveCurrentLock,
+    isPositionLocked,
+    isFullyLocked,
+    isReplaceOnly,
+    isStyleLocked,
+  } = useSelectedElementLock({
+    selectedImageId,
+    selectedTextId: id,
+    template,
+    side,
+  });
+
+  // ✅ Effective lock (prop override or hook)
+  const effectiveLock = currentLock ?? liveCurrentLock;
+
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isFullyLocked) return; // 🚫 block clicks if fully locked
+    if (isReplaceOnly) {
+      // ✅ allow editing text content only
+      onEdit(text, position, textAlign);
+      return;
+    }
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
       onEdit(text, position, textAlign);
@@ -77,40 +116,30 @@ const TextElement: React.FC<TextElementProps> = ({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (isPositionLocked || isFullyLocked || isReplaceOnly) return; // 🚫 enforce lock
+  
     const node = e.target;
-    const width = node.width();
-    const height = node.height();
-
-    const minX = cardBounds.x + padding;
-    const maxX = cardBounds.x + cardBounds.width - width - padding;
-    const minY = cardBounds.y + padding;
-    const maxY = cardBounds.y + cardBounds.height - height - padding;
-
-    const clampedX = Math.max(minX, Math.min(node.x(), maxX));
-    const clampedY = Math.max(minY, Math.min(node.y(), maxY));
-
-    node.position({ x: clampedX, y: clampedY });
+  
+    // Position is already clamped by dragBoundFunc
+    const clampedX = node.x();
+    const clampedY = node.y();
+  
     node.getLayer()?.batchDraw();
-
+  
     onUpdate({ id, text, position: { x: clampedX, y: clampedY } });
-
+  
     if (setGhostLines) {
       setGhostLines({});
     }
   };
-
+  
   const dragBoundFunc = useMemo(() => {
     const width = textRef.current?.width() ?? 0;
     const height = textRef.current?.height() ?? 0;
-
-    return getZoomAwareDragBoundFunc(
-      cardBounds,
-      { width, height },
-      zoom
-    );
+  
+    return getZoomAwareDragBoundFunc(cardBounds, { width, height }, zoom, 2, isIsolationMode);
   }, [cardBounds, zoom, textRef.current?.width(), textRef.current?.height()]);
-
-  const hasHydratedRef = useRef(false);
+  
 
   useEffect(() => {
     if (
@@ -119,8 +148,8 @@ const TextElement: React.FC<TextElementProps> = ({
       textRef.current !== konvaText
     ) {
       const node = textRef.current;
-  
-      // ✅ Manually hydrate expected attributes
+
+      // ✅ Hydrate attributes
       node.setAttrs({
         align: node.attrs.align ?? 'left',
         lineHeight: node.attrs.lineHeight ?? 1.2,
@@ -130,16 +159,16 @@ const TextElement: React.FC<TextElementProps> = ({
         width: node.attrs.width ?? 200,
         height: node.attrs.height ?? 100,
       });
-  
+
       setKonvaText(node);
     }
   }, [selected, konvaText]);
-  
 
 
-    return (
+  //const isSelected = selectedIds.includes(id);
+
+  return (
     <Group>
-     
       <Text
         id={id}
         ref={textRef}
@@ -149,16 +178,14 @@ const TextElement: React.FC<TextElementProps> = ({
         fontSize={size}
         fontFamily={fontFamily}
         align={textAlign}
+        
         fontStyle={fontStyle}
         fill={color}
-
-        draggable={!locked}
+        draggable={!isPositionLocked && !isFullyLocked && !isReplaceOnly}
         onClick={handleClick}
-        onDragEnd={locked ? undefined : handleDragEnd}
-
+        onDragEnd={handleDragEnd}
         dragBoundFunc={dragBoundFunc}
-       
-        cursor={selected ? 'move' : 'default'}
+        cursor={selected && !isFullyLocked ? 'move' : 'default'}
         wrap={isMultiline ? 'word' : 'none'}
         width={isMultiline ? textWidth ?? 240 : undefined}
         height={isMultiline ? textHeight ?? undefined : undefined}

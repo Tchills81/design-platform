@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { tone } from '../types/tone';
+import { LockType } from '../types/access';
 
 interface TextToolbarProps {
   isMultiline: boolean;
@@ -52,6 +53,8 @@ interface TextToolbarProps {
   toggleCommentModal: () => void;
   selectedTextId?: string | null;
   offset: number;
+  // ...existing props...
+  currentLock?:LockType
 }
 
 const TextToolbar: React.FC<TextToolbarProps> = ({
@@ -77,12 +80,19 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
   textAlign,
   onAlignChange,
   onToggleMultiline,
-  onToggleUnderline
+  onToggleUnderline,
+  currentLock
 }) => {
   const { backgroundClass } = useSeasonalTone();
   const offsetClass = offset === 0 ? 'left-1/2' : 'left-2/3';
+  const isPositionLocked =
+  currentLock === "position" || currentLock === "full" || currentLock === "hierarchical";
+  const isFullyLocked =
+  currentLock === "full" || currentLock === "hierarchical";
+  const isReplaceOnly = currentLock === "replace";
 
-  console.log('TextToolbar rendered with tone:', tone, 'and role:', role);
+
+  //console.log("TextToolbar - currentLock:", currentLock, "isPositionLocked:", isPositionLocked, "isFullyLocked:", isFullyLocked, "isReplaceOnly:", isReplaceOnly);
   
   const fontSuggestions = useFontPairing(role, tone);
 
@@ -123,13 +133,48 @@ const TextToolbar: React.FC<TextToolbarProps> = ({
         isActive={!!selectedTextId}
       />
 
-      <FontDropdown selectedFont={selectedFont} onChange={onFontChange} />
-      <FontSizeDropdown selectedSize={selectedFontSize} onChange={onFontSizeChange} />
-      <ColorPicker selectedColor={selectedColor} onChange={onColorChange} />
+      <FontDropdown
+      selectedFont={selectedFont}
+      onChange={onFontChange}
+      disabled={isFullyLocked || isReplaceOnly}
+      />
+      <FontSizeDropdown
+      selectedSize={selectedFontSize}
+      onChange={onFontSizeChange}
+      disabled={isFullyLocked || isReplaceOnly}
+      />
+     <ColorPicker
+  selectedColor={selectedColor}
+  onChange={onColorChange}
+  disabled={isFullyLocked || isReplaceOnly}
+/>
 
-      <ToneButton icon={<Bold size={16} />} label="" isActive={isBold} onClick={onToggleBold} tone={tone} title="Bold" />
-      <ToneButton icon={<Italic size={16} />} label="" isActive={isItalic} onClick={onToggleItalic} tone={tone} title="Italic" />
-      <ToneButton icon={<Underline size={16} />} label="" isActive={isUnderlined} onClick={onToggleUnderline} tone={tone} title="Underline" />
+<ToneButton
+  icon={<Bold size={16} />}
+  label=""
+  isActive={isBold}
+  onClick={onToggleBold}
+  tone={tone}
+  title="Bold"
+  disabled={isFullyLocked || isReplaceOnly}
+/>
+<ToneButton
+  icon={<Italic size={16} />}
+  label=""
+  isActive={isItalic}
+  onClick={onToggleItalic}
+  tone={tone}
+  title="Italic"
+  disabled={isFullyLocked || isReplaceOnly}
+/>
+      <ToneButton
+  icon={<Underline size={16} />}
+  label=""
+  isActive={isUnderlined}
+  onClick={onToggleUnderline}
+  tone={tone}
+  disabled={isFullyLocked || isReplaceOnly}
+/>
       <ToneButton icon={<WrapText size={16} />} label="" isActive={isMultiline} onClick={onToggleMultiline} tone={tone} />
 
       {/* Alignment */}

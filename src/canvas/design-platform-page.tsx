@@ -46,7 +46,10 @@ import { SidebarPanel } from "@/src/components/SidebarPanel";
 
 import { TabContext } from "@/src/canvas/hooks/TabContext";
 import { TextOverlayControls } from "../components/text/TextOverlayControls";
-import { useTextLock } from "./hooks/useTextLock";
+import { useLock } from "./hooks/useTextLock";
+import { LockType, useSafeLock } from "../types/access";
+import { useSelectedElement } from "../components/elements/useSelectedElement";
+import { useUnifiedOverlayPosition } from "./hooks/useOverlayPosition";
 
 
 export default function DesignPlatformPage() {
@@ -161,7 +164,16 @@ export default function DesignPlatformPage() {
     textAreaRef,
     lockedTextIds,
     setLockedTextIds,
-    
+    domPos,
+    boundingBox,
+    isMarqueeActive,
+    selectedIds,
+    elementsGrouped,
+    setElementsGrouped,
+    selectedGroupId,
+    isIsolationMode,
+
+    //currentSelectedElement
   } = state;
 
   const {
@@ -240,8 +252,10 @@ export default function DesignPlatformPage() {
     kovaTextAlign,
     toggleMultiline,
     toggleUnderline,
-    isTextLocked,
-    toggleTextLock
+   duplicatedElement,
+   deleteElementById,
+   groupSelectedElements,
+   
     
   } = actions;
 
@@ -249,24 +263,79 @@ export default function DesignPlatformPage() {
   if(!selectedDualTemplate || !template) return;
 
 
-  const canUseTextLock =
-  selectedTextId !== null &&
-  template !== null &&
-  typeof side === 'string';
-
-const { locked, toggle } = canUseTextLock
-  ? useTextLock({
-      id: selectedTextId,
-      lockedTextIds,
-      setLockedTextIds,
-      template,
-      side,
-      setTemplate
-    })
-  : { locked: false, toggle: () => {} };
+  //console.log(selectedGroupId, selectedTextId, selectedImageId)
 
 
+  
 
+   const { selectedElement:selectedElement, role } = useSelectedElement({
+      selectedImageId: selectedImageId ?? null,
+      selectedTextId: selectedTextId ?? null,
+      selectedGroupId:selectedGroupId ?? null,
+      template:template,
+      side: side
+    });
+
+  console.log('selected element ',selectedElement, 'mode', isIsolationMode);
+
+
+  const {
+    currentLock: currentTextLock,
+    toggle: currentTextToggle,
+    setLockType: setTextLockType,
+  } = useSafeLock(selectedTextId, "position", template, side, setTemplate);
+  
+  const {
+    currentLock: currentImageLock,
+    toggle: currentImageToggle,
+    setLockType: setImagetLockType,
+  } = useSafeLock(selectedImageId, "position", template, side, setTemplate);
+  
+
+  const {
+    currentLock: currentGroupLock,
+    toggle: currentGroupToggle,
+    setLockType: setGroupLockType,
+  } = useSafeLock(selectedGroupId, "position", template, side, setTemplate);
+
+
+  const type=role ?? selectedElement?.type;
+
+  let lockProps;
+if (type === "group") {
+  lockProps = {
+    currentLock: currentGroupLock,
+    onToggleLock: currentGroupToggle,
+    onChangeLockType: setGroupLockType,
+  };
+} else if (selectedElement?.type === "image") {
+  lockProps = {
+    currentLock: currentImageLock,
+    onToggleLock: currentImageToggle,
+    onChangeLockType: setImagetLockType,
+  };
+} else if (selectedElement?.type === "text") {
+  lockProps = {
+    currentLock: currentTextLock,
+    onToggleLock: currentTextToggle,
+    onChangeLockType: setTextLockType,
+  };
+} else {
+  lockProps = {
+    currentLock: "none" as LockType,
+    onToggleLock: () => {},
+    onChangeLockType: () => {},
+  };
+}
+
+
+const overlayPos= useUnifiedOverlayPosition(selectedElement, domPos, inputPosition, boundingBox)
+
+
+const isMarqueeSelection = !selectedElement && selectedIds.length > 1;
+
+
+  
 
   
 
@@ -276,6 +345,13 @@ const { locked, toggle } = canUseTextLock
 
  
   const card = { width: template.width, height: template.height };
+
+  
+
+
+
+
+  //console.log('selectedElement', selectedElement)
 
   
   return (
@@ -623,7 +699,7 @@ const { locked, toggle } = canUseTextLock
       />
 
 
-{showToolbar && inputPosition && mode === 'card' && (
+{showToolbar && inputPosition &&  mode === 'card' && (
   <div ref={textToolbarRef} id="text-toolbar">
     <TextToolbarOverlay
       template={template}
@@ -661,6 +737,10 @@ const { locked, toggle } = canUseTextLock
       />
 
 
+
+      
+
+
   </div>
 )}
 
@@ -690,25 +770,18 @@ const { locked, toggle } = canUseTextLock
   zoom={zoom}
   tone={template.tone as tone}
   konvaText={konvaText}
+  currentLock={currentTextLock as LockType}
   
 />
 
 
-<TextOverlayControls
-      textControlsRef={textControlsRef}
-      elementId={selectedTextId}
-      position={inputPosition || { x: 0, y: 0 }}
-      locked={locked}
-      onToggleLock={toggle}
-      onDuplicate={duplicateTextById}
-      onDelete={deleteTextById}
-      tone={template.tone as tone}
-    />
+
+
+
+
+
 </>
 )}
-
-
-
 
 
 
@@ -759,30 +832,70 @@ const { locked, toggle } = canUseTextLock
 
 
 
+{selectedImageId && mode==="card" && (
+<>
+
+<ImageToolbarOverlay 
+setPreviewSrc={setPreviewSrc}
+previewSrc={previewSrc}
+cardGridGroupRef={cardGridGroupRef}
+selectedImageId={selectedImageId}
+handleOnUploadImage={handleOnUploadImage}
+tone={template.tone}
+template={template}
+setTemplate={setTemplate}
+side={side}
+recordSnapshot={recordSnapshot}
+setTransformModeActive={setTransformModeActive}
+setCropMode={setModeActive}
+onToggleCropMode={setModeActive}
+setShowCommentModal={setShowCommentModal}
+imageRef={imageRef}
+cropRegion={cropRegion}
+canvasBounds={canvasBounds}
+mode={mode}
+imagebarRef={imagebarRef}
+/>
+
+
+</>
+
+   )}
+
+
+
+   {(selectedElement || selectedIds.length > 1) && (
+    <>
+    <TextOverlayControls
+  elementId={isMarqueeSelection ? null : selectedElement?.id ?? null}
+  position={isMarqueeSelection ? boundingBox?.stage ?? {x:0,y:0} : overlayPos}
+  currentLock={isMarqueeSelection ? "none" as LockType : lockProps.currentLock}
+  onToggleLock={isMarqueeSelection ? () => {} : lockProps.onToggleLock}
+  onChangeLockType={isMarqueeSelection ? () => {} : lockProps.onChangeLockType}
+  onDuplicate={isMarqueeSelection ? () => {} : duplicatedElement}
+  onDelete={isMarqueeSelection ? () => {} : deleteElementById}
+  textControlsRef={textControlsRef}
+  isMarqueeActive={isMarqueeSelection}
+  elementsGrouped={elementsGrouped}
+  groupSelectedElements={groupSelectedElements}
+  setElementsGrouped={setElementsGrouped}
+  selectedGroupId={selectedGroupId}
+  isIsolationMode={isIsolationMode}
+  length={selectedIds.length}
+  tone={template.tone as tone}
+/>
+
+
+    </>
+   )}
+
+
+
+
 
       
 
-      <ImageToolbarOverlay 
-      setPreviewSrc={setPreviewSrc}
-      previewSrc={previewSrc}
-      cardGridGroupRef={cardGridGroupRef}
-      selectedImageId={selectedImageId}
-      handleOnUploadImage={handleOnUploadImage}
-      tone={template.tone}
-      template={template}
-      setTemplate={setTemplate}
-      side={side}
-      recordSnapshot={recordSnapshot}
-      setTransformModeActive={setTransformModeActive}
-      setCropMode={setModeActive}
-      onToggleCropMode={setModeActive}
-      setShowCommentModal={setShowCommentModal}
-      imageRef={imageRef}
-      cropRegion={cropRegion}
-      canvasBounds={canvasBounds}
-      mode={mode}
-      imagebarRef={imagebarRef}
-     />
+     
       {showExportModal && (
         <ExportRitualModal
           snapshots={snapshots}
@@ -796,7 +909,7 @@ const { locked, toggle } = canUseTextLock
     </div>
 
 
-
+    
 
 
    </div>

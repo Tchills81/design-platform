@@ -15,6 +15,7 @@ import TonePalette from './TonePalette';
 import { tone } from '../types/tone';
 
 import { useSelectedElement } from './elements/useSelectedElement';
+import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
 
 type ImageToolbarProps = {
   selectedElementId: string | null;
@@ -74,6 +75,8 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     shapeType
   } = useSelectedElement({
     selectedImageId: selectedElementId,
+    selectedTextId: '',
+    selectedGroupId:'',
     template,
     side
   });
@@ -188,7 +191,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     recordSnapshot();
   };
 
-  console.log('selectedElement', selectedElement);
+  console.log('selectedElement', selectedElementId);
 
  
   const [previewRole, setPreviewRole] = useState<'background' | 'element'>('background');
@@ -199,6 +202,38 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   imageRef.current.getClassName() != 'Image'
 
   const { heroText, logo, cta, backgroundClass, nextSeason } = useSeasonalTone();
+
+
+  // ✅ Live lock state from hook
+const {
+  currentLock: liveCurrentLock,
+  isPositionLocked,
+  isFullyLocked,
+  isReplaceOnly,
+  isStyleLocked,
+} = useSelectedElementLock({
+  selectedImageId:selectedElementId,
+  selectedTextId: '', // or pass text id if relevant
+  template,
+  side,
+});
+
+
+/**
+ * 
+ * 
+ * Mapping lock types to toolbar actions
+Position lock → disable Resize (transform handles), disable drag on canvas.
+
+Style lock → disable Color picker / TonePalette.
+
+Replace lock → disable Crop and Upload/Replace actions.
+
+Full lock → disable all toolbar actions (resize, crop, remove, style).
+
+Hierarchical lock (if you add it) → disable everything and make element unselectable.
+ */
+
 
 
   return (
@@ -216,53 +251,49 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
     setPreviewSrc(src);
     }}
 />
-      <ToneButton
-        label="Resize"
-        icon={<ImageUpscaleIcon size={18} />}
-        tone={tone}
-        fontSize="text-sm"
-        isActive={false}
-        onClick={handleResizeClick}
-        disabled={!isElementSelected}
-      />
+<ToneButton
+  label="Resize"
+  icon={<ImageUpscaleIcon size={24} />}
+  tone={tone}
+  fontSize="text-sm"
+  onClick={handleResizeClick}
+  disabled={!isElementSelected || isPositionLocked || isFullyLocked}
+/>
   
-      <ToneButton
-        label="Crop"
-        icon={<Crop size={18} />}
-        tone="green"
-        fontSize="text-sm"
-        isActive={isCropMode}
-        onClick={handleCropClick}
-        disabled={!isElementSelected}
-      />
+<ToneButton
+  label="Crop"
+  icon={<Crop size={24} />}
+  tone="green"
+  fontSize="text-sm"
+  onClick={handleCropClick}
+  disabled={!isElementSelected || isFullyLocked || isReplaceOnly}
+/>
   
-      {isCropMode && (
-        <ToneButton
-          label="Confirm Crop"
-          icon={<Check size={18} />}
-          tone={tone}
-          fontSize="text-sm"
-          isActive={false}
-          onClick={handleCropConfirm}
-          disabled={!imageRef?.current || !cropRegion}
-        />
-      )}
+{isCropMode && (
+  <ToneButton
+    label="Confirm Crop"
+    icon={<Check size={24} />}
+    tone={tone}
+    fontSize="text-sm"
+    onClick={handleCropConfirm}
+    disabled={!imageRef?.current || !cropRegion || isFullyLocked}
+/>
+)}
   
-      <ToneButton
-        label="Remove"
-        icon={<TrashIcon size={18} />}
-        tone="danger"
-        fontSize="text-sm"
-        isActive={false}
-        onClick={handleRemoveClick}
-        disabled={!isElementSelected}
-      />
+  <ToneButton
+  label="Remove"
+  icon={<TrashIcon size={24} />}
+  tone="danger"
+  onClick={handleRemoveClick}
+  disabled={!isElementSelected || isFullyLocked}
+/>
   
       {onToggleCropMode && (
         <ToggleCheckbox
           tone={tone}
           label="Crop Mode"
           checked={isCropMode}
+          disabled={!isElementSelected || isFullyLocked || isReplaceOnly}
           onToggle={() => {
             const next = !isCropMode;
             setIsCropMode(next);
@@ -274,7 +305,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   
      
   
-      {showColorPicker && (
+      {showColorPicker && !isStyleLocked && (
         <>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Fill Color:</label>

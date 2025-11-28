@@ -7,10 +7,11 @@ import { Flower } from './shapes/FlowerShape';
 
 import type { ReactElement } from 'react';
 import Konva from 'konva';
+import { KonvaEventObject } from 'konva/lib/Node';
 
 type CommonProps = {
   ref: React.Ref<any>;
-  onClick: () => void;
+  onClick?: (e: KonvaEventObject<MouseEvent>) => void;
   onDragMove: (e: any) => void;
   onDragEnd: (e: any) => void;
   onTransformEnd: () => void;

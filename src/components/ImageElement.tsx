@@ -1,48 +1,41 @@
 import React, { useRef, useEffect } from 'react';
-import { Image as KonvaImage, Rect, Circle, Line, Transformer } from 'react-konva';
+import { Image as KonvaImage, Transformer } from 'react-konva';
 import useImage from 'use-image';
 import { KonvaEventObject } from 'konva/lib/Node';
 import SelectionFrame from './SelectionFrame';
-import { DesignElement } from '../types/DesignElement';
 import Konva from 'konva';
-import { TemplateElement } from '../types/template';
+import { DualTemplate, TemplateElement } from '../types/template';
 import { supportedShapes } from './elements/shapeRegistry';
 import { tone } from '../types/tone';
-import { toneColorMap } from '../types/tone';
 import { getZoomAwareDragBoundFunc } from '../utils/getZoomAwareDragBoundFunc';
-import { Text } from 'react-konva';
-
+import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
 
 interface ImageElementProps {
   id: string;
   templateId: string;
+  template:DualTemplate | null;
   src: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
   zoom: number;
   tone: tone;
+  side: 'front' | 'back';
   isSelected: boolean;
   showTransformer?: boolean;
+  isIsolationMode?:boolean;
   transformModeActive?: boolean;
   selectedImageId?: string;
+  grouped?:boolean;
   containerRef: React.RefObject<HTMLDivElement | null>;
   stageRef: React.RefObject<any>;
   element: TemplateElement;
-
   canvasBounds: { x: number; y: number; width: number; height: number };
   handleImageUpdate: (e: KonvaEventObject<Event>, id: string) => void;
   setGhostLines?: (lines: { x?: number; y?: number }) => void;
-  onSelect: () => void;
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   forwardedRef?: React.RefObject<Konva.Image | null>;
   setSelectedRef?: (ref: Konva.Image | null) => void;
-
-  // ✅ NEW: shape drag support
-  dragBoundFunc?: (pos: { x: number; y: number }) => { x: number; y: number };
-  onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  onDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  onTransformEnd?: () => void;
 }
-
 
 const ImageElement: React.FC<ImageElementProps> = ({
   id,
@@ -62,14 +55,31 @@ const ImageElement: React.FC<ImageElementProps> = ({
   selectedImageId,
   forwardedRef,
   setSelectedRef,
+  grouped,
+  isIsolationMode,
   element,
-  tone
+  template,
+  side,
+  tone,
 }) => {
   const internalRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<any>(null);
   const [image] = useImage(src);
   const padding = 2;
   const gridSpacing = 50;
+
+  // ✅ Lock state
+  const {
+    isPositionLocked,
+    isFullyLocked,
+    isReplaceOnly,
+    isStyleLocked,
+  } = useSelectedElementLock({
+    selectedImageId: id,
+    selectedTextId: '',
+    template: template,
+    side: side,
+  });
 
   // ✅ Track last snapped ghost line values
   const lastSnapped = useRef<{ x?: number; y?: number }>({});
@@ -87,12 +97,14 @@ const ImageElement: React.FC<ImageElementProps> = ({
     }
   }, [isSelected, showTransformer]);
 
-  const handleOnSelect = () => {
+  const handleOnSelect = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isFullyLocked) return; // 🚫 block selection if fully locked
     if (setSelectedRef) setSelectedRef(internalRef.current);
-    onSelect();
+    onSelect(e);
   };
 
   const handleTransformEnd = () => {
+    if (isFullyLocked || isReplaceOnly || isStyleLocked) return; // 🚫 block transform if locked
     const node = internalRef.current;
     if (!node) return;
 
@@ -111,25 +123,23 @@ const ImageElement: React.FC<ImageElementProps> = ({
         x: () => node.x(),
         y: () => node.y(),
         width: () => node.width(),
-        height: () => node.height()
-      }
+        height: () => node.height(),
+      },
     } as KonvaEventObject<Event>, id);
   };
 
   const handleDragMove = (e: any) => {
+    if (isPositionLocked || isFullyLocked || isReplaceOnly) return; // 🚫 enforce lock
     const node = e.target;
-    const box = canvasBounds;
-
-    const newX = Math.max(box.x + padding, Math.min(node.x(), box.x + box.width - node.width() - padding));
-    const newY = Math.max(box.y + padding, Math.min(node.y(), box.y + box.height - node.height() - padding));
-
-    node.x(newX);
-    node.y(newY);
-
+  
+    // Position is already clamped by dragBoundFunc
+    const newX = node.x();
+    const newY = node.y();
+  
+    // Snap to grid
     const snappedX = Math.round(newX / gridSpacing) * gridSpacing;
     const snappedY = Math.round(newY / gridSpacing) * gridSpacing;
-
-    // ✅ Only update ghost lines if snapped values changed
+  
     if (
       setGhostLines &&
       (snappedX !== lastSnapped.current.x || snappedY !== lastSnapped.current.y)
@@ -138,110 +148,72 @@ const ImageElement: React.FC<ImageElementProps> = ({
       setGhostLines({ x: snappedX, y: snappedY });
     }
   };
-
+  
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+    if (isPositionLocked || isFullyLocked || isReplaceOnly) return; // 🚫 enforce lock
     const node = e.target;
-    const box = canvasBounds;
-
-    const imageWidth = node.width();
-    const imageHeight = node.height();
-    const safeMargin = 24;
-
-    const minX = box.x + safeMargin;
-    const maxX = box.x + box.width - safeMargin - imageWidth;
-    const minY = box.y + safeMargin;
-    const maxY = box.y + box.height - safeMargin - imageHeight;
-
-    const rawX = node.x();
-    const rawY = node.y();
-
-    const clampedX = Math.max(minX, Math.min(rawX, maxX));
-    const clampedY = Math.max(minY, Math.min(rawY, maxY));
-
-    node.position({ x: clampedX, y: clampedY });
+  
+    // Position is already clamped by dragBoundFunc
+    const clampedX = node.x();
+    const clampedY = node.y();
+  
     node.getLayer()?.batchDraw();
-
+  
     if (setGhostLines) setGhostLines({});
-
+  
     handleImageUpdate({
       target: {
         x: () => clampedX,
         y: () => clampedY,
         width: () => node.width(),
-        height: () => node.height()
-      }
+        height: () => node.height(),
+      },
     } as KonvaEventObject<Event>, id);
   };
 
 
+  
+  const dragBoundFunc = getZoomAwareDragBoundFunc(canvasBounds, size, zoom, 2, isIsolationMode);
+  
 
-  const dragBoundFunc = getZoomAwareDragBoundFunc(canvasBounds, size, zoom);
-
+  // ✅ Shared props with lock booleans applied
   const sharedProps = {
     ref: internalRef,
     onClick: handleOnSelect,
-    onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => {
-      const node = e.target;
-      const x = node.x();
-      const y = node.y();
-  
-      if (setGhostLines) {
-        const snapThreshold = 10;
-        const snapX = Math.abs(x % 100) < snapThreshold ? x : undefined;
-        const snapY = Math.abs(y % 100) < snapThreshold ? y : undefined;
-        setGhostLines({ x: snapX, y: snapY });
-      }
-  
-      handleDragMove?.(e); // preserve any existing logic
-    },
-    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
-      handleDragEnd?.(e); // preserve any existing logic
-      if (setGhostLines) setGhostLines({});
-    },
+    onDragMove: handleDragMove,
+    onDragEnd: handleDragEnd,
     onTransformEnd: handleTransformEnd,
-    cursor: isSelected ? 'move' : 'default',
+    cursor: isSelected && !isFullyLocked ? 'move' : 'default',
     isSelected,
     zoom,
-    fillColor: element.type === 'shape' ? element.fill : '#ffffff', // or from color picker state
+    fillColor: element.type === 'shape' ? element.fill : '#ffffff',
     showTransformer,
     dragBoundFunc,
-    setGhostLines
+    draggable: !isPositionLocked && !isFullyLocked && !isReplaceOnly, // ✅ lock-aware
   };
-  
-
 
   const shapeMeta = element.type === 'shape' ? supportedShapes[element.shapeType] : null;
-  const offset = internalRef.current && shapeMeta?.getAnchorOffset
-  ? shapeMeta.getAnchorOffset(internalRef.current)
-  : { x: 0, y: 0 };
-
-  
-  
-  
 
   return (
     <>
-      <SelectionFrame
-        x={position.x}
-        y={position.y}
-        width={size.width}
-        height={size.height}
-        selected={isSelected}
-        shapeType={element.type === 'shape' ? element.shapeType : undefined}
-        refNode={internalRef.current}
-        tone={tone}
-      />
-
+    <SelectionFrame
+    x={position.x}
+    y={position.y}
+    width={size.width}
+    height={size.height}
+    selected={isSelected}
+     />
+ 
       {element.type === 'shape' &&
       element.shapeType &&
-      supportedShapes[element.shapeType] ? (
-        supportedShapes[element.shapeType].render(
+      shapeMeta ? (
+        shapeMeta.render(
           {
             ...element,
             x: position.x,
             y: position.y,
             width: size.width,
-            height: size.height
+            height: size.height,
           },
           sharedProps
         )
@@ -255,12 +227,12 @@ const ImageElement: React.FC<ImageElementProps> = ({
           width={size.width}
           height={size.height}
           onClick={handleOnSelect}
-          draggable={true}
-          dragBoundFunc={getZoomAwareDragBoundFunc(canvasBounds, size, zoom)}
+          draggable={!isPositionLocked && !isFullyLocked && !isReplaceOnly}
+          dragBoundFunc={dragBoundFunc}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}
-          cursor={isSelected ? 'move' : 'default'}
+          cursor={isSelected && !isFullyLocked ? 'move' : 'default'}
           stroke={showTransformer && isSelected ? '#00f0ff' : undefined}
           strokeWidth={showTransformer ? 2 : 0}
           shadowColor={showTransformer ? '#00f0ff' : undefined}
@@ -268,7 +240,8 @@ const ImageElement: React.FC<ImageElementProps> = ({
         />
       )}
 
-      {isSelected && showTransformer && <Transformer ref={transformerRef} />}
+      {isSelected && showTransformer && !grouped &&  <Transformer ref={transformerRef} />}
+      {isSelected && isIsolationMode && grouped &&  <Transformer ref={transformerRef} />}
     </>
   );
 };

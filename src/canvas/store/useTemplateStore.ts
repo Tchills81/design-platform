@@ -1,4 +1,4 @@
-import { DualTemplate, TemplateDocument } from '@/src/types/template';
+import { DualTemplate, TemplateDocument, TemplateElement } from '@/src/types/template';
 import { HistoryEntry } from '@/src/types/HistoryEntry';
 import { StateCreator } from 'zustand';
 
@@ -49,6 +49,13 @@ export interface TemplateSlice {
   template: DualTemplate | null;
   setTemplate: (
     t: DualTemplate | null | ((prev: DualTemplate | null) => DualTemplate | null)
+  ) => void;
+
+
+
+  templateElement: TemplateElement | null;
+  setTemplateElement: (
+    t: TemplateElement | null | ((prev: TemplateElement | null) => TemplateElement | null)
   ) => void;
 
   selectedDualTemplate: DualTemplate | null;
@@ -131,6 +138,14 @@ export const createTemplateSlice: StateCreator<TemplateSlice> = (set) => ({
     set((state) => ({
       template: typeof t === 'function' ? t(state.template) : t,
     })),
+
+
+    templateElement: null,
+    setTemplateElement: (t) =>
+      set((state) => ({
+        templateElement: typeof t === 'function' ? t(state.templateElement) : t,
+      })),
+  
 
 
     selectedDualTemplate: null,

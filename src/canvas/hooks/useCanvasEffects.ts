@@ -113,7 +113,13 @@ export function useCanvasEffects(
     textAreaRef,
     elementInserted,
     setKonvaText,
-    setLockedTextIds
+    setLockedTextIds,
+    clearAll,
+    setIsolationMode,
+    isIsolationMode,
+    setSelectedGroupId,
+    selectedGroupId,
+    setSelectedImageId
     
   } = state;
 
@@ -691,7 +697,7 @@ useEffect(() => {
   
     setLockedTextIds(lockedIds);
 
-    console.log("Locked text IDs updated:", Array.from(lockedIds), template[side].elements);
+   // console.log("Locked text IDs updated:", Array.from(lockedIds), template[side].elements);
   }, [template, side]);
   
 
@@ -721,9 +727,9 @@ useEffect(() => {
 
       
 
-      console.log("handleGlobalClick", 
-                  'clickedInsideToolbar', 
-                  clickedInsideToolbar, 'control....',  ); 
+      
+
+      //console.log('clearing .. global click selected Image Id', selectedImageId);
 
 
       if (clickedInsideToolbar ||  
@@ -733,28 +739,26 @@ useEffect(() => {
           clickedOnFooterCluster ||
           clickedOnTabs         ||
           clickedOnPanel   || 
-          clickedOntextControls
+          clickedOntextControls 
 
         ) return;
 
 
-        if (konvaText?.visible) {
-          // 🧠 Sync Konva height to overlay before dismissal
-          if (textAreaRef.current) {
-            const overlayHeight = textAreaRef.current.offsetHeight;
-            konvaText.height(overlayHeight);
-            console.log("Syncing konvaText height to toolbarRef.current:", 
-              toolbarRef.current?.offsetHeight, 'konvaText height before:', konvaText.height());
-          }
-        
-          konvaText.visible(true);
-          konvaText.getLayer()?.batchDraw();
+    console.log('global click ,isIsolationMode, ', 'target', e.target, 'e.detail', e.detail)
 
-          setSelectedTextId(null);
-          setShowToolbar(false);
-          setInputPosition(null);
-          setKonvaText(null);
-        }
+// Dismiss global: clear store selection and legacy text selection, hide overlay and sync Konva text
+clearAll({
+  clearStoreSelection: false,
+  clearTextSelection: false,
+  clearImageSelection:true,
+  hideToolbar: true,
+  resetInput: true,
+  resetKonvaText: true,
+  isIsolationMode:false
+  // no transform/mode changes here (global DOM context)
+});
+
+        
         
          
 
@@ -763,7 +767,7 @@ useEffect(() => {
 
     document.addEventListener("mousedown", handleGlobalClick);
     return () => document.removeEventListener("mousedown", handleGlobalClick);
-  }, [konvaText, textAreaRef.current]);
+  }, [konvaText, textAreaRef.current, isIsolationMode, setIsolationMode]);
 
 
 
@@ -781,6 +785,7 @@ useEffect(() => {
 
       _handleTextClick(konvaText!, activeTab ? true : false);
       setElementInserted(false);
+      
 
     }
 
@@ -905,6 +910,30 @@ useEffect(() => {
       setHasChanged(false);
     }
   }, [template, side]);
+
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isIsolationMode) {
+
+        setIsolationMode(false);
+      
+
+
+        setSelectedGroupId(selectedGroupId)
+
+        console.log('isolation mode being set to', isIsolationMode)
+
+        
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isIsolationMode, setIsolationMode]);
   
   
   

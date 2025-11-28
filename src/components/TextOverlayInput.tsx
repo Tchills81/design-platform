@@ -5,6 +5,7 @@ import { useFontDrivenOverlay } from '../canvas/hooks/useFontDrivenOverlay';
 import { DualTemplate } from '../types/template';
 import { measureText } from '../utils/measureText';
 import ResizeHandle from './ResizeHandle';
+import { LockType } from '../types/access';
 
 interface TextOverlayInputProps {
   inputPosition?: { x: number; y: number } | null | undefined;
@@ -31,6 +32,7 @@ interface TextOverlayInputProps {
   template?: DualTemplate | null;
   height?: number;
   width?: number;
+  currentLock?:LockType;
 }
 
 const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
@@ -55,8 +57,18 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
   toolbarRef,
   textAreaRef,
   template,
+  currentLock='none',
 }) => {
   if (!template) return null;
+
+
+  // 🔑 lock awareness
+  const isPositionLocked =
+    currentLock === "position" || currentLock === "full" || currentLock === "hierarchical";
+  const isFullyLocked =
+    currentLock === "full" || currentLock === "hierarchical";
+
+  // ... your existing refs, state, and overlay logic ...
 
   const isResizing = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
@@ -359,7 +371,10 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
       <textarea
         ref={textAreaRef}
         value={editingText}
-        onChange={handleTextChange}
+        onChange={(e) => {
+          if (isFullyLocked) return; // 🔑 block edits
+          onTextChange?.(e.target.value);
+        }}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         onBlur={onTextBlur}
@@ -373,22 +388,27 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
           textDecoration: konvaText?.textDecoration() ?? 'none',
           fontWeight,
           textAlign: konvaText?.attrs?.align ?? 'left',
-          lineHeight: konvaText?.attrs?.lineHeight ?? 1.2,
+          lineHeight: konvaText?.attrs?.lineHeight ?? 1,
           fontStyle: konvaText?.attrs?.fontStyle ?? 'normal',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           resize: 'none',
           outline: 'none',
-          pointerEvents: 'auto',
+         
           boxSizing: 'border-box',
           background: 'transparent',
-          border: borderStyle,
+          border: isFullyLocked ? '2px dashed #aaa' : borderStyle,
+          pointerEvents: isFullyLocked ? 'none' : 'auto', // 🔑 block interaction
+         
           borderRadius: 2,
           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
           transition: 'box-shadow 0.2s ease, border 0.2s ease, height 120ms ease-in-out, padding-left 0.2s ease',
         }}
       />
 
+      {/* Resize handles disabled if position locked */}
+      {!isPositionLocked && (
+        <>
 
 <ResizeHandle position="top-left" style={{ ...handleStyle, top: -6, left: -6 }} toneColor={toneColor} onMouseDown={handleMouseDown} />
 <ResizeHandle position="top-right" style={{ ...handleStyle, top: -6, right: -6 }} toneColor={toneColor} onMouseDown={handleMouseDown} />
@@ -396,6 +416,11 @@ const TextOverlayInput: React.FC<TextOverlayInputProps> = ({
 <ResizeHandle position="bottom-right" style={{ ...handleStyle, bottom: -6, right: -6 }} toneColor={toneColor} onMouseDown={handleMouseDown} />
 <ResizeHandle position="left" style={{ ...rectHandleStyle, top: '50%', left: -8, transform: 'translateY(-50%) rotate(90deg)' }} toneColor={toneColor} onMouseDown={handleMouseDown} />
 <ResizeHandle position="right" style={{ ...rectHandleStyle, top: '50%', right: -8, transform: 'translateY(-50%) rotate(90deg)' }} toneColor={toneColor} onMouseDown={handleMouseDown} />
+
+
+      </>)}
+
+
 
 
       <canvas ref={canvasRef} style={{ display: 'none' }} />

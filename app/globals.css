@@ -323,7 +323,29 @@
 }
 .animate-slide-down {
   animation: slideDown 300ms ease-in-out;
+
 }
+
+
+@keyframes pulseElegant {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); /* tone-driven glow */
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.pulseElegant {
+  animation: pulseElegant 2s infinite;
+}
+
 
 @keyframes slideLeft {
   from { transform: translateX(100%); opacity: 0; }

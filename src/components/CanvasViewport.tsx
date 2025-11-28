@@ -15,6 +15,11 @@ import { DesignElement } from '../types/DesignElement';
 import CanvasScrollbars from './CanvasScrollbars';
 import { useSeasonalTone } from '@/src/themes/useSeasonalTone';
 import { SidebarTab } from '../types/Tab';
+import { useSelectedElement } from './elements/useSelectedElement';
+import { KonvaEventObject } from 'konva/lib/Node';
+import { ClearOptions } from '../canvas/hooks/useClearSelection';
+import { BoundsRect, MarqueeRect } from '../canvas/store/useContextStore';
+import { BoundingBox } from '../canvas/hooks/useBoundingBox';
 
 interface CanvasViewportProps {
   template: DualTemplate;
@@ -36,8 +41,37 @@ interface CanvasViewportProps {
   selectedImageId: string | null;
   selectedTextId: string | null;
   cropRegion: { x: number; y: number; width: number; height: number };
+  groupEl:TemplateElement | null;
+
   resetTransformMode: () => void;
+
   setModeActive:(active:boolean)=>void;
+  toggleSelection: (id: string) => void;
+  addSelection: (id: string) => void;
+  selectOnly: (id: string) => void;
+  removeSelection: (id: string) => void;
+
+  isMarqueeActive: boolean;
+
+  startMarquee: (pos: {
+    x: number;
+    y: number;
+}) => void;
+updateMarquee: (pos: {
+  x: number;
+  y: number;
+}) => void;
+
+finalizeMarquee: (elements: TemplateElement[], stage: Konva.Stage) => void
+setMarqueeActive: (b: boolean | ((prev: boolean) => boolean)) => void;
+
+marqueeRect: MarqueeRect | null;
+
+selectedIds: string[];
+
+boundingBox: BoundingBox | undefined;
+boundingGroupBox: BoundingBox | undefined;
+
 
   scrollPos:{x:number; y:number};
    setActiveTab: (tab: SidebarTab | null) => void
@@ -48,7 +82,7 @@ interface CanvasViewportProps {
   setScrollPosition: (pos: {
     x: number;
     y: number;
-}) => void
+}) => void;
   
   setCropRegion: (region: { x: number; y: number; width: number; height: number }) => void;
   canvasSize:{scaleX:number; scaleY:number; width:number; height:number};
@@ -73,15 +107,20 @@ interface CanvasViewportProps {
   isMultiline: boolean;
   isUnderline: boolean;
   isPreviewMode:boolean;
+  isIsolationMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
-  //setElementId: React.Dispatch<React.SetStateAction<string>>;
+  
+  clearAll: (opts?: ClearOptions) => void
   setElementId: (id: string) => void
   konvaText: Konva.Text | null;
+  boundsRect: BoundsRect | null;
 
   pendingStyle: {
     isBold?: boolean;
     isItalic?: boolean;
 }
+
+
 
 
 
@@ -114,6 +153,15 @@ interface CanvasViewportProps {
     setSelectedTextId: (id: string | null) => void
     setKonvaText: (node:Konva.Text | null)=>void;
      _handleTextClick: (textNode: Konva.Text, tabActive:boolean) => void;
+     handleElementClick: (e: KonvaEventObject<MouseEvent>, id: string) => void;
+     setSelectedGroupId: (id: string | null) => void;
+     onGroupUpdate: (updated: TemplateElement) => void;
+     setTransformModeActive: (enabled: boolean) => void;
+     setIsolationMode: (b: boolean | ((prev: boolean) => boolean)) => void;
+     setBoundsRect: (rect: BoundsRect | null)=>void;
+     commitGroupUpdate: (updatedGroupElement: TemplateElement) => void;
+     setElementsGrouped: (b: boolean) => void;
+     groupSelectedElements: () => void;
 
   };
 }
@@ -173,7 +221,22 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     stageStyle,
     setActiveTab,
     isTransitioningTemplate,
-    tab
+    tab,
+    clearAll,
+    isMarqueeActive,
+    startMarquee,
+    updateMarquee,
+    finalizeMarquee,
+    marqueeRect,
+    selectedIds,
+    boundingBox,
+    boundingGroupBox,
+    toggleSelection,
+    addSelection,
+    selectOnly,
+    groupEl,
+    isIsolationMode,
+    boundsRect
 
   } = props;
 
@@ -185,8 +248,21 @@ export default function CanvasViewport(props: CanvasViewportProps) {
 
  const  backgroundColor = isPreviewMode ? toneBackgroundClasses[template.tone as tone] : '#e2e8f0';
 
- 
-  
+
+
+ /*const { selectedElement, role} = useSelectedElement({
+  selectedImageId: selectedImageId ?? null,
+  selectedTextId: selectedTextId ?? null,
+  template:template,
+  side: side
+});
+
+ console.log("CanvasViewport - selectedElement:", selectedElement);*/
+
+ //console.log('startMarquee..',startMarquee, 'selectedIds:',selectedIds);
+ //console.log('viewport...:',handlers.onGroupUpdate, handlers.setSelectedGroupId, isIsolationMode, 
+  //handlers.setIsolationMode, handlers.setBoundsRect, boundsRect)
+
 
   return (
     <div
@@ -209,6 +285,57 @@ export default function CanvasViewport(props: CanvasViewportProps) {
         height={stageSize.height}
         className={`${isPreviewMode? backgroundColor:backgroundClass}`}
         style={stageStyle}
+
+
+
+        onMouseDown={(e) => {
+          const clickedNode = e.target;
+          const stage = e.target.getStage();
+        
+          // Stage itself
+          const isStage = clickedNode === stage;
+        
+          // Background rect (Konva draws a Rect under the Layer)
+          const isBackgroundRect =
+            clickedNode.getClassName?.() === 'Rect' &&
+            clickedNode.parent?.getClassName?.() === 'Group' &&
+            clickedNode.parent?.parent?.getClassName?.() === 'Layer';
+        
+          if (isStage || isBackgroundRect) {
+            const pos = stageRef.current?.getPointerPosition();
+            if (pos) {
+             // console.log('Starting marquee at', pos);
+              startMarquee(pos);
+            }
+          }
+        }}
+        
+        onMouseMove={(e) => {
+          if (!isMarqueeActive) return;
+          const pos = stageRef.current?.getPointerPosition();
+          if (pos){ 
+            //console.log('Updating marquee to', pos);
+            updateMarquee(pos);
+           
+          }
+        }}
+        onMouseUp={() => {
+          if (isMarqueeActive) {
+           
+            finalizeMarquee(template?.[side]?.elements ?? [], stageRef.current!);
+            clearAll({
+              clearStoreSelection: false,   // ✅ only clears when background clicked
+              clearImageSelection: true,
+              clearTextSelection: true,
+              hideToolbar: false,
+              resetInput: false,
+              resetKonvaText: false,
+              resetTransform: true,
+              setModeInactive: true,
+              
+            });
+          }
+        }}
 
 
         onClick={(e) => {
@@ -243,88 +370,134 @@ Applies pending style updates if needed
 Shows transform if applicable
              */
 
+// 🔍 DOM overlay checks
 const overlayEl = document.getElementById('text-overlay');
-  const overImageBar = document.getElementById('image-tool-bar');
-  const { clientX, clientY } = e.evt;
-  const domTarget = document.elementFromPoint(clientX, clientY);
+const overImageBar = document.getElementById('image-tool-bar');
+const { clientX, clientY } = e.evt;
+const domTarget = document.elementFromPoint(clientX, clientY);
 
-  const clickedInsideOverlay = overlayEl?.contains(domTarget);
-  const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
+const clickedInsideOverlay = overlayEl?.contains(domTarget);
+const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
 
-  if (clickedInsideOverlay || clickedInsideOverImageBar) {
-    console.log('Clicked inside overlay / image toolbar — do not dismiss');
-    return;
-  }
+//console.log('stage click', e.target);
+if (clickedInsideOverlay || clickedInsideOverImageBar) {
+  return; // do not dismiss if clicking overlay/toolbars
+}
 
-  const clickedNode = e.target;
-  const className = clickedNode.getClassName?.();
-  const nodeName = clickedNode.name?.();
+// 🔍 Konva node checks
+const clickedNode = e.target;
+const className = clickedNode.getClassName?.();
+const nodeName = clickedNode.name?.();
 
-  const isImage = className === 'Image';
-  const isShape = nodeName === 'Shape';
-  const isFrame = nodeName === 'Frame'; // ✅ Frame detection
-  const isTransformer = className === 'Transformer';
-  const isRect = className === 'Rect';
-  const isStage = clickedNode === e.target.getStage();
+const isImage = className === 'Image';
+const isShape = nodeName === 'Shape';
+const isFrame = nodeName === 'Frame';
+const isTransformer = className === 'Transformer';
+const isRect = className === 'Rect';
+const isStage = clickedNode === e.target.getStage();
 
-  console.log('nodeName:', nodeName);
+// ✅ Consistent background rect detection
+const isBackgroundRect =
+  isRect &&
+  !isShape &&
+  !isFrame &&
+  clickedNode.parent?.getClassName?.() === 'Group' &&
+  clickedNode.parent?.parent?.getClassName?.() === 'Layer';
 
-  const shouldShowTransform = isImage || isShape || isFrame;
+const shouldShowTransform = isImage || isShape || isFrame;
+const shouldDismiss = isStage || isBackgroundRect;
+const isUnknown =
+  !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect;
 
-  // ✅ Refined dismissal logic: only dismiss if it's a Rect AND NOT a frame
-  const shouldDismiss = (isRect && !isFrame && !isShape) || isStage;
+// 1) Dismissal path — only for Stage or background rect
 
-  const isUnknown =
-    !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect;
+const isClickOnElement = e.target instanceof Konva.Text || e.target instanceof Konva.Image;
 
-  if (shouldDismiss || isUnknown) {
-    handlers.setSelectedImageId(null);
-    resetTransformMode();
-    setModeActive(false);
-    return;
-  }
 
-  // 🎨 Apply pending style updates to selected text
-  if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
-    const updatedElements = template[side].elements.map((el) =>
-      el.id === selectedTextId && el.type === 'text'
-        ? { ...el, ...pendingStyle }
-        : el
-    );
+const target = e.target;
 
-    setTemplate((prev) => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
+if (target instanceof Konva.Text) {
+  handlers.setSelectedTextId(clickedNode?.id())
+  handlers.setSelectedImageId(null);
+  handlers.setSelectedGroupId(null)
+} else if (target instanceof Konva.Image) {
+  handlers.setSelectedTextId(null)
+  handlers.setSelectedImageId(clickedNode?.id());
+  handlers.setSelectedGroupId(null)
+}
 
-    setPendingStyle({});
-  }
 
-  // ✨ Select and show transform
-  if (shouldShowTransform) {
-    const selectedId = clickedNode.id?.();
-    if (selectedId) {
-      handlers.setSelectedImageId(selectedId);
+if ( (shouldDismiss || isUnknown )) {
+
+  console.log('clearing  selection Stage onClick', e.target)
+  clearAll({
+    clearStoreSelection: true,   // ✅ only clears when background clicked
+    clearImageSelection: true,
+    clearTextSelection: false,
+    hideToolbar: false,
+    resetInput: false,
+    resetKonvaText: false,
+    resetTransform: true,
+    setModeInactive: true,
+    
+  });
+  return;
+}
+
+// 2) Apply pending style to selected text when showing transform
+if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
+  const updatedElements = template[side].elements.map((el) =>
+    el.id === selectedTextId && el.type === 'text'
+      ? { ...el, ...pendingStyle }
+      : el
+  );
+
+  setTemplate((prev) => ({
+    ...prev!,
+    [side]: {
+      ...prev![side],
+      elements: updatedElements,
+    },
+  }));
+
+  setPendingStyle({});
+}
+
+// 3) Select and show transform for the clicked drawable (image/shape/frame)
+if (shouldShowTransform) {
+  console.log('shouldShowTransform', shouldShowTransform)
+  const selectedId = clickedNode.id?.();
+  if (selectedId) {
+    // ✅ Sync with store selection
+    if (e.evt.shiftKey) {
+      addSelection(selectedId);   // accumulate
+    } else if (e.evt.ctrlKey || e.evt.metaKey) {
+      toggleSelection(selectedId); // toggle on/off
+    } else {
+      selectOnly(selectedId);     // replace
     }
 
-    konvaText?.visible(true);
-    konvaText?.getLayer()?.batchDraw();
+    // Legacy image selection sync
+    handlers.setSelectedImageId(selectedId);
   }
+
+  konvaText?.visible(true);
+  konvaText?.getLayer()?.batchDraw();
+}
 
 }}
           
       >
         {/* Canvas layer */}
         <CardSideLayer
+         groupEl={groupEl}
           konvaText={konvaText}
           setKonvaText={handlers.setKonvaText}
           setActiveTab={setActiveTab}
           isTransitioningTemplate={isTransitioningTemplate}
           tab={tab}
           isPreviewMode={isPreviewMode}
+          isIsolationMode={isIsolationMode}
           scrollOffset={scrollOffset}
           scrollPos={scrollPos}
           setScrollPosition={setScrollPosition}
@@ -334,9 +507,15 @@ const overlayEl = document.getElementById('text-overlay');
           side={side}
           editingText={editingText}
           templateId={template.id}
+          template={template}
           tone={template.tone as tone}
           selectedImageId={selectedImageId}
+          boundingBox={boundingGroupBox}
+          boundingStageBox={boundingBox}
+          boundsRect={boundsRect}
+
           selectedTextId={selectedTextId}
+          
           setElementId={setElementId}
           transformModeActive={transformModeActive}
           cardX={cardX}
@@ -454,6 +633,39 @@ const overlayEl = document.getElementById('text-overlay');
       )}
       
       </Layer>
+
+
+
+        {/* Overlay rectangle */}
+  {isMarqueeActive && marqueeRect && (
+    <Layer>
+      <Rect
+        x={marqueeRect.x}
+        y={marqueeRect.y}
+        width={marqueeRect.w}
+        height={marqueeRect.h}
+        stroke="blue"
+        dash={[4, 4]}
+        opacity={0.5}
+      />
+    </Layer>
+  )}
+
+
+
+{boundingBox && selectedIds.length > 1 && (
+  <Layer>
+  <Rect
+    x={boundingBox.x}
+    y={boundingBox.y}
+    width={boundingBox.width}
+    height={boundingBox.height}
+    stroke="blue"
+    dash={[4, 4]}
+    listening={false}
+  />
+  </Layer>
+)}
       
       </Stage>
 

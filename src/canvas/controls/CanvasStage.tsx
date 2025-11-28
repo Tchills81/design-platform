@@ -31,6 +31,7 @@ export interface CanvasStageProps {
   setCropRegion: (region: { x: number; y: number; width: number; height: number }) => void;
   state: ReturnType<typeof useCanvasState>;
   actions: ReturnType<typeof useCanvasActions>;
+  
 }
 
 export default function CanvasStage({
@@ -109,7 +110,36 @@ export default function CanvasStage({
     konvaText,
     SIDEBAR_WIDTH,
     activeTab,
-    isTransitioningTemplate
+    isTransitioningTemplate,
+    handleElementClick,
+    clearAll,
+    addSelection,
+removeSelection,
+toggleSelection,
+
+// marquee (optional for later steps)
+isMarqueeActive,
+marqueeRect,
+startMarquee,
+updateMarquee,
+finalizeMarquee,
+setMarqueeActive,
+setMarqueeRect,
+selectOnly,
+selectedIds,
+boundingBox,
+templateElement,
+onGroupUpdate,
+groupElement,
+selectedGroupId,
+setSelectedGroupId,
+setTransformModeActive,
+setIsolationMode,
+isIsolationMode,
+setBoundsRect,
+boundsRect,
+setElementsGrouped,
+    
   } = state;
   
   const {
@@ -132,7 +162,9 @@ export default function CanvasStage({
     handleVerticalScroll,
     _handleTextClick,
     setKonvaText,
-    setActiveTab
+    setActiveTab,
+    commitGroupUpdate,
+    groupSelectedElements,
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -145,14 +177,20 @@ export default function CanvasStage({
 
   const konvaGroup = cardGridGroupRef.current;
 
-  //console.log('scrollPos....', scrollPosition, 'position', position)
+  //console.log('startMarquee',startMarquee);
+  //console.log('startMarquee',startMarquee);
+//console.log('stage...:',onGroupUpdate, setSelectedGroupId, isIsolationMode, setIsolationMode, setBoundsRect, boundsRect)
 
+
+  
   return (
 
     
     <CanvasViewport
+    groupEl={groupElement}
    setActiveTab={setActiveTab}
    tab={activeTab}
+   isIsolationMode={isIsolationMode}
   template={template}
   side={side}
   mode={mode}
@@ -204,6 +242,22 @@ export default function CanvasStage({
   konvaText={konvaText}
   isTransitioningTemplate={isTransitioningTemplate}
   SIDEBAR_WIDTH={SIDEBAR_WIDTH}
+  selectedIds={selectedIds}
+  boundingBox={boundingBox?.stage}
+  boundingGroupBox={boundingBox?.group}
+  clearAll={clearAll}
+ isMarqueeActive={isMarqueeActive}
+  marqueeRect={marqueeRect}
+  startMarquee={startMarquee}
+  updateMarquee={updateMarquee}
+  finalizeMarquee={finalizeMarquee}
+  setMarqueeActive={setMarqueeActive}
+  addSelection={addSelection}
+  removeSelection={removeSelection}
+  toggleSelection={toggleSelection}
+  selectOnly={selectOnly}
+  boundsRect={boundsRect}
+
   handlers={{
     setImageRef: updateImageRef,
     onPaint: handleCellPaint,
@@ -216,9 +270,16 @@ export default function CanvasStage({
     handleVerticalScroll:handleVerticalScroll,
     setSelectedTextId: setSelectedTextId,
     _handleTextClick:_handleTextClick,
+    handleElementClick:handleElementClick,
     setKonvaText:setKonvaText,
-    
-    
+    setSelectedGroupId:setSelectedGroupId,
+    onGroupUpdate:onGroupUpdate,
+    setTransformModeActive:setTransformModeActive,
+    setIsolationMode:setIsolationMode,
+    setBoundsRect:setBoundsRect,
+    commitGroupUpdate:commitGroupUpdate,
+    setElementsGrouped:setElementsGrouped,
+    groupSelectedElements:groupSelectedElements,
     setGhostLines,
     setSelectedFont,
     setSelectedColor,

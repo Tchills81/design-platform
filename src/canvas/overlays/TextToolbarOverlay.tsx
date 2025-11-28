@@ -23,6 +23,7 @@ export interface TextToolbarOverlayProps {
   selectedColor: string;
   selectedFontSize: number;
   selectedTextId?: string | null;
+  selectedImageId?: string | null;
   template:DualTemplate | null;
   side:'front' | 'back';
   isBold: boolean;
@@ -58,6 +59,7 @@ export default function TextToolbarOverlay({
   side,
   template,
   selectedTextId,
+  selectedImageId,
   setShowCommentModal,
   onFontChange,
   onColorChange,
@@ -76,17 +78,20 @@ export default function TextToolbarOverlay({
   isMultiline,
   isUnderline,
   textAlign,
+  
   offset
 }: TextToolbarOverlayProps) {
   if (!showToolbar || !inputPosition || mode !== "card") return null;
 
   const { selectedElement, role } = useSelectedElement({
-    selectedImageId: null,
-    selectedTextId: selectedTextId,
+    selectedImageId: selectedImageId ?? null,
+    selectedTextId: selectedTextId ?? null,
+    selectedGroupId:'',
     template:template,
     side: side
   });
 
+   console.log("TextToolbarOverlay - selectedElement:", selectedElement);
   
 
   return (
@@ -101,14 +106,13 @@ export default function TextToolbarOverlay({
           offset={offset}
           role={role ?? undefined}
           tone={tone}
+          currentLock={selectedElement?.lockType}
           toggleCommentModal={()=>{setShowCommentModal(true);}}
           onFontChange={onFontChange}
           onColorChange={onColorChange}
           onFontSizeChange={onFontSizeChange}
           onToggleBold={onToggleBold}
           onToggleItalic={onToggleItalic}
-          
-         
           onAddText={onAddText}
           onRemoveText={onRemoveText}
           exitEditingMode={exitEditingMode}

@@ -11,6 +11,12 @@ import { DesignElement } from '../types/DesignElement';
 import { tone } from '../types/tone';
 import { Rect } from 'react-konva';
 import { SidebarTab } from '../types/Tab';
+import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
+import { useCardBounds } from '../canvas/hooks/useCardBounds';
+import { KonvaEventObject } from 'konva/lib/Node';
+import GroupElement from './elements/GroupElement';
+import { BoundingBox, useBoundingBox } from '../canvas/hooks/useBoundingBox';
+import { BoundsRect } from '../canvas/store/useContextStore';
 
 interface CardSideLayerProps {
   card: {
@@ -30,7 +36,7 @@ interface CardSideLayerProps {
   elements: TemplateElement[];
   side: 'front' | 'back';
   templateId: string;
-  template?:DualTemplate;
+  template?:DualTemplate | null;
   tone: tone;
   selectedImageId: string | null;
   selectedTextId: string | null;
@@ -39,7 +45,10 @@ interface CardSideLayerProps {
   position: { x: number; y: number };
   canvasBounds: { x: number; y: number; width: number; height: number };
   scrollPos: {x: number; y: number}
-
+  groupEl:TemplateElement | null;
+  isIsolationMode: boolean;
+  boundsRect:BoundsRect | null;
+  
   setScrollPosition: (pos: {
     x: number;
     y: number;
@@ -67,6 +76,8 @@ interface CardSideLayerProps {
   setElementId: (id: string) => void
   setActiveTab: (tab: SidebarTab | null) => void
   tab:SidebarTab;
+  boundingBox:BoundingBox | undefined;
+  boundingStageBox:BoundingBox | undefined;
   
   designElements: DesignElement[];
   handlers: {
@@ -85,6 +96,16 @@ interface CardSideLayerProps {
     onFontSizeChange: (size: number) => void;
     onPrimitiveSelect: () => void;
     _handleTextClick: (textNode: Konva.Text, tabActive:boolean) => void;
+    handleElementClick: (e: KonvaEventObject<MouseEvent>, id: string) => void;
+    onGroupUpdate: (updated: TemplateElement) => void;
+    setSelectedGroupId: (id: string | null) => void;
+    setTransformModeActive: (enabled: boolean) => void;
+    setIsolationMode: (b: boolean | ((prev: boolean) => boolean)) => void;
+    setBoundsRect: (rect: BoundsRect | null)=>void;
+    commitGroupUpdate: (updatedGroupElement: TemplateElement) => void;
+    setElementsGrouped: (b: boolean) => void;
+  
+    
     
   };
 }
@@ -142,31 +163,35 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   isTransitioningTemplate,
   setKonvaText,
   konvaText,
+  boundingBox,
+  boundingStageBox,
+  groupEl,
+  isIsolationMode,
+  boundsRect,
   tab
 }) => {
 
 
-  if (isTransitioningTemplate) return null;
+  if (isTransitioningTemplate || !template) return null;
 
 
   const imageRef = useRef<Konva.Image>(null);
-  const cardBounds = {
-    x: 0,
-    y: 0,
-    width: template? template.width * zoom :card.width,
-    height: template? template.height * zoom :card.height
-  };
+  const cardBounds = useCardBounds(template, card, zoom, position);
 
   const setSelectedRef = (ref: Konva.Image | null) => {
     if (handlers.setImageRef) handlers.setImageRef(ref);
   };
 
+  
+  //console.log('layer...:',handlers.onGroupUpdate, handlers.setSelectedGroupId, isIsolationMode, 
+    //handlers.setIsolationMode, handlers.setBoundsRect, boundsRect)
+  
 
 
 
 
   return (
-    <Layer
+    <Layer id='card-side-layer'
          
          ref={cardGridGroupRef}
           x={position.x}
@@ -206,12 +231,19 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
 
           {elements
             .filter(el => el.type === 'image' || el.type === 'shape')
-            .map(el => (
-              <ImageElement
+            .map(el=>{
+
+             // console.log('el individual', el)
+              return(
+                <ImageElement
+            
                 key={el.id}
                 element={el}
                 id={el.id}
                 templateId={templateId}
+                template={template}
+                side={side}
+                
                 src={'src' in el ? el.src : ''}
                 position={{
                   x: el.position.x,
@@ -226,29 +258,49 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 stageRef={stageRef}
                 canvasBounds={cardBounds}
                 setGhostLines={handlers.setGhostLines}
-                onSelect={() => {
+                onSelect={(e) => {
 
-                  console.log('el', el);
-                  handlers.setSelectedImageId(el.id);
+                  e.cancelBubble=true;
+
+                  handlers.handleElementClick(e, el.id);
+
+                       
+
+                  if (!e.evt.shiftKey) 
+                     handlers.setSelectedImageId(el.id);
+                 
+
+                  
+
                   setElementId(el.id);
+
+                 
+                 
                 }}
                 handleImageUpdate={(e) => handlers.onImageUpdate(e, el.id)}
                 setSelectedRef={setSelectedRef}
               />
-            ))}
+              )
+            })}
 
           {elements
             .filter(isTextElementForTextComponent)
-            .map(el => (
-              <TextElement
+            .map(el=>{
+              //console.log('el individual', el);
+              return(
+
+                <TextElement
                 setKonvaText={setKonvaText}
                 konvaText={konvaText}
                 zoom={zoom}
                 key={el.id}
                 id={el.id}
-                locked={el.locked ?? false}
+                 side={side}
+                 template={template}
+                 selectedTextId={el.id}
+                 selectedImageId={null}
+                 currentLock={el.lockType??'none'}
                 index={Number(el.id)}
-                el={el}
                 text={el.label}
                 position={{
                   x: el.position.x,
@@ -284,7 +336,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   handlers.onTextUpdate(updated);
                 }}
                 onClick={(e) => {
-                
+                  //e.cancelBubble=true;
 
                     const node = e.target;
                     const stage = node.getStage();
@@ -295,18 +347,29 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                        // 1. Pass the actual node to your overlay logic
 
 
-                       console.log('tab..briri', tab, 'setActiveTab'); 
+                       
+
+                       handlers.handleElementClick(e, el.id);
 
                        
-                       handlers._handleTextClick(node, tab ? true:false);
+
+                       if (!e.evt.shiftKey) {
+
+
+                        handlers._handleTextClick(node, tab ? true:false);
 
                        // 2. Sync sidebar state (optional if overlay handles this)
                        handlers.onFontSizeChange(node.fontSize());
                        handlers.setSelectedFont(node.fontFamily());
                        handlers.setSelectedColor(el.color);
 
-                       // 3. Track selected element
+                      
+
+                       }
+
+                      // 3. Track selected element
                       setElementId(node.id());
+                       
                 }}}
                 onEdit={(text, pos, align) => {
                   handlers.onTextEdit(text, pos, el);
@@ -315,7 +378,49 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                   handlers.setInputPosition(pos);
                 }}
               />
-            ))}
+
+              )
+            })
+          }
+
+
+{elements
+  .filter(el => el.type === 'group')
+  .map(el=>{
+   // console.log('el' ,el);
+    return(
+      <GroupElement
+      groupEl={el}
+      isSelected={true}
+      groupElement={groupEl}
+      key={el.id}
+      id={el.id}
+      position={el.position}
+      templateId={templateId}
+      template={template}
+      side={side}
+      zoom={zoom}
+      tone={tone}
+      selectedImageId={selectedImageId}
+      selectedTextId={selectedTextId}
+      transformModeActive={transformModeActive}
+      containerRef={containerRef}
+      stageRef={stageRef}
+      cardBounds={cardBounds}
+      handlers={handlers}
+      setSelectedRef={setSelectedRef}
+      setKonvaText={setKonvaText}
+      konvaText={konvaText}
+      tab={tab}
+      setElementId={setElementId}
+      isIsolationMode={isIsolationMode}
+      boundsRect={boundsRect}
+      
+    />
+    )
+  })
+ }
+
         
       
     </Layer>
