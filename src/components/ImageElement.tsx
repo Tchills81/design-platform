@@ -100,7 +100,9 @@ const ImageElement: React.FC<ImageElementProps> = ({
   const handleOnSelect = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (isFullyLocked) return; // 🚫 block selection if fully locked
     if (setSelectedRef) setSelectedRef(internalRef.current);
-    onSelect(e);
+    
+
+    console.log('imageElement', 'isSelected', isSelected, 'isIsolationMode', isIsolationMode, 'grouped', grouped)
   };
 
   const handleTransformEnd = () => {
@@ -160,6 +162,10 @@ const ImageElement: React.FC<ImageElementProps> = ({
     node.getLayer()?.batchDraw();
   
     if (setGhostLines) setGhostLines({});
+
+
+    
+    
   
     handleImageUpdate({
       target: {
@@ -188,6 +194,7 @@ const ImageElement: React.FC<ImageElementProps> = ({
     zoom,
     fillColor: element.type === 'shape' ? element.fill : '#ffffff',
     showTransformer,
+    listening: !grouped || isIsolationMode,
     dragBoundFunc,
     draggable: !isPositionLocked && !isFullyLocked && !isReplaceOnly, // ✅ lock-aware
   };
@@ -237,11 +244,16 @@ const ImageElement: React.FC<ImageElementProps> = ({
           strokeWidth={showTransformer ? 2 : 0}
           shadowColor={showTransformer ? '#00f0ff' : undefined}
           shadowBlur={showTransformer ? 10 : 0}
+          listening={(!grouped || isIsolationMode)}
         />
       )}
 
-      {isSelected && showTransformer && !grouped &&  <Transformer ref={transformerRef} />}
-      {isSelected && isIsolationMode && grouped &&  <Transformer ref={transformerRef} />}
+{showTransformer &&
+  (
+    (isSelected && !grouped && !isIsolationMode) ||
+    (isIsolationMode && grouped)
+  ) && <Transformer ref={transformerRef} />}
+
     </>
   );
 };

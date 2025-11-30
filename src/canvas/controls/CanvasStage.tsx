@@ -139,13 +139,15 @@ isIsolationMode,
 setBoundsRect,
 boundsRect,
 setElementsGrouped,
-    
+setStagePosition,
+stagePosition,
+cardBounds
   } = state;
   
   const {
     handleCellPaint,
     handleImageUpdate,
-    handleTextClick,
+   
     handleTextEdit,
     handleTextUpdate,
     
@@ -257,12 +259,13 @@ setElementsGrouped,
   toggleSelection={toggleSelection}
   selectOnly={selectOnly}
   boundsRect={boundsRect}
+  stagePosition={stagePosition}
+  cardBounds={cardBounds}
 
   handlers={{
     setImageRef: updateImageRef,
     onPaint: handleCellPaint,
     onImageUpdate: handleImageUpdate,
-    onTextClick: handleTextClick,
     onTextEdit: handleTextEdit,
     onTextUpdate: handleTextUpdate,
     onPrimitiveSelect: onPrimitiveSelect,

@@ -172,6 +172,11 @@ export default function DesignPlatformPage() {
     setElementsGrouped,
     selectedGroupId,
     isIsolationMode,
+    setIsolationMode,
+    setEditorHistory, 
+    editorHistory,
+    editorFuture,
+    setStagePosition
 
     //currentSelectedElement
   } = state;
@@ -207,7 +212,6 @@ export default function DesignPlatformPage() {
     onColorChange,
     onFontSizeChange,
     handleCellPaint,
-    handleTextClick,
     handleTextBlur,
     exitEditingMode,
     handleImageUpdate,
@@ -255,7 +259,7 @@ export default function DesignPlatformPage() {
    duplicatedElement,
    deleteElementById,
    groupSelectedElements,
-   
+    exitIsolationMode,
     
   } = actions;
 
@@ -263,7 +267,7 @@ export default function DesignPlatformPage() {
   if(!selectedDualTemplate || !template) return;
 
 
-  //console.log(selectedGroupId, selectedTextId, selectedImageId)
+  //console.log(setEditorHistory, editorHistory,editorFuture)
 
 
   
@@ -276,7 +280,7 @@ export default function DesignPlatformPage() {
       side: side
     });
 
-  console.log('selected element ',selectedElement, 'mode', isIsolationMode);
+  //console.log('selected element ',selectedElement, 'mode', isIsolationMode);
 
 
   const {
@@ -384,13 +388,14 @@ const isMarqueeSelection = !selectedElement && selectedIds.length > 1;
         >
           <SidebarTabs
           SidebarTabsRef={SidebarTabsRef}
-        
+         
           hasInitializedZoom={hasInitializedZoom}
           tone={template.tone}
            SIDEBAR_WIDTH={SIDEBAR_WIDTH}
            PANEL_WIDTH={PANEL_WIDTH}
           setStageStyle={setStageStyle}
           recenterCanvas={recenterCanvas}
+          setStagePosition={setStagePosition}
         />
         </div>
 
@@ -518,8 +523,8 @@ const isMarqueeSelection = !selectedElement && selectedIds.length > 1;
         handleTemplateSelect={handleTemplateSelect}
         dualFaces={dualFaces}
         setDualFaces={setDualFaces}
-        history={history}
-        future={future}
+        history={editorHistory}
+        future={editorFuture}
         resetDesign={resetDesign}
         createPageTemplate={createPageTemplate}
         setCanvasReady={setCanvasReady}
@@ -879,8 +884,10 @@ imagebarRef={imagebarRef}
   elementsGrouped={elementsGrouped}
   groupSelectedElements={groupSelectedElements}
   setElementsGrouped={setElementsGrouped}
+  setIsolationMode={setIsolationMode}
   selectedGroupId={selectedGroupId}
   isIsolationMode={isIsolationMode}
+  exitIsolationMode={exitIsolationMode}
   length={selectedIds.length}
   tone={template.tone as tone}
 />

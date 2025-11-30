@@ -15,7 +15,7 @@ export const getZoomAwareDragBoundFunc = (
     const boundsHeight = isIsolationMode ? canvasBounds.height : canvasBounds.height * zoom;
 
     const minX = canvasBounds.x + padding;
-    const maxX = canvasBounds.x + boundsWidth - scaledWidth - padding;
+    const maxX = canvasBounds.x + (boundsWidth - scaledWidth - padding);
     const minY = canvasBounds.y + padding;
     const maxY = canvasBounds.y + boundsHeight - scaledHeight - padding;
 

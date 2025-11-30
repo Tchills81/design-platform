@@ -12,7 +12,7 @@ type SidebarTabsProps = {
   SIDEBAR_WIDTH: number;
   hasInitializedZoom: RefObject<boolean>;
   SidebarTabsRef: RefObject<HTMLDivElement | null>;
-  //setStageStyle: Dispatch<SetStateAction<{}>>;
+  setStagePosition: (pos: {x: number; y: number;} ) => void;
 
   setStageStyle: (style: React.CSSProperties) => void
   tone: string;
@@ -26,6 +26,7 @@ export function SidebarTabs({
   hasInitializedZoom, 
   setStageStyle, 
   recenterCanvas, 
+  setStagePosition,
   tone 
 }: SidebarTabsProps)
  {
@@ -65,9 +66,11 @@ export function SidebarTabs({
 
 
             if(nextTab){
-                setStageStyle({ backgroundColor: '#1e1e1e', position: 'absolute', left:  PANEL_WIDTH+SIDEBAR_WIDTH });
+                setStageStyle({ backgroundColor: '#1e1e1e', position: 'absolute' });
+                setStagePosition({x:PANEL_WIDTH+SIDEBAR_WIDTH, y:0})
                 recenterCanvas();
                 setActiveTab(nextTab);
+                hasInitializedZoom.current=false;
             }else{
                  setActiveTab(null)
                 hasInitializedZoom.current=false;

@@ -69,6 +69,7 @@ export function useCanvasEffects(
     imageRef,
     containerRef,
     cardGridGroupRef,
+    imagebarRef,
     stageRef,
     zoom,
     hasInitializedZoom,
@@ -119,7 +120,11 @@ export function useCanvasEffects(
     isIsolationMode,
     setSelectedGroupId,
     selectedGroupId,
-    setSelectedImageId
+    setSelectedImageId,
+    currentSelectedElement,
+    transformModeActive,
+    setStagePosition,
+    setCanvasBounds
     
   } = state;
 
@@ -241,22 +246,31 @@ useEffect(() => {
 
     
 
-    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:(PANEL_WIDTH+SIDEBAR_WIDTH)});
+    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute'});
+
+    setStagePosition({x:(PANEL_WIDTH+SIDEBAR_WIDTH), y:0})
 
     setPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
 
     setInitailPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
+
+    setCanvasBounds({x:initialKonvaX+(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY, width:template?.width, height:template?.height})
+    
     
   }else{
 
     setPosition({ x: initialKonvaX, y: initialKonvaY });
+    
+    setCanvasBounds({x:initialKonvaX, y:initialKonvaY, width:template?.width, height:template?.height});
+
     setInitailPosition({ x: (stageSize.width - scaledWidth) / 2, y: (stageSize.height - scaledHeight) / 2});
 
-    console.log()
-    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:0});
+    setStagePosition({x:0, y:0})
  
     
   }
+
+  console.log('setting canvas bounds...', activeTab)
     
 
   
@@ -717,6 +731,7 @@ useEffect(() => {
       
       
       const clickedInsideToolbar = textToolbarRef.current?.contains(e.target as Node);
+      const clickedOnImagebar = imagebarRef.current?.contains(e.target as Node);
       const clickedOnTextOverlay = toolbarRef.current?.contains(e.target as Node);
       const clickedOnTopBar = topBarRef.current?.contains(e.target as Node);
       const clickedOnSideBar = sideBarRef.current?.contains(e.target as Node);
@@ -739,18 +754,19 @@ useEffect(() => {
           clickedOnFooterCluster ||
           clickedOnTabs         ||
           clickedOnPanel   || 
-          clickedOntextControls 
+          clickedOntextControls  ||
+          clickedOnImagebar
 
         ) return;
 
 
-    console.log('global click ,isIsolationMode, ', 'target', e.target, 'e.detail', e.detail)
+    console.log('global click ,transformModeActive, ', 'konvaText', konvaText)
 
 // Dismiss global: clear store selection and legacy text selection, hide overlay and sync Konva text
 clearAll({
   clearStoreSelection: false,
-  clearTextSelection: false,
-  clearImageSelection:true,
+  clearTextSelection: true,
+  clearImageSelection:!transformModeActive,
   hideToolbar: true,
   resetInput: true,
   resetKonvaText: true,
@@ -767,7 +783,7 @@ clearAll({
 
     document.addEventListener("mousedown", handleGlobalClick);
     return () => document.removeEventListener("mousedown", handleGlobalClick);
-  }, [konvaText, textAreaRef.current, isIsolationMode, setIsolationMode]);
+  }, [konvaText, textAreaRef.current, isIsolationMode, setIsolationMode, transformModeActive]);
 
 
 

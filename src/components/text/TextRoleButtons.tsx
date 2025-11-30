@@ -163,7 +163,7 @@ export function TextRoleButtons({ tone }: TextRoleButtonsProps) {
         const { color, highlight, textColor, fontFamily } = useElementTone({ role, tone, shapeType });
         const fontSize = roleFontSizes[role] ?? 16;
 
-        console.log(`TextRoleButtons: role=${role}, tone=${tone}, font=${fontFamily}, size=${fontSize}`);
+        //console.log(`TextRoleButtons: role=${role}, tone=${tone}, font=${fontFamily}, size=${fontSize}`);
 
         return (
           <motion.button

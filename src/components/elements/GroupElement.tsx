@@ -301,11 +301,33 @@ const updatedChildren = children.map(el => {
     height: (bottomRightStage?.y ?? 0) - (topLeftStage?.y ?? 0),
   };
 
+
+
+
+  const rectRef = useRef<Konva.Rect>(null);
+
+  useEffect(() => {
+    if (!rectRef.current) return;
+
+    if (isIsolationMode) {
+      rectRef.current.moveToTop();
+      rectRef.current.listening(true);
+      rectRef.current.visible(true);
+    } else {
+      rectRef.current.moveToBottom();
+      rectRef.current.listening(false);
+      rectRef.current.visible(false);
+    }
+
+    rectRef.current.getLayer()?.batchDraw();
+  }, [isIsolationMode]);
+
  
   
 
   return (
     <>
+
       <Group
         ref={groupRef}
         id={groupEl.id ?? id}
@@ -318,6 +340,17 @@ const updatedChildren = children.map(el => {
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
+
+
+   <IsolationRect
+ 
+ width={size.width}
+ height={size.height}
+ isIsolationMode={isIsolationMode}
+ strokeColor="blue"
+ dashPattern={[6, 4]}
+ animationSpeed={1}
+/>
         {children.map((el) => {
           if (!el) return null;
 
@@ -336,7 +369,7 @@ const updatedChildren = children.map(el => {
                 zoom={zoom}
                 tone={tone as tone}
                 isSelected={selectedImageId === el.id}
-                showTransformer={false}
+                showTransformer={transformModeActive}
                 isIsolationMode={isIsolationMode}
                 grouped={true}
                 containerRef={containerRef}
@@ -399,15 +432,24 @@ const updatedChildren = children.map(el => {
                 setGhostLines={handlers.setGhostLines}
                 setKonvaText={setKonvaText}
                 konvaText={konvaText}
+
                 onUpdate={({ id, text, position }) => {
-                  const updated: TemplateElement = {
-                    ...el,
-                    label: text,
-                    text,
-                    position,
-                  };
-                  handlers.onTextUpdate(updated);
-                }}
+                    const original = children.find(el => el.id === id);
+
+                    console.log('groupElement original', original)
+                    if (!original || !isTextElementForTextComponent(original)) return;
+                    const updated: TemplateElement = {
+                      ...original,
+                      label: text,
+                      text,
+                      position: {
+                        x: position.x,
+                        y: position.y
+                      }
+                    };
+                    handlers.onTextUpdate(updated);
+                  }}
+                
                 onClick={(e) => {
                   //e.cancelBubble=true;
                   const node = e.target;
@@ -439,18 +481,10 @@ const updatedChildren = children.map(el => {
         })}
 
 
-   <IsolationRect
-    width={size.width}
-    height={size.height}
-    isIsolationMode={isIsolationMode}
-    strokeColor="blue"
-    dashPattern={[6, 4]}
-    animationSpeed={1}
-  />
 
       </Group>
 
-      {isSelected && transformModeActive && <Transformer ref={transformerRef} />}
+      {isSelected && transformModeActive && !isIsolationMode && <Transformer ref={transformerRef} />}
     </>
   );
 };

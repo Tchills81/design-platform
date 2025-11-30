@@ -23,7 +23,7 @@ export function useShiftClickSelection({
       selectOnly(id);
     }
 
-    e.cancelBubble = true; // ✅ prevent Stage dismissal firing after element click
+    //e.cancelBubble = true; // ✅ prevent Stage dismissal firing after element click
 
     // console.log('useShiftClickSelection', 'selectedIds', selectedIds);
   };

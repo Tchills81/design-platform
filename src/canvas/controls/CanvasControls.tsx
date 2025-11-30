@@ -31,6 +31,7 @@ import ProfileCard from '@/src/components/ProfileCard';
 //import ElementPanel from '@/src/components/ElementPanel';
 import { DesignElement } from '@/src/types/DesignElement';
 import { SnapshotEntry } from '@/src/types/SnapshotEntry';
+import { EditorHistoryEntry } from '@/src/types/CardState';
 
 
 export interface CanvasControlsProps {
@@ -78,8 +79,8 @@ export interface CanvasControlsProps {
     setLastSavedTemplate:(template:DualTemplate | null)=>void;
     lastSavedTemplate:DualTemplate | null;
     setDualFaces: React.Dispatch<React.SetStateAction<DualTemplate[]>>;
-    history: HistoryEntry[];
-    future: HistoryEntry[];
+    history: EditorHistoryEntry[];
+    future: EditorHistoryEntry[];
     dualFaces:DualTemplate[];
     designElements:DesignElement[];
     activeTimestamp:string | null; 

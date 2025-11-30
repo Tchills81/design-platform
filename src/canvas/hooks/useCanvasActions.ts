@@ -5,10 +5,10 @@ import { useCallback } from "react";
 import { useCanvasState } from "./useCanvasState";
 import { DualTemplate, TemplateElement, TemplateElementType } from "@/src/types/template";
 import { SnapshotEntry } from "@/src/types/SnapshotEntry";
-import { HistoryEntry } from "@/src/types/HistoryEntry";
+
 import { CanvasMode } from "@/src/types/CanvasMode";
 import { tone } from "@/src/types/tone";
-import { KonvaEventObject } from "konva/lib/Node";
+
 import { isTextElement } from "@/src/types/template";
 import { normalizeDualTemplate } from "@/src/utils/normalizeDualTemplate";
 import { renderToCanvas } from "@/src/utils/renderToCanvas";
@@ -22,10 +22,10 @@ import isEqual from 'lodash.isequal';
 
 import Konva from "konva";
 import { DesignElement } from "@/src/types/DesignElement";
-import { number } from "framer-motion";
 import { SidebarTab } from "@/src/types/Tab";
 import { computeOverlayControlPosition } from "./useOverlayControlPosition";
-import { useSelectedElement } from "@/src/components/elements/useSelectedElement";
+
+import { CardState, EditorHistoryEntry } from "@/src/types/CardState";
 
 export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   const {
@@ -84,10 +84,10 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setPrepareForPrint,
     setFaceMode,
     lastSavedTemplate,
-    history,
-    future,
+   
+    editorFuture,
     setHistory,
-    setFuture,
+   
     stageSize,
     zoom,
     position,
@@ -107,13 +107,13 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     mode,
     showBleeds, 
     showRulers,
-    faceMode,
+  
     selectedColor,
     accessLevel,
     activateTransformMode,
-    dualFaces,
+  
     setReflections,
-    designElements,
+  
     setDesignElements,
     resetTransformMode,
     initialZoomedOutValue,
@@ -134,7 +134,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setShowPages,
     setStripHeight,
     setVerticalOffset,
-    verticalOffset,
+  
     cardGridGroupRef,
     setLargeContainerSize,
     setScrollPosition,
@@ -143,9 +143,7 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     scrollPosition,
     setVisible,
     fadeTimeout,
-    thumbValue,
-    setThumbValue,
-    hasInitialized,
+   
     initailPosition,
     setInitailPosition,
     positionRef,
@@ -156,11 +154,10 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     setActiveIndex,
     setIsFullScreen,
     elementRef,
-    setEditingTextId,
-    setOverlayProps,
+    
     setShowOverlayInput,
     setKonvaText,
-    setPreviewRole,
+   
     setPreviewSrc,
     konvaText,
     activeIndex,
@@ -183,119 +180,196 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     currentSelectedElement,
     selectedIds,
     boundingBox,
-     setTemplateElement,
+  
      onGroupUpdate,
      setIsolationMode,
      setMarqueeActive,
-     setElementId,
+    
      elementsGrouped,
      setElementsGrouped,
-     setSelectedGroupId
+     setSelectedGroupId,
+     selectedGroupId,
+     setTransformModeActive,
+     clearAll,
+     setEditorHistory, editorHistory,
+     setEditorFuture,
+    
+     isIsolationMode,
+     pendingStyle,
+
+     setCanvasBounds
+    
 
   } = state;
 
+
+
   const commitHistoryEntry = useCallback(() => {
     if (!card || !elements) return;
-    const cardState = {
-      width: card.width,
-      height: card.height,
-      background: card.background,
-      backgroundImage: card.backgroundImage,
-      gridColors: card.gridColors,
-      elements,
-    };
-    setHistory(prev => [...prev, { mode, cardState }]);
-    setFuture([]);
-  }, [card, elements, mode]);
+    const snapshot: EditorHistoryEntry = {
+      cardState: {
+        width: card.width,
+        height: card.height,
+        background: card.background,
+        backgroundImage: card.backgroundImage,
+        gridColors: card.gridColors,
+        elements,
+      },
+      template,
+      mode,
+      selectedTextId:selectedTextId,
+      selectedGroupId:selectedGroupId,
+      selectedImageId:selectedImageId,
+      isIsolationMode:isIsolationMode,
+      elementsGrouped:elementsGrouped,
+      pendingStyle,
+    }
+  
+    setEditorHistory(prev => [...prev, snapshot]);
+    setEditorFuture([]);
+  }, [card, elements, mode])
+  
+
+
+
 
   const recordSnapshot = useCallback(() => {
-    if (!template || !template[side]) return;
-    setHistory(prev => [
-      ...prev,
-      {
-        mode,
-        cardState: {
-          width: card?.width ?? 0,
-          height: card?.height ?? 0,
-          background: card?.background ?? "",
-          backgroundImage: card?.backgroundImage ?? "",
-          gridColors: card?.gridColors ?? [],
-          elements: [...(template[side]?.elements ?? [])],
-        },
+    if (!template || !template[side] || !card) return;
+  
+    const snapshot: EditorHistoryEntry = {
+      mode,
+      cardState: {
+        width: card.width ?? 0,
+        height: card.height ?? 0,
+        background: card.background ?? "",
+        backgroundImage: card.backgroundImage ?? "",
+        gridColors: card.gridColors ?? [],
+        elements: [...(template[side]?.elements ?? [])],
       },
-    ]);
-  }, [template, side, card, mode]);
+      template,
+      selectedTextId,
+      selectedGroupId,
+      selectedImageId,
+      isIsolationMode,
+      elementsGrouped,
+      pendingStyle,
+    };
+  
+    setEditorHistory(prev => [...prev, snapshot]);
+    setEditorFuture([]); // clear redo stack
+  }, [template, side, card, mode, selectedTextId, selectedGroupId, selectedImageId, isIsolationMode, pendingStyle]);
+  
 
 
-  function shouldPushToHistory(elements: TemplateElement[], entry: HistoryEntry | undefined, card: any | undefined): boolean {
+
+
+  function shouldPushToHistory(
+    elements: TemplateElement[],
+    entry: EditorHistoryEntry | undefined,
+    card: CardState | undefined,
+    uiState: {
+      selectedTextId: string | null;
+      selectedGroupId: string | null;
+      selectedImageId: string | null;
+      isIsolationMode: boolean;
+      elementsGrouped:boolean|undefined;
+      pendingStyle: Record<string, any>;
+    }
+  ): boolean {
     if (!entry || !card) return true;
   
     return (
       !isEqual(elements, entry.cardState.elements) ||
       card.backgroundImage !== entry.cardState.backgroundImage ||
       card.background !== entry.cardState.background ||
-      !isEqual(card.gridColors, entry.cardState.gridColors)
+      !isEqual(card.gridColors, entry.cardState.gridColors) ||
+      uiState.selectedTextId !== entry.selectedTextId ||
+      uiState.selectedGroupId !== entry.selectedGroupId ||
+      uiState.selectedImageId !== entry.selectedImageId ||
+      uiState.isIsolationMode !== entry.isIsolationMode ||
+      !isEqual(uiState.pendingStyle, entry.pendingStyle)
     );
   }
   
 
+
+
   const handleUndo = useCallback(() => {
-    if (history.length === 0 || !template || !card) return;
+    if (editorHistory.length === 0 || !template || !card) return;
   
-    console.log('handleUndo length', history.length);
+    console.log("handleUndo length", editorHistory);
   
-    const previous = history[history.length - 1];
+    const previous = editorHistory[editorHistory.length - 1];
+
   
-    // Push current state to redo stack before undoing
-    if (shouldPushToHistory(elements, previous, card)) {
-      setFuture(prev => [
-        {
-          mode,
-          cardState: {
-            width: card.width ?? previous.cardState.width,
-            height: card.height ?? previous.cardState.height,
-            background: card.background ?? previous.cardState.background,
-            backgroundImage: card.backgroundImage ?? previous.cardState.backgroundImage,
-            gridColors: card.gridColors ?? previous.cardState.gridColors,
-            elements,
-          },
+    // Push current state into redo stack before undoing
+    setEditorFuture(prev => [
+      {
+        template,
+        mode,
+        cardState: {
+          width: card.width,
+          height: card.height,
+          background: card.background,
+          backgroundImage: card.backgroundImage,
+          gridColors: card.gridColors,
+          elements,
         },
-        ...prev,
-      ]);
-    }
-  
-    // Apply previous state
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        card: {
-          width: previous.cardState.width,
-          height: previous.cardState.height,
-          background: previous.cardState.background,
-          backgroundImage: previous.cardState.backgroundImage,
-          gridColors: previous.cardState.gridColors,
-        },
-        elements: previous.cardState.elements,
+        selectedTextId,
+        selectedGroupId,
+        selectedImageId,
+        isIsolationMode,
+        elementsGrouped,
+        pendingStyle,
       },
-    }));
+      ...prev,
+    ]);
   
+    // Apply previous snapshot
+    setTemplate(previous.template);
     setMode(previous.mode);
+    setSelectedTextId(previous.selectedTextId);
+    setSelectedGroupId(previous.selectedGroupId);
+    setSelectedImageId(previous.selectedImageId);
+    setIsolationMode(previous.isIsolationMode);
+    setElementsGrouped(previous.elementsGrouped);
+    setPendingStyle(previous.pendingStyle);
   
     // Remove last entry from history
-    setHistory(prev => prev.slice(0, -1));
-  }, [history, future, template, card, elements, mode, side]);
+    setEditorHistory(prev => prev.slice(0, -1));
+  }, [
+    editorHistory,
+    template,
+    card,
+    elements,
+    mode,
+    side,
+    selectedTextId,
+    selectedGroupId,
+    selectedImageId,
+    isIsolationMode,
+    pendingStyle,
+  ]);
   
-  
+
+
+
   const handleRedo = useCallback(() => {
-    if (future.length === 0 || !template || !card) return;
+
+    if (editorFuture.length === 0 || !template || !card) return;
   
-    console.log('handleRedo length', future.length);
+    const nextEntry = editorFuture[0];
   
-    const nextEntry = future[0];
-  
-    // Push current state to history before redoing
-    if (shouldPushToHistory(elements, nextEntry, card)) {
-      setHistory(prev => [
+    // Push current into history before redoing
+    if (shouldPushToHistory(elements, nextEntry, card, {
+      selectedTextId,
+      selectedGroupId,
+      selectedImageId,
+      isIsolationMode,
+      elementsGrouped,
+      pendingStyle,
+    })) {
+      setEditorHistory(prev => [
         ...prev,
         {
           mode,
@@ -307,11 +381,18 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
             gridColors: card.gridColors ?? [],
             elements,
           },
+          template,
+          selectedTextId,
+          selectedGroupId,
+          selectedImageId,
+          isIsolationMode,
+          elementsGrouped,
+          pendingStyle,
         },
       ]);
     }
   
-    // Apply next state
+    // Restore snapshot
     setTemplate(prev => ({
       ...prev!,
       [side]: {
@@ -319,13 +400,19 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
         elements: nextEntry.cardState.elements,
       },
     }));
-  
     setMode(nextEntry.mode);
+    setSelectedTextId(nextEntry.selectedTextId);
+    setSelectedGroupId(nextEntry.selectedGroupId);
+    setSelectedImageId(nextEntry.selectedImageId);
+    setIsolationMode(nextEntry.isIsolationMode);
+    setPendingStyle(nextEntry.pendingStyle);
   
     // Remove applied entry from future
-    setFuture(prev => prev.slice(1));
-  }, [future, template, card, elements, mode, side]);
-
+    setEditorFuture(prev => prev.slice(1));
+  }, [editorFuture, template, card, elements, mode, side, selectedTextId, selectedGroupId, selectedImageId, isIsolationMode, pendingStyle]);
+  
+  
+  
 
   const triggerFade = () => {
     setVisible(true);
@@ -403,42 +490,12 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
 
 
 
-
-  
-  
-
-
   const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(value, max));
 
 
 
-  const centerZoomedCanvas=useCallback(()=>{
-
-
-    const konvaGroup = cardGridGroupRef.current;
-    if (!konvaGroup || !template) return;
-    
   
-    const currentKonvaPosition = konvaGroup.position();
-    const center = {
-      x: stageSize.width / 2,
-      y: stageSize.height / 2,
-    };
-  
-    // 🎯 Recalculate position to keep canvas centered
-    const newPosition = {
-      x: center.x - ((center.x - currentKonvaPosition.x) / zoom) * zoom,
-      y: center.y - ((center.y - currentKonvaPosition.y) / zoom) * zoom,
-    };
-
-
-    // 🧩 Apply canvas transform
-    setPosition(newPosition);
-    
-
-  }, [zoom])
-
 
 
   const computeOverlayPosition =useCallback( (textNode: Konva.Text, stage: Konva.Stage, scale:number=zoom):{x:number, y:number} => {
@@ -468,7 +525,16 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     if(activeTab){
       console.log('active tab...xxx ', activeTab);
       center = { x:(stageSize.width-(PANEL_WIDTH+SIDEBAR_WIDTH)) / 2, y: stageSize.height / 2 };
+      setCanvasBounds({x:currentKonvaPosition.x+(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:currentKonvaPosition.y, width:template?.width, height:template?.height})
+    
+    
+      
+    }else{
+      setCanvasBounds({x:currentKonvaPosition.x, y:currentKonvaPosition.y, width:template?.width, height:template?.height});
     }
+
+
+
   
     // 🎯 Recalculate canvas position to keep it centered
     const newPosition = {
@@ -591,17 +657,6 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
   
   
 
-  
-  
-
-  const createShapeId = useCallback(
-    (side: 'front' | 'back', elements: TemplateElement[]) => {
-      const count = elements.filter(el => el.type === 'shape').length;
-      return `${side}-shape-${count + 1}`;
-    },
-    []
-  );
-
   const createTextId = useCallback((side: 'front' | 'back', elements: TemplateElement[]) => {
     const count = elements.filter(el => el.type === 'text').length;
     return `${side}-text-${count + 1}`;
@@ -647,57 +702,57 @@ const setDesignElement = useCallback(
     let newElement: TemplateElement;
 
     switch (el.type) {
-      case 'shape':
+      case "shape":
         newElement = {
           id: newId,
-          type: 'shape',
+          type: "shape",
           position: { x: el.x ?? 100, y: el.y ?? 100 },
           size: {
             width: el.width ?? 60,
             height: el.height ?? 60,
           },
-          fill: el.fill ?? '#f0f0f0',
+          fill: el.fill ?? "#f0f0f0",
           shapeType: el.shapeType,
           stroke: el.stroke,
           strokeWidth: el.strokeWidth,
           tone: template.tone,
-          role: 'accent',
-          label: el.label ?? '',
+          role: "accent",
+          label: el.label ?? "",
         };
         break;
 
-      case 'image':
+      case "image":
         newElement = {
           id: newId,
-          type: 'image',
-          src: el.src ?? '/assets/logo.png',
+          type: "image",
+          src: el.src ?? "/assets/logo.png",
           position: { x: el.x ?? 100, y: el.y ?? 100 },
           size: {
             width: el.width ?? 100,
             height: el.height ?? 80,
           },
           tone: template.tone,
-          role: 'decoration',
-          label: el.label ?? '',
+          role: "decoration",
+          label: el.label ?? "",
         };
         break;
 
-      case 'text':
-        console.log('text type of element created ', el.label);
+      case "text":
+        console.log("text type of element created ", el.label);
         newElement = {
           id: newId,
-          type: 'text',
-          label: el.label ?? 'New Text',
+          type: "text",
+          label: el.label ?? "New Text",
           shapeType: el.shapeType,
-          text: el.label ?? 'New Text',
-          font: el.font ?? '--font-inter',
+          text: el.label ?? "New Text",
+          font: el.font ?? "--font-inter",
           size: el.fontSize ?? 16,
-          color: el.fill ?? '#000000',
+          color: el.fill ?? "#000000",
           position: { x: el.x ?? 200, y: el.y ?? 200 },
           isBold: el.isBold ?? false,
           isItalic: el.isItalic ?? false,
           tone: template.tone,
-          role: 'message',
+          role: "message",
         };
         break;
 
@@ -705,8 +760,30 @@ const setDesignElement = useCallback(
         return;
     }
 
-    setTemplate((prev) => {
+    setTemplate(prev => {
       if (!prev || !prev[side]) return null;
+
+      // ✅ If a group is selected, inject into that group’s children
+      if (selectedGroupId) {
+        const updatedElements = updateElementById(
+          prev[side].elements,
+          selectedGroupId,
+          el =>
+            el.type === "group" && Array.isArray(el.children)
+              ? { ...el, children: [...el.children, newElement] }
+              : el
+        );
+
+        return {
+          ...prev,
+          [side]: {
+            ...prev[side],
+            elements: updatedElements,
+          },
+        };
+      }
+
+      // ✅ Otherwise, append to root elements
       return {
         ...prev,
         [side]: {
@@ -716,270 +793,360 @@ const setDesignElement = useCallback(
       };
     });
 
-    if (el.type === 'text') {
+    if (el.type === "text") {
       setSelectedTextId(newId);
     }
   },
-  [template, side]
+  [template, side, selectedGroupId, recordSnapshot, createPrimitiveId, setTemplate, setSelectedTextId]
 );
 
 
 
 
-  
 
-  const handleAddText = useCallback(() => {
-    if (!template || !template[side]) return;
-    
-      recordSnapshot();
-    
-      const newId = createTextId(side, template[side].elements);
-      console.log("newId", newId);
-    
-      const newTextElement: TemplateElement = {
-        type: 'text',
-        id: newId,
-        label: 'New Text',
-        shapeType:'heading',
-        text: 'New Text',
-        font: '--font-inter',
-        size: 16,
-        color: '#000000',
-        position: { x: 100, y: 100 },
-        isBold: false,
-        isItalic: false,
-        tone: template.tone,
-      };
-    
-      setTemplate(prev => {
-        if (!prev || !prev[side]) return null;
+function updateElementById(
+  elements: TemplateElement[],
+  id: string,
+  updater?: (el: TemplateElement) => TemplateElement,
+  remove: boolean = false
+): TemplateElement[] {
+  return elements
+    .map(el => {
+      if (el.id === id) {
+        if (remove) {
+          return null; // mark for removal
+        }
+        return updater ? updater(el) : el;
+      }
+
+      if (el.type === "group" && Array.isArray(el.children)) {
         return {
-          ...prev,
-          [side]: {
-            ...prev[side],
-            elements: [...prev[side].elements, newTextElement],
-          },
+          ...el,
+          children: updateElementById(el.children, id, updater, remove),
         };
-      });
-    
-      setSelectedTextId(newId); // migrated
-  }, [template, side]);
+      }
 
-  const handleRemoveText = useCallback(() => {
-    if (!selectedTextId || !template || !template[side]) return;
-    const updatedElements = template[side].elements.filter(el => el.id !== selectedTextId);
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: { ...prev![side], elements: updatedElements },
-    }));
-    setSelectedTextId(null);
-    setShowToolbar(false);
-    setInputPosition(null);
-  }, [selectedTextId, template, side]);
+      return el;
+    })
+    .filter((el): el is TemplateElement => el !== null);
+}
 
-  const handleTextEdit = useCallback((
-    text: string,
-    pos: { x: number; y: number },
-    el: TemplateElement) => {
+
+
+
+
+const onTextChange = useCallback((text: string) => {
+  setEditingText(text);
+  if (!selectedTextId || !template || !template[side]) return;
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => ({ ...el, label: text })
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+const onFontChange = useCallback((newFont: string) => {
+  setSelectedFont(newFont);
+  if (!selectedTextId || !template || !template[side]) return;
+  commitHistoryEntry();
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => el.type === "text" ? { ...el, font: newFont } : el
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+const onFontSizeChange = useCallback((newSize: number) => {
+  setSelectedFontSize(newSize);
+  if (!selectedTextId || !template || !template[side]) return;
+  commitHistoryEntry();
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => el.type === "text" ? { ...el, size: newSize } : el
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+const onColorChange = useCallback((newColor: string) => {
+  setSelectedColor(newColor);
+  if (!selectedTextId || !template || !template[side]) return;
+  commitHistoryEntry();
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => el.type === "text" ? { ...el, color: newColor } : el
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+const handleToggleBold = useCallback(() => {
+  setPendingStyle(prev => ({ ...prev, isBold: !prev.isBold }));
+  if (!selectedTextId || !template || !template[side]) return;
+  commitHistoryEntry();
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => el.type === "text" ? { ...el, isBold: !el.isBold } : el
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+const handleToggleItalic = useCallback(() => {
+  setPendingStyle(prev => ({ ...prev, isItalic: !prev.isItalic }));
+  if (!selectedTextId || !template || !template[side]) return;
+  commitHistoryEntry();
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    el => el.type === "text" ? { ...el, isItalic: !el.isItalic } : el
+  );
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+}, [selectedTextId, template, side]);
+
+
+
+
+
+const handleAddText = useCallback(() => {
+  if (!template || !template[side]) return;
+
+  recordSnapshot();
+
+  const newId = createTextId(side, template[side].elements);
+  const newTextElement: TemplateElement = {
+    type: "text",
+    id: newId,
+    label: "New Text",
+    shapeType: "heading",
+    text: "New Text",
+    font: "--font-inter",
+    size: 16,
+    color: "#000000",
+    position: { x: 100, y: 100 },
+    isBold: false,
+    isItalic: false,
+    tone: template.tone,
+  };
+
+  setTemplate(prev => {
+    if (!prev || !prev[side]) return null;
+
+    // ✅ If a group is selected, inject into that group’s children
+    if (selectedGroupId) {
+      const updatedElements = updateElementById(
+        prev[side].elements,
+        selectedGroupId,
+        el =>
+          el.type === "group" && Array.isArray(el.children)
+            ? { ...el, children: [...el.children, newTextElement] }
+            : el
+      );
+
+      return {
+        ...prev,
+        [side]: {
+          ...prev[side],
+          elements: updatedElements,
+        },
+      };
+    }
+
+    // ✅ Otherwise, append to root elements
+    return {
+      ...prev,
+      [side]: {
+        ...prev[side],
+        elements: [...prev[side].elements, newTextElement],
+      },
+    };
+  });
+
+  setSelectedTextId(newId);
+}, [template, side, selectedGroupId, recordSnapshot, createTextId]);
+
+
+const handleRemoveText = useCallback(() => {
+  if (!selectedTextId || !template || !template[side]) return;
+
+  const updatedElements = updateElementById(
+    template[side].elements,
+    selectedTextId,
+    () => null as any // remove by filtering later
+  ).filter(el => el !== null);
+
+  setTemplate(prev => ({
+    ...prev!,
+    [side]: { ...prev![side], elements: updatedElements },
+  }));
+
+  setSelectedTextId(null);
+  setShowToolbar(false);
+  setInputPosition(null);
+}, [selectedTextId, template, side]);
+
+const handleTextEdit = useCallback(
+  (text: string, pos: { x: number; y: number }, el: TemplateElement) => {
     if (!template || !isTextElement(el) || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(e =>
-      e.id === el.id
-        ? {
-            ...e,
-            label: text,
-            text,
-            position: { x: pos.x - canvasBounds.x, y: pos.y - canvasBounds.y },
-            isBold: el.isBold ?? false,
-            isItalic: el.isItalic ?? false,
-          }
-        : e
+    //commitHistoryEntry();
+
+    const updatedElements = updateElementById(
+      template[side].elements,
+      el.id,
+      e => ({
+        ...e,
+        label: text,
+        text,
+        position: { x: pos.x - canvasBounds.x, y: pos.y - canvasBounds.y },
+        isBold: el.isBold ?? false,
+        isItalic: el.isItalic ?? false,
+      })
     );
+
     setTemplate(prev => ({
       ...prev!,
       [side]: { ...prev![side], elements: updatedElements },
     }));
+
     setSelectedFont(el.font || "--font-inter");
     setSelectedColor(el.color || "#000000");
     setInputPosition(pos);
-  }, [template, side, canvasBounds]);
+  },
+  [template, side, canvasBounds]
+);
 
-  // ...continued below
-  const handleTextUpdate = useCallback((updated: TemplateElement) => {
-    if (!template || !isTextElement(updated)) return;
+const handleTextUpdate = useCallback(
+  (updated: TemplateElement) => {
+    if (!template || !isTextElement(updated) || !template[side]) return;
     commitHistoryEntry();
-    const updatedElements = elements.map(el =>
-      el.id === updated.id && el.type === "text"
-        ? {
-            ...el,
-            label: updated.text,
-            position: {
-              x: updated.position.x,
-              y: updated.position.y,
-            },
-          }
-        : el
+
+    const updatedElements = updateElementById(
+      template[side].elements,
+      updated.id,
+      el => ({
+        ...el,
+        label: updated.text,
+        position: { x: updated.position.x, y: updated.position.y },
+      })
     );
+
     setTemplate(prev => ({
       ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
+      [side]: { ...prev![side], elements: updatedElements },
     }));
-  }, [template, elements, side]);
+  },
+  [template, side]
+);
 
-  const handleTextClick = useCallback((text: string, pos: { x: number; y: number }, id: string) => {
-    setEditingText(text);
-    setInputPosition(pos);
-    setSelectedTextId(id);
-    setShowToolbar(true);
-    activateTransformMode(id, "text");
-    console.log("🖋️ Text selected with ID:", id, "label:", text);
-  }, [activateTransformMode]);
-
-  const handleTextBlur = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
+const handleTextBlur = useCallback(
+  (e: React.FocusEvent<HTMLTextAreaElement>) => {
     const toolbarEl = document.getElementById("text-toolbar");
     const relatedTarget = e.relatedTarget as HTMLElement;
     if (!relatedTarget || (toolbarEl && toolbarEl.contains(relatedTarget))) return;
+
     if (selectedTextId && template?.[side]?.elements) {
-      const updatedElements = template[side].elements.map(el =>
-        el.id === selectedTextId && el.type === "text"
-          ? { ...el, label: editingText }
-          : el
+      // ✅ updateElementById already recurses into groups
+      const updatedElements = updateElementById(
+        template[side].elements,
+        selectedTextId,
+        el => {
+          if (el.type === "text") {
+            return { ...el, label: editingText };
+          }
+          return el;
+        }
       );
+
       setTemplate(prev => ({
         ...prev!,
-        [side]: {
-          ...prev![side],
-          elements: updatedElements,
-        },
+        [side]: { ...prev![side], elements: updatedElements },
       }));
+
       console.log("📝 Text committed:", editingText);
     }
+
+    // If a group is selected, commit its children too
+    if (selectedGroupId && template?.[side]?.elements) {
+      const updatedElements = updateElementById(
+        template[side].elements,
+        selectedGroupId,
+        el => {
+          if (el.type === "group" && Array.isArray(el.children)) {
+            return {
+              ...el,
+              children: updateElementById(el.children, selectedTextId!, child =>
+                child.type === "text" ? { ...child, label: editingText } : child
+              ),
+            };
+          }
+          return el;
+        }
+      );
+
+      setTemplate(prev => ({
+        ...prev!,
+        [side]: { ...prev![side], elements: updatedElements },
+      }));
+
+      console.log("📝 Group text committed:", editingText);
+    }
+
     exitEditingMode();
-  }, [selectedTextId, template, side, editingText]);
+  },
+  [selectedTextId, selectedGroupId, template, side, editingText]
+);
+
+
 
   const exitEditingMode = useCallback(() => {
+
+    clearAll({
+      clearTextSelection:true,
+      hideToolbar:true,
+      resetInput:true,
+    })
     konvaText?.visible(true);
     konvaText?.getLayer()?.batchDraw();
-    setSelectedTextId(null);
-    setShowToolbar(false);
-    setInputPosition(null);
     console.log("🚪 Exited editing mode");
   }, []);
 
-  const onTextChange = useCallback((text: string) => {
-
-    let newText = text;
-    setEditingText(text);
-    if (!selectedTextId || !template || !template[side]) return;
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId ? { ...el, label: text } : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
-  const onFontChange = useCallback((newFont: string) => {
-    setSelectedFont(newFont);
-    if (!selectedTextId || !template || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId && el.type === "text"
-        ? { ...el, font: newFont }
-        : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
-  const onFontSizeChange = useCallback((newSize: number) => {
-
-    console.log("Font size changed to:", newSize);
-    setSelectedFontSize(newSize);
-    if (!selectedTextId || !template || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId && el.type === "text"
-        ? { ...el, size: newSize }
-        : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
-  const onColorChange = useCallback((newColor: string) => {
-    setSelectedColor(newColor);
-    if (!selectedTextId || !template || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId && el.type === "text"
-        ? { ...el, color: newColor }
-        : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
-  const handleToggleBold = useCallback(() => {
-    setPendingStyle(prev => ({ ...prev, isBold: !prev.isBold }));
-    if (!selectedTextId || !template || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId && el.type === "text"
-        ? { ...el, isBold: !el.isBold }
-        : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
-  const handleToggleItalic = useCallback(() => {
-    setPendingStyle(prev => ({ ...prev, isItalic: !prev.isItalic }));
-    if (!selectedTextId || !template || !template[side]) return;
-    commitHistoryEntry();
-    const updatedElements = template[side].elements.map(el =>
-      el.id === selectedTextId && el.type === "text"
-        ? { ...el, isItalic: !el.isItalic }
-        : el
-    );
-    setTemplate(prev => ({
-      ...prev!,
-      [side]: {
-        ...prev![side],
-        elements: updatedElements,
-      },
-    }));
-  }, [selectedTextId, template, side]);
-
+  
+  
+  
   const handleImageUpdate = useCallback(
-    (e: KonvaEventObject<Event>, id: string) => {
+    (e: Konva.KonvaEventObject<Event>, id: string) => {
       if (!template || !template[side]) return;
   
       commitHistoryEntry();
@@ -992,41 +1159,44 @@ const setDesignElement = useCallback(
   
       const offset = shapeMeta?.getAnchorOffset?.(node) ?? { x: 0, y: 0 };
   
-      const updatedX = node.x() + offset.x - canvasBounds.x;
-      const updatedY = node.y() + offset.y - canvasBounds.y;
+      const updatedX = node.x() 
+      const updatedY = node.y() 
       const updatedWidth = node.width();
       const updatedHeight = node.height();
   
-      const updatedElements = template[side].elements.map(el => {
-        if (el.id !== id) return el;
-  
-        if (el.type === 'image' || el.type === 'shape') {
+      // helper to update recursively
+      const updateElement = (el: TemplateElement): TemplateElement => {
+        if (el.id === id && (el.type === "image" || el.type === "shape")) {
           return {
             ...el,
-            position: {
-              x: updatedX,
-              y: updatedY
-            },
-            size: {
-              width: updatedWidth,
-              height: updatedHeight
-            }
+            position: { x: updatedX, y: updatedY },
+            size: { width: updatedWidth, height: updatedHeight },
+          };
+        }
+  
+        if (el.type === "group" && Array.isArray(el.children)) {
+          return {
+            ...el,
+            children: el.children.map(updateElement),
           };
         }
   
         return el;
-      });
+      };
+  
+      const updatedElements = template[side].elements.map(updateElement);
   
       setTemplate(prev => ({
         ...prev!,
         [side]: {
           ...prev![side],
-          elements: updatedElements
-        }
+          elements: updatedElements,
+        },
       }));
     },
     [template, side, canvasBounds]
   );
+  
   
   
 
@@ -1073,16 +1243,17 @@ const setDesignElement = useCallback(
   
 
 
-  const handleOnUploadImage = useCallback(async (src: string, role: "background" | "element") => {
-    if (!template || !template[side]) return;
-
-    console.log('handleOnUploadImage')
+  const handleOnUploadImage = useCallback(
+    async (src: string, role: "background" | "element") => {
+      if (!template || !template[side]) return;
   
-    recordSnapshot();
+      console.log("handleOnUploadImage");
   
-    setHistory(prev => [
-      ...prev,
-      {
+      // ✅ use the new snapshot logic
+      recordSnapshot();
+  
+      // ✅ commit a full EditorHistoryEntry
+      const snapshot: EditorHistoryEntry = {
         mode,
         cardState: {
           width: card?.width ?? 0,
@@ -1092,27 +1263,50 @@ const setDesignElement = useCallback(
           gridColors: card?.gridColors ?? [],
           elements: [...(template[side]?.elements ?? [])],
         },
-      },
-    ]);
-  
-    const inject = useInjectAsset(template); // ✅ get the function
-    const enriched = await inject({ src, role }); // ✅ call it with asset
-
-
-    console.log('side', side,  'enriched', enriched);
-  
-    setTemplate(prev => {
-      if (!prev || !prev[side])
-        {
-           
-           return prev;
-        }
-      return {
-        ...prev,
-        [side]: enriched[side],
+        template,
+        selectedTextId,
+        selectedGroupId,
+        selectedImageId,
+        isIsolationMode,
+        elementsGrouped,
+        pendingStyle,
       };
-    });
-  }, [template, side, card, mode]);
+      setEditorHistory(prev => [...prev, snapshot]);
+      setEditorFuture([]); // clear redo stack
+  
+      // ✅ inject asset into template
+      const inject = useInjectAsset(template);
+      const enriched = await inject({ src, role });
+  
+      console.log("side", side, "enriched", enriched);
+  
+      setTemplate(prev => {
+        if (!prev || !prev[side]) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [side]: enriched[side],
+        };
+      });
+    },
+    [
+      template,
+      side,
+      card,
+      mode,
+      selectedTextId,
+      selectedGroupId,
+      selectedImageId,
+      isIsolationMode,
+      pendingStyle,
+      recordSnapshot,
+      setEditorHistory,
+      setEditorFuture,
+      setTemplate,
+    ]
+  );
+  
 
   const setModeActive = useCallback((bool: boolean) => {
     setCropModeActive(bool);
@@ -1204,73 +1398,9 @@ const setDesignElement = useCallback(
     setShowPages(true);
      return; 
 
-    handlePreview(snapshotArchive[0]); return;
-
-    //const clonedTemplate: DualTemplate = JSON.parse(JSON.stringify(template));
-
-    
-  
-    setShowBleeds(false);
-    setShowRulers(false);
-
-
-
-    setMode("insideFace");
-  
-    setSide("front");
-    await new Promise(resolve => setTimeout(resolve, 500));
-    console.log('generating preview for front', showBleeds, showRulers)
-    const front = captureCardFaceSnapshot({
-      stageRef,
-      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
-      pixelRatio: 2,
-    });
-  
-    setSide("back");
-    await new Promise(resolve => setTimeout(resolve, 500));
-    console.log('generating preview for back', showBleeds, showRulers)
-    const back = captureCardFaceSnapshot({
-      stageRef,
-      bounds: {x:position.x, y:position.y, width:canvasSize.width, height: canvasSize.height},
-      pixelRatio: 2,
-    });
-  
-    setSide("front");
-    setSnapshots({ front, back });
-    setShowGallery(true);
-    setLastSavedTemplate(template);
-    
-    //console.log('clonedTemplate', clonedTemplate)
-
-    //handleTemplateSelect(clonedTemplate || undefined);
   
   }, [stageRef, canvasBounds, template, showRulers, showBleeds]);
 
-
-  async function captureThumbnails(
-    faceIds: string[],
-    setSide: (id: string) => void,
-    stageRef: React.RefObject<any>,
-    canvasBounds: DOMRect,
-    delay = 500
-  ): Promise<Record<string, string>> {
-    const snapshots: Record<string,string> = {};
-  
-    for (const faceId of faceIds) {
-      setSide(side); // 🔁 Render face in Konva
-      await new Promise(resolve => setTimeout(resolve, delay)); // ⏳ Wait for render
-  
-      const snapshot = captureCardFaceSnapshot({
-        stageRef,
-        bounds: canvasBounds,
-        pixelRatio: 2
-      });
-  
-     
-    }
-  
-    return snapshots;
-  }
   
 
 
@@ -1491,7 +1621,7 @@ const setDesignElement = useCallback(
       setShowToolbar(false);
       setInputPosition(null);
       setHistory([]);
-      setFuture([]);
+      setEditorFuture([]);
       setCellSize(normalized.front?.card.cellSize ?? cellSize);
       setMode("card");
       renderToCanvas(normalized, setTemplate, setMode, 'front', () => {
@@ -1514,7 +1644,7 @@ const setDesignElement = useCallback(
     } catch (err) {
       console.error("🛑 Failed to parse and render template:", err);
     }
-  }, [setTemplate, setSide, setSelectedTextId, setSelectedImageId, setShowToolbar, setInputPosition, setHistory, setFuture, setCellSize, setMode, setShowBleeds, setShowRulers, setShowGallery, cellSize]);
+  }, [setTemplate, setSide, setSelectedTextId, setSelectedImageId, setShowToolbar, setInputPosition, setHistory, setEditorFuture, setCellSize, setMode, setShowBleeds, setShowRulers, setShowGallery, cellSize]);
   
 
 
@@ -1684,6 +1814,8 @@ const setDesignElement = useCallback(
     setIsolationMode(false)
     setMarqueeActive(false)
     setElementsGrouped(false)
+    setSelectedGroupId(null)
+    setIsolationMode(false)
     setStageSize({width:window.innerWidth, height:window.innerHeight});
     
   }, []);
@@ -1719,42 +1851,8 @@ const setDesignElement = useCallback(
   }, [template, accessLevel]);
 
 
-  const addDesignElement = useCallback((el:DesignElement) => {
-    //add selected element from elementPanel ..do this by updating template designElements.map(el)
-    
-  }, []);
 
 
-
-  const fitTemplateInViewPort = useCallback(() => {
-    if (!template || !containerRef.current || mode=="painting" ) return;
-
-  const container = containerRef.current;
-
-  // Layout constants
-  const SIDEBAR_WIDTH = 280;
-  const RULER_THICKNESS = 24;
-  const TOP_BAR_HEIGHT = 64;
-  const FOOTER_HEIGHT = 48;
-  const RIGHT_MARGIN = 280;
-  const EXTRA_MARGIN = 120;
-
-  // Masked viewport dimensions
-  const viewportWidth = container.offsetWidth - SIDEBAR_WIDTH - RULER_THICKNESS - RIGHT_MARGIN;
-  const viewportHeight = container.offsetHeight - TOP_BAR_HEIGHT - RULER_THICKNESS - FOOTER_HEIGHT;
-
-  // Desired zoom to fit template
-  const zoomX = (viewportWidth - EXTRA_MARGIN) / template.width;
-  const zoomY = (viewportHeight - EXTRA_MARGIN) / template.height;
-  const targetZoom = Math.min(zoomX, zoomY, 1);
-
-  const scaleBy = targetZoom / zoom;
-  setInitialZoomedOutValue(targetZoom);
-
-  handleZoom(scaleBy, true);
-  
-    
-  }, [template, mode, zoom, handleZoom]);
 
 
 
@@ -1883,27 +1981,7 @@ const setDesignElement = useCallback(
 
     
   
-    setOverlayProps({
-      selectedFont: fontFamily,
-      selectedFontSize: fontSize,
-      selectedColor: fill,
-      isBold: fontStyle.includes('bold'),
-      isItalic: fontStyle.includes('italic'),
-      textAlign: align,
-      isMultiline: true,
-      isUnderline: textNode.attrs.textDecoration === 'underline',
-      editingText: textNode.text(),
-      width:width,
-      height:height,
-      lineHeight:lineHeight,
-      inputPosition: {  x:pos.x, y:pos.y},
-      showToolbar: true,
-      mode: 'card',
-      tone: template?.tone as tone,
-      onTextBlur:()=>{},
-      onTextChange:onTextChange
-      
-    })
+
     
     
   
@@ -2258,6 +2336,23 @@ const setDesignElement = useCallback(
    
     [template, side, commitHistoryEntry, onGroupUpdate]
   );
+
+  const exitIsolationMode=useCallback((id:string | null)=>{
+     
+    if(!id) return;
+
+    setIsolationMode(false);
+    switch(id){
+      case selectedTextId: clearAll({ clearTextSelection: true})
+      case selectedImageId: clearAll({ clearImageSelection: true})
+      case selectedGroupId: clearAll({ isIsolationMode: true})
+    }
+
+    setSelectedGroupId(selectedGroupId);
+    
+    setTransformModeActive(true)
+
+  }, [setIsolationMode, selectedTextId, selectedImageId, selectedGroupId, clearAll])
   
 
   // You can now export all these methods in your return block
@@ -2323,7 +2418,6 @@ const setDesignElement = useCallback(
     handleRemoveText,
     handleTextEdit,
     handleTextUpdate,
-    handleTextClick,
     handleTextBlur,
     exitEditingMode,
     onTextChange,
@@ -2414,6 +2508,7 @@ const setDesignElement = useCallback(
     duplicatedElement,
     deleteElementById,
     groupSelectedElements,
-    commitGroupUpdate
+    commitGroupUpdate,
+    exitIsolationMode
   };
 }

@@ -21,6 +21,7 @@ interface TextOverlayControlsProps {
   groupSelectedElements?: () => void;
   setElementsGrouped?: (b: boolean ) => void;
   setIsolationMode?: (b: boolean ) => void;
+  exitIsolationMode?: (id: string | null) => void;
   selectedGroupId?:string | null;
   isIsolationMode?: boolean;
   id?:string | null;
@@ -45,6 +46,7 @@ export const TextOverlayControls = ({
   length=0,
   selectedGroupId,
   isIsolationMode,
+  exitIsolationMode,
   id,
   tone,
 }: TextOverlayControlsProps) => {
@@ -102,8 +104,8 @@ export const TextOverlayControls = ({
         tone={tone as tone || "primary"}
         label='Exit' // need toggling Group/ UnGroup
         onClick={() => {
-          if(setIsolationMode)
-            setIsolationMode(false);
+          if(exitIsolationMode)
+            exitIsolationMode(elementId);
         }}
       />
         </>

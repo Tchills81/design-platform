@@ -2,11 +2,12 @@ import { useMemo } from "react";
 
 import { DualTemplate } from "@/src/types/template";
 
-interface Bounds {
+export interface Bounds {
   x: number;
   y: number;
   width: number;
   height: number;
+  
 }
 
 /**
@@ -19,14 +20,16 @@ export function useCardBounds(
   template: DualTemplate | null | undefined,
   card: { width: number; height: number },
   zoom: number,
-  position:{x:number, y: number}
+  position:{x:number, y: number},
+  offset: number,
+  
 ): Bounds {
   return useMemo(() => {
     const safeZoom = zoom || 1;
 
     const rawWidth = template?.width ?? card.width;
     const rawHeight = template?.height ?? card.height;
-    console.log('useCardBounds', template)
+    console.log('position', position)
 
     return {
       x: position.x,

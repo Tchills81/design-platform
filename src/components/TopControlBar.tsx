@@ -13,13 +13,14 @@ import { signOut } from 'next-auth/react';
 import FooterControlCluster from '@/src/components/FooterControlCluster';
 import { DualTemplate } from '../types/template';
 import { RefObject } from 'react';
+import { EditorHistoryEntry } from '../types/CardState';
 
 
 
 interface TopControlBarProps {
   tone: tone;
-  history: HistoryEntry[];
-  future: HistoryEntry[];
+  history: EditorHistoryEntry[];
+  future: EditorHistoryEntry[];
   template?:DualTemplate;
   activeMode: CanvasMode;
   onPreview: () => void;

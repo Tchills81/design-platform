@@ -20,6 +20,7 @@ type CommonProps = {
   zoom: number;
   fillColor?: string;
   showTransformer?: boolean;
+  listening?:boolean;
 };
 
 export type ShapeRenderer = (

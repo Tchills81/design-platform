@@ -1,6 +1,7 @@
 import { DualTemplate, TemplateDocument, TemplateElement } from '@/src/types/template';
 import { HistoryEntry } from '@/src/types/HistoryEntry';
 import { StateCreator } from 'zustand';
+import { EditorHistoryEntry } from '@/src/types/CardState';
 
 export interface TemplateSlice {
   activePageId: string;
@@ -41,9 +42,21 @@ export interface TemplateSlice {
     h: HistoryEntry[] | ((prev: HistoryEntry[]) => HistoryEntry[])
   ) => void;
 
+
+  // NEW: editorHistory
+  editorHistory: EditorHistoryEntry[];
+  setEditorHistory: (
+    h: EditorHistoryEntry[] | ((prev: EditorHistoryEntry[]) => EditorHistoryEntry[])
+  ) => void;
+
   future: HistoryEntry[];
   setFuture: (
     f: HistoryEntry[] | ((prev: HistoryEntry[]) => HistoryEntry[])
+  ) => void;
+
+  editorFuture: EditorHistoryEntry[];
+  setEditorFuture: (
+    f: EditorHistoryEntry[] | ((prev: EditorHistoryEntry[]) => EditorHistoryEntry[])
   ) => void;
 
   template: DualTemplate | null;
@@ -127,11 +140,28 @@ export const createTemplateSlice: StateCreator<TemplateSlice> = (set) => ({
       history: typeof h === 'function' ? h(state.history) : h,
     })),
 
+
+      // NEW: editorHistory
+  editorHistory: [],
+  setEditorHistory: (h) =>
+    set((state) => ({
+      editorHistory: typeof h === "function" ? h(state.editorHistory) : h,
+    })),
+
+  
+    editorFuture: [],
+    setEditorFuture: (f) =>
+      set((state) => ({
+        editorFuture: typeof f === 'function' ? f(state.editorFuture) : f,
+      })),
+
   future: [],
   setFuture: (f) =>
     set((state) => ({
       future: typeof f === 'function' ? f(state.future) : f,
     })),
+
+
 
   template: null,
   setTemplate: (t) =>

@@ -24,6 +24,18 @@ setStageSize: (
 ) => void;
 
 
+
+stagePosition: {
+  x: number;
+  y: number;
+};
+setStagePosition: (
+  pos:
+    | { x: number; y: number }
+    | ((prev: { x: number; y: number }) => { x: number; y: number })
+) => void;
+
+
   canvasBounds: { x: number; y: number; width: number; height: number };
   setCanvasBounds: (
     bounds:
@@ -205,6 +217,17 @@ export const createLayoutSlice: StateCreator<LayoutSlice> = (set) => ({
   setStageSize: (size) =>
     set((state) => ({
       stageSize: typeof size === 'function' ? size(state.stageSize) : size,
+    })),
+
+
+
+  stagePosition: {
+    x: 0,
+    y: 0
+  },
+  setStagePosition: (pos) =>
+    set((state) => ({
+      stagePosition: typeof pos === 'function' ? pos(state.stagePosition) : pos,
     })),
   
   canvasBounds: { x: 0, y: 0, width: 0, height: 0 },

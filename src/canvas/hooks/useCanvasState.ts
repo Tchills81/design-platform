@@ -18,6 +18,7 @@ import { useOverlayDomPosition } from "./useOverlayDomPosition";
 import { useShiftClickSelection } from "./useShiftClickSelection";
 import { useClearSelection } from "./useClearSelection";
 import { useBoundingBox } from "./useBoundingBox";
+import { useCardBounds } from "./useCardBounds";
 
 
 
@@ -55,8 +56,8 @@ export function useCanvasState() {
     setElementInserted,
     setLockedTextIds,
     lockedTextIds,
-    
-   
+    setStagePosition,
+    stagePosition,
 
     
     
@@ -79,7 +80,8 @@ export function useCanvasState() {
   setPrepareForPrint,
   animatedCells,
   setAnimatedCells,
-
+  setEditorHistory, editorHistory,
+  editorFuture, setEditorFuture,
 
     //Chunk 3: 🖋️ Text Editing
 
@@ -174,6 +176,7 @@ export function useCanvasState() {
   canvasReady,
   setCanvasReady,
   canvasBounds,
+  setCanvasBounds,
 
 
   //Chunk 7: 📸 Snapshots and Export
@@ -476,6 +479,8 @@ const domPos = computeDomPos({
 
 
 
+
+
 const { clearAll } = useClearSelection({
   setShowToolbar,
   setInputPosition,
@@ -504,6 +509,12 @@ const { selectedElement:currentSelectedElement, role } = useSelectedElement({
 
 
 
+const cardBounds = useCardBounds(template, {width:template?.width ?? 0, height:template?.height ?? 0}, zoom, position, 0);
+
+
+
+
+//console.log('setCanvasBounds', setCanvasBounds);
 
   
   
@@ -860,6 +871,14 @@ setBoundsRect,
 boundsRect,
 elementsGrouped,
 setElementsGrouped,
+setEditorHistory,
+ editorHistory,
+ editorFuture,
+ setEditorFuture,
+ setStagePosition,
+  stagePosition,
+  cardBounds,
+  setCanvasBounds
 
   };
   

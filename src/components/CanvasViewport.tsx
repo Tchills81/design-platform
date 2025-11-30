@@ -20,6 +20,8 @@ import { KonvaEventObject } from 'konva/lib/Node';
 import { ClearOptions } from '../canvas/hooks/useClearSelection';
 import { BoundsRect, MarqueeRect } from '../canvas/store/useContextStore';
 import { BoundingBox } from '../canvas/hooks/useBoundingBox';
+import { useStageClickHandler } from '../canvas/hooks/useStageClickHandler';
+import { Bounds } from '../canvas/hooks/useCardBounds';
 
 interface CanvasViewportProps {
   template: DualTemplate;
@@ -50,6 +52,11 @@ interface CanvasViewportProps {
   addSelection: (id: string) => void;
   selectOnly: (id: string) => void;
   removeSelection: (id: string) => void;
+
+  stagePosition: {
+    x: number;
+    y: number;
+}
 
   isMarqueeActive: boolean;
 
@@ -109,6 +116,7 @@ boundingGroupBox: BoundingBox | undefined;
   isPreviewMode:boolean;
   isIsolationMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
+  cardBounds: Bounds;
   
   clearAll: (opts?: ClearOptions) => void
   setElementId: (id: string) => void
@@ -136,7 +144,6 @@ boundingGroupBox: BoundingBox | undefined;
     setImageRef?: (ref: Konva.Image | null) => void;
     onPaint?: (col: number, row: number) => void;
     onImageUpdate: (e: any, id: string) => void;
-    onTextClick: (label: string, pos: { x: number; y: number }, id: string) => void;
     onTextEdit: (text: string, pos: { x: number; y: number }, el: TemplateElement) => void;
     onTextUpdate: (updated: TemplateElement) => void;
     setGhostLines: (lines: { x?: number; y?: number }) => void;
@@ -236,7 +243,9 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     selectOnly,
     groupEl,
     isIsolationMode,
-    boundsRect
+    boundsRect,
+    stagePosition,
+    cardBounds
 
   } = props;
 
@@ -249,20 +258,28 @@ export default function CanvasViewport(props: CanvasViewportProps) {
  const  backgroundColor = isPreviewMode ? toneBackgroundClasses[template.tone as tone] : '#e2e8f0';
 
 
+ 
 
- /*const { selectedElement, role} = useSelectedElement({
-  selectedImageId: selectedImageId ?? null,
-  selectedTextId: selectedTextId ?? null,
-  template:template,
-  side: side
+
+
+
+ // inside your component
+const handleStageClick = useStageClickHandler({
+  stageRef,
+  template,
+  side,                // typed as "left" | "right"
+  selectedTextId,
+  pendingStyle,
+  konvaText,
+  handlers,
+  clearAll,
+  setTemplate,
+  setPendingStyle,
+  setElementId,
+  addSelection,
+  toggleSelection,
+  selectOnly,
 });
-
- console.log("CanvasViewport - selectedElement:", selectedElement);*/
-
- //console.log('startMarquee..',startMarquee, 'selectedIds:',selectedIds);
- //console.log('viewport...:',handlers.onGroupUpdate, handlers.setSelectedGroupId, isIsolationMode, 
-  //handlers.setIsolationMode, handlers.setBoundsRect, boundsRect)
-
 
   return (
     <div
@@ -278,216 +295,187 @@ export default function CanvasViewport(props: CanvasViewportProps) {
   >
   
       
-    
-      <Stage
-        ref={stageRef}
-        width={stageSize.width}
-        height={stageSize.height}
-        className={`${isPreviewMode? backgroundColor:backgroundClass}`}
-        style={stageStyle}
+  <Stage
+  ref={stageRef}
+   x={stagePosition.x}
+   y={stagePosition.y}
+  width={stageSize.width}
+  height={stageSize.height}
+  className={isPreviewMode ? backgroundColor : backgroundClass}
+  style={stageStyle}
 
+  // --- Marquee selection ---
+  onMouseDown={(e) => {
+    const clickedNode = e.target;
+    const stage = e.target.getStage();
 
+    const isStage = clickedNode === stage;
+    const isBackgroundRect =
+      clickedNode.getClassName?.() === "Rect" &&
+      clickedNode.parent?.getClassName?.() === "Group" &&
+      clickedNode.parent?.parent?.getClassName?.() === "Layer";
 
-        onMouseDown={(e) => {
-          const clickedNode = e.target;
-          const stage = e.target.getStage();
-        
-          // Stage itself
-          const isStage = clickedNode === stage;
-        
-          // Background rect (Konva draws a Rect under the Layer)
-          const isBackgroundRect =
-            clickedNode.getClassName?.() === 'Rect' &&
-            clickedNode.parent?.getClassName?.() === 'Group' &&
-            clickedNode.parent?.parent?.getClassName?.() === 'Layer';
-        
-          if (isStage || isBackgroundRect) {
-            const pos = stageRef.current?.getPointerPosition();
-            if (pos) {
-             // console.log('Starting marquee at', pos);
-              startMarquee(pos);
-            }
-          }
-        }}
-        
-        onMouseMove={(e) => {
-          if (!isMarqueeActive) return;
-          const pos = stageRef.current?.getPointerPosition();
-          if (pos){ 
-            //console.log('Updating marquee to', pos);
-            updateMarquee(pos);
-           
-          }
-        }}
-        onMouseUp={() => {
-          if (isMarqueeActive) {
-           
-            finalizeMarquee(template?.[side]?.elements ?? [], stageRef.current!);
-            clearAll({
-              clearStoreSelection: false,   // ✅ only clears when background clicked
-              clearImageSelection: true,
-              clearTextSelection: true,
-              hideToolbar: false,
-              resetInput: false,
-              resetKonvaText: false,
-              resetTransform: true,
-              setModeInactive: true,
-              
-            });
-          }
-        }}
+    if (isStage || isBackgroundRect) {
+      const pos = stageRef.current?.getPointerPosition();
+      if (pos) startMarquee(pos);
+    }
+  }}
+  onMouseMove={() => {
+    if (!isMarqueeActive) return;
+    const pos = stageRef.current?.getPointerPosition();
+    if (pos) updateMarquee(pos);
+  }}
+  onMouseUp={() => {
+    if (isMarqueeActive) {
+      finalizeMarquee(template?.[side]?.elements ?? [], stageRef.current!);
+    }
+  }}
 
+  // --- Centralised click handling ---
+  onClick={(e) => {
+    const { clientX, clientY } = e.evt;
+    const domTarget = document.elementFromPoint(clientX, clientY);
 
-        onClick={(e) => {
-
-         
-
-            /**
-             * 
-             * 🔍 What This onClick Handler Does
-Detects DOM target under the click
-
-Checks if click was inside overlay or image toolbar
-
-If yes → exits early
-
-Identifies clicked Konva node
-
-Class name, node name, type
-
-Dismisses selection if clicked on canvas, rect, or unknown
-
-Calls:
-
-handlers.setSelectedImageId(null)
-
-resetTransformMode()
-
-setModeActive(false)
-
-Applies pending style updates if needed
-
-Shows transform if applicable
-             */
-
-// 🔍 DOM overlay checks
-const overlayEl = document.getElementById('text-overlay');
-const overImageBar = document.getElementById('image-tool-bar');
-const { clientX, clientY } = e.evt;
-const domTarget = document.elementFromPoint(clientX, clientY);
-
-const clickedInsideOverlay = overlayEl?.contains(domTarget);
-const clickedInsideOverImageBar = overImageBar?.contains(domTarget);
-
-//console.log('stage click', e.target);
-if (clickedInsideOverlay || clickedInsideOverImageBar) {
-  return; // do not dismiss if clicking overlay/toolbars
-}
-
-// 🔍 Konva node checks
-const clickedNode = e.target;
-const className = clickedNode.getClassName?.();
-const nodeName = clickedNode.name?.();
-
-const isImage = className === 'Image';
-const isShape = nodeName === 'Shape';
-const isFrame = nodeName === 'Frame';
-const isTransformer = className === 'Transformer';
-const isRect = className === 'Rect';
-const isStage = clickedNode === e.target.getStage();
-
-// ✅ Consistent background rect detection
-const isBackgroundRect =
-  isRect &&
-  !isShape &&
-  !isFrame &&
-  clickedNode.parent?.getClassName?.() === 'Group' &&
-  clickedNode.parent?.parent?.getClassName?.() === 'Layer';
-
-const shouldShowTransform = isImage || isShape || isFrame;
-const shouldDismiss = isStage || isBackgroundRect;
-const isUnknown =
-  !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect;
-
-// 1) Dismissal path — only for Stage or background rect
-
-const isClickOnElement = e.target instanceof Konva.Text || e.target instanceof Konva.Image;
-
-
-const target = e.target;
-
-if (target instanceof Konva.Text) {
-  handlers.setSelectedTextId(clickedNode?.id())
-  handlers.setSelectedImageId(null);
-  handlers.setSelectedGroupId(null)
-} else if (target instanceof Konva.Image) {
-  handlers.setSelectedTextId(null)
-  handlers.setSelectedImageId(clickedNode?.id());
-  handlers.setSelectedGroupId(null)
-}
-
-
-if ( (shouldDismiss || isUnknown )) {
-
-  console.log('clearing  selection Stage onClick', e.target)
-  clearAll({
-    clearStoreSelection: true,   // ✅ only clears when background clicked
-    clearImageSelection: true,
-    clearTextSelection: false,
-    hideToolbar: false,
-    resetInput: false,
-    resetKonvaText: false,
-    resetTransform: true,
-    setModeInactive: true,
-    
-  });
-  return;
-}
-
-// 2) Apply pending style to selected text when showing transform
-if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
-  const updatedElements = template[side].elements.map((el) =>
-    el.id === selectedTextId && el.type === 'text'
-      ? { ...el, ...pendingStyle }
-      : el
-  );
-
-  setTemplate((prev) => ({
-    ...prev!,
-    [side]: {
-      ...prev![side],
-      elements: updatedElements,
-    },
-  }));
-
-  setPendingStyle({});
-}
-
-// 3) Select and show transform for the clicked drawable (image/shape/frame)
-if (shouldShowTransform) {
-  console.log('shouldShowTransform', shouldShowTransform)
-  const selectedId = clickedNode.id?.();
-  if (selectedId) {
-    // ✅ Sync with store selection
-    if (e.evt.shiftKey) {
-      addSelection(selectedId);   // accumulate
-    } else if (e.evt.ctrlKey || e.evt.metaKey) {
-      toggleSelection(selectedId); // toggle on/off
-    } else {
-      selectOnly(selectedId);     // replace
+    // 🔍 DOM overlay checks
+    const overlayEl = document.getElementById("text-overlay");
+    const overImageBar = document.getElementById("image-tool-bar");
+    if (overlayEl?.contains(domTarget) || overImageBar?.contains(domTarget)) {
+      return; // ignore clicks inside overlays/toolbars
     }
 
-    // Legacy image selection sync
-    handlers.setSelectedImageId(selectedId);
-  }
+    // 🔍 Konva node checks
+    const clickedNode = e.target;
+    if (!clickedNode) return;
 
-  konvaText?.visible(true);
-  konvaText?.getLayer()?.batchDraw();
-}
+    const className = clickedNode.getClassName?.();
+    const nodeName = clickedNode.name?.();
+    const isStage = clickedNode === e.target.getStage();
+    const isRect = className === "Rect";
+    const isText = className === "Text";
+    const isImage = className === "Image";
+    const isShape = nodeName === "Shape";
+    const isFrame = nodeName === "Frame";
+    const isIsolationRect = nodeName === "isolationRectangle";
+    const isTransformer = className === "Transformer";
 
-}}
-          
-      >
+    const isBackgroundRect =
+      isRect &&
+      !isShape &&
+      !isFrame &&
+      clickedNode.parent?.getClassName?.() === "Group" &&
+      clickedNode.parent?.parent?.getClassName?.() === "Layer";
+
+    const shouldShowTransform = isImage || isShape || isFrame;
+    const shouldDismiss = isStage || isBackgroundRect;
+    const isUnknown =
+      !isImage && !isShape && !isFrame && !isTransformer && !isStage && !isRect && !isText;
+
+    // --- Handle Text click ---
+    if (clickedNode instanceof Konva.Text) {
+      const node = clickedNode as Konva.Text;
+
+      clearAll({
+        clearImageSelection: true,
+        resetTransform: true,
+        setModeInactive: true,
+      });
+
+      handlers.setSelectedTextId(node.id());
+      handlers.handleElementClick(e, node.id());
+
+      if (!e.evt.shiftKey) {
+        handlers._handleTextClick(node, !!tab);
+        handlers.onFontSizeChange(node.fontSize());
+        handlers.setSelectedFont(node.fontFamily());
+        handlers.setSelectedColor(node.fill() as string);
+      }
+
+      setElementId(node.id());
+      return;
+    }
+
+    // --- Handle Image click ---
+    if (clickedNode instanceof Konva.Image) {
+      const node = clickedNode as Konva.Image;
+
+      clearAll({
+        clearTextSelection: true,
+        hideToolbar: true,
+        resetInput: true,
+        resetKonvaText: true,
+      });
+
+      handlers.setSelectedImageId(node.id());
+      handlers.setSelectedGroupId(null);
+      handlers.handleElementClick(e, node.id());
+
+      if (!e.evt.shiftKey) handlers.setSelectedImageId(node.id());
+      setElementId(node.id());
+      return;
+    }
+
+    // --- Handle Isolation rectangle ---
+    if (isIsolationRect && e.evt.detail !== 2) {
+      handlers.setIsolationMode(false);
+      e.cancelBubble = true;
+      return;
+    }
+
+    // --- Dismiss selection ---
+    if (shouldDismiss || isUnknown) {
+      clearAll({
+        clearStoreSelection: true,
+        clearImageSelection: true,
+        clearTextSelection: true,
+        hideToolbar: true,
+        resetInput: true,
+        resetKonvaText: true,
+        resetTransform: true,
+        setModeInactive: true,
+      });
+      return;
+    }
+
+    // --- Apply pending style to selected text ---
+    if (shouldShowTransform && selectedTextId && template?.[side]?.elements) {
+      const updatedElements = template[side].elements.map((el) =>
+        el.id === selectedTextId && el.type === "text"
+          ? { ...el, ...pendingStyle }
+          : el
+      );
+
+      setTemplate((prev) => ({
+        ...prev!,
+        [side]: {
+          ...prev![side],
+          elements: updatedElements,
+        },
+      }));
+
+      setPendingStyle({});
+    }
+
+    // --- Select and show transform ---
+    if (shouldShowTransform) {
+      const selectedId = clickedNode.id?.();
+      if (selectedId) {
+        if (e.evt.shiftKey) {
+          addSelection(selectedId);
+        } else if (e.evt.ctrlKey || e.evt.metaKey) {
+          toggleSelection(selectedId);
+        } else {
+          selectOnly(selectedId);
+        }
+        handlers.setSelectedImageId(selectedId);
+      }
+
+      konvaText?.visible(true);
+      konvaText?.getLayer()?.batchDraw();
+    }
+  }}
+>
+
+
         {/* Canvas layer */}
         <CardSideLayer
          groupEl={groupEl}
@@ -513,6 +501,7 @@ if (shouldShowTransform) {
           boundingBox={boundingGroupBox}
           boundingStageBox={boundingBox}
           boundsRect={boundsRect}
+          cardBounds={cardBounds}
 
           selectedTextId={selectedTextId}
           
@@ -612,6 +601,7 @@ if (shouldShowTransform) {
             />
           )}
         </Layer>
+        
 
         <Layer>
       
@@ -666,6 +656,8 @@ if (shouldShowTransform) {
   />
   </Layer>
 )}
+
+     
       
       </Stage>
 

@@ -105,17 +105,19 @@ const TextElement: React.FC<TextElementProps> = ({
     if (isFullyLocked) return; // 🚫 block clicks if fully locked
     if (isReplaceOnly) {
       // ✅ allow editing text content only
-      onEdit(text, position, textAlign);
+      //onEdit(text, position, textAlign);
       return;
     }
     const absPos = textRef.current?.getAbsolutePosition();
     if (absPos) {
-      onEdit(text, position, textAlign);
+     // onEdit(text, position, textAlign);
     }
-    if (onClick) onClick(e);
+    //if (onClick) onClick(e);
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+
+    console.log('handleDragEnd... beeing called ')
     if (isPositionLocked || isFullyLocked || isReplaceOnly) return; // 🚫 enforce lock
   
     const node = e.target;
@@ -191,6 +193,7 @@ const TextElement: React.FC<TextElementProps> = ({
         height={isMultiline ? textHeight ?? undefined : undefined}
         lineHeight={isMultiline ? lineHeight ?? 1 : undefined}
         textDecoration={isUnderline ? 'underline' : undefined}
+        listening={(!grouped || isIsolationMode)}
       />
     </Group>
   );

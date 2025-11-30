@@ -12,7 +12,7 @@ import { tone } from '../types/tone';
 import { Rect } from 'react-konva';
 import { SidebarTab } from '../types/Tab';
 import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
-import { useCardBounds } from '../canvas/hooks/useCardBounds';
+import { Bounds, useCardBounds } from '../canvas/hooks/useCardBounds';
 import { KonvaEventObject } from 'konva/lib/Node';
 import GroupElement from './elements/GroupElement';
 import { BoundingBox, useBoundingBox } from '../canvas/hooks/useBoundingBox';
@@ -78,13 +78,12 @@ interface CardSideLayerProps {
   tab:SidebarTab;
   boundingBox:BoundingBox | undefined;
   boundingStageBox:BoundingBox | undefined;
-  
+  cardBounds: Bounds;
   designElements: DesignElement[];
   handlers: {
     setImageRef?: (ref: Konva.Image | null) => void;
     onPaint?: (col: number, row: number) => void;
     onImageUpdate: (e: any, id: string) => void;
-    onTextClick: (label: string, pos: { x: number; y: number }, id: string) => void;
     onTextEdit: (text: string, pos: { x: number; y: number }, el: TemplateElement) => void;
     onTextUpdate: (updated: TemplateElement) => void;
     setGhostLines: (lines: { x?: number; y?: number }) => void;
@@ -168,6 +167,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   groupEl,
   isIsolationMode,
   boundsRect,
+  cardBounds,
   tab
 }) => {
 
@@ -175,8 +175,14 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
   if (isTransitioningTemplate || !template) return null;
 
 
+  const SIDEBAR_WIDTH = 60; // or 280 if panel is open
+  const TOPBAR_OFFSET = 30; // or 280 if panel is open
+  const PANEL_WIDTH = 385;
+  const offset = tab? SIDEBAR_WIDTH + PANEL_WIDTH : 0;
+
+
   const imageRef = useRef<Konva.Image>(null);
-  const cardBounds = useCardBounds(template, card, zoom, position);
+  //const cardBounds = useCardBounds(template, card, zoom, position, offset);
 
   const setSelectedRef = (ref: Konva.Image | null) => {
     if (handlers.setImageRef) handlers.setImageRef(ref);
@@ -256,11 +262,11 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 showTransformer={transformModeActive}
                 containerRef={containerRef}
                 stageRef={stageRef}
-                canvasBounds={cardBounds}
+                canvasBounds={canvasBounds}
                 setGhostLines={handlers.setGhostLines}
                 onSelect={(e) => {
 
-                  e.cancelBubble=true;
+                  //e.cancelBubble=true;
 
                   handlers.handleElementClick(e, el.id);
 
@@ -318,7 +324,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 size={el.size}
                 selected={el.id === selectedTextId}
                 color={el.color}
-                cardBounds={cardBounds}
+                cardBounds={canvasBounds}
                 templateId={templateId}
                 setGhostLines={handlers.setGhostLines}
                 onUpdate={({ id, text, position }) => {
@@ -362,6 +368,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                        handlers.onFontSizeChange(node.fontSize());
                        handlers.setSelectedFont(node.fontFamily());
                        handlers.setSelectedColor(el.color);
+                       
 
                       
 
@@ -406,7 +413,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
       transformModeActive={transformModeActive}
       containerRef={containerRef}
       stageRef={stageRef}
-      cardBounds={cardBounds}
+      cardBounds={canvasBounds}
       handlers={handlers}
       setSelectedRef={setSelectedRef}
       setKonvaText={setKonvaText}
