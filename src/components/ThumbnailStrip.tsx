@@ -187,7 +187,7 @@ export function ThumbnailStrip({
         const isActive = activeIndex === index;
 
 
-        console.log('isActive', index)
+        //console.log('isActive', index)
 
         return (
           <div

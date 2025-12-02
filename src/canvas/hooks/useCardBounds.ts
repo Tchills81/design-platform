@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { DualTemplate } from "@/src/types/template";
+import { SidebarTab } from "@/src/types/Tab";
 
 export interface Bounds {
   x: number;
@@ -21,7 +22,7 @@ export function useCardBounds(
   card: { width: number; height: number },
   zoom: number,
   position:{x:number, y: number},
-  offset: number,
+  activeTab:SidebarTab
   
 ): Bounds {
   return useMemo(() => {
@@ -37,6 +38,6 @@ export function useCardBounds(
       width: rawWidth,   // keep raw units
       height: rawHeight, // keep raw units
     };
-  }, [template?.width, template?.height, card.width, card.height, zoom]);
+  }, [template?.width, template?.height, card.width, card.height, zoom, position.x, position.y, activeTab]);
 }
 

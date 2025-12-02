@@ -11,6 +11,7 @@ import { ModalThumbnailStrip } from './ModalThumbnailStrip';
 import { getPreviewLabel } from '../utils/getPreviewLabel';
 
 type PreviewModalProps = {
+
   entry: SnapshotEntry | null;
   snapshots: SnapshotEntry[];
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   entry,
   snapshots,
   handlePreview,
+ 
   isOpen,
   onClose,
   setZoom,

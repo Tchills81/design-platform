@@ -1,5 +1,6 @@
 import Konva from 'konva';
 import { SidebarTab } from '@/src/types/Tab';
+import { SidebarAsset } from "@/public/assets/types"; 
 import { StateCreator } from 'zustand';
 import { TemplateElement } from '@/src/types/template';
 
@@ -15,6 +16,9 @@ export interface ContextSlice {
   isIsolationMode: boolean;
   setIsolationMode: (b: boolean | ((prev: boolean) => boolean)) => void;
 
+  isDragOverCard: boolean;
+  setIsDragOverCard: (b: boolean | ((prev: boolean) => boolean)) => void;
+
   elementInserted: boolean;
   setElementInserted: (b: boolean | ((prev: boolean) => boolean)) => void;
 
@@ -23,8 +27,11 @@ export interface ContextSlice {
     tab: SidebarTab | null | ((prev: SidebarTab | null) => SidebarTab | null)
   ) => void;
 
-
-  
+  // ✅ Selected asset tracking
+  selectedAsset: SidebarAsset | null;
+  setSelectedAsset: (
+    asset: SidebarAsset | null | ((prev: SidebarAsset | null) => SidebarAsset | null)
+  ) => void;
 
   isCollapsed: boolean;
   setIsCollapsed: (b: boolean | ((prev: boolean) => boolean)) => void;
@@ -139,6 +146,17 @@ export const createContextSlice: StateCreator<ContextSlice> = (set, get) => ({
       activeIndex: typeof i === 'function' ? i(state.activeIndex) : i,
     })),
 
+
+
+
+  // ✅ Selected asset tracking
+  selectedAsset: null,
+  setSelectedAsset: (asset) =>
+    set((state) => ({
+      selectedAsset: typeof asset === "function" ? asset(state.selectedAsset) : asset,
+    })),
+
+
   isTransitioningTemplate: false,
   setIsTransitioningTemplate: (b) =>
     set((state) => ({
@@ -156,6 +174,14 @@ export const createContextSlice: StateCreator<ContextSlice> = (set, get) => ({
       set((state) => ({
         isIsolationMode: typeof b === 'function' ? b(state.isIsolationMode) : b,
       })),
+
+
+      isDragOverCard: false,
+      setIsDragOverCard: (b) =>
+        set((state) => ({
+          isDragOverCard: typeof b === 'function' ? b(state.isDragOverCard) : b,
+        })),
+  
 
       
   transformMode: null,

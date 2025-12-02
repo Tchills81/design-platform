@@ -22,6 +22,7 @@ import { BoundsRect, MarqueeRect } from '../canvas/store/useContextStore';
 import { BoundingBox } from '../canvas/hooks/useBoundingBox';
 import { useStageClickHandler } from '../canvas/hooks/useStageClickHandler';
 import { Bounds } from '../canvas/hooks/useCardBounds';
+import { GlowOverlay } from './GlowOverlay';
 
 interface CanvasViewportProps {
   template: DualTemplate;
@@ -117,6 +118,7 @@ boundingGroupBox: BoundingBox | undefined;
   isIsolationMode:boolean;
   setTemplate: (value: React.SetStateAction<DualTemplate | null>) => void;
   cardBounds: Bounds;
+  isDragOverCard:boolean;
   
   clearAll: (opts?: ClearOptions) => void
   setElementId: (id: string) => void
@@ -169,6 +171,8 @@ boundingGroupBox: BoundingBox | undefined;
      commitGroupUpdate: (updatedGroupElement: TemplateElement) => void;
      setElementsGrouped: (b: boolean) => void;
      groupSelectedElements: () => void;
+     commitGroupPositionUpdate: (updated: TemplateElement) => void;
+     
 
   };
 }
@@ -245,7 +249,8 @@ export default function CanvasViewport(props: CanvasViewportProps) {
     isIsolationMode,
     boundsRect,
     stagePosition,
-    cardBounds
+    cardBounds,
+    isDragOverCard
 
   } = props;
 
@@ -297,8 +302,6 @@ const handleStageClick = useStageClickHandler({
       
   <Stage
   ref={stageRef}
-   x={stagePosition.x}
-   y={stagePosition.y}
   width={stageSize.width}
   height={stageSize.height}
   className={isPreviewMode ? backgroundColor : backgroundClass}
@@ -317,7 +320,7 @@ const handleStageClick = useStageClickHandler({
 
     if (isStage || isBackgroundRect) {
       const pos = stageRef.current?.getPointerPosition();
-      if (pos) startMarquee(pos);
+      if (pos) startMarquee(pos), console.log('marquee pos',  pos);
     }
   }}
   onMouseMove={() => {
@@ -326,8 +329,12 @@ const handleStageClick = useStageClickHandler({
     if (pos) updateMarquee(pos);
   }}
   onMouseUp={() => {
+
+    console.log('selected ids', selectedIds)
     if (isMarqueeActive) {
       finalizeMarquee(template?.[side]?.elements ?? [], stageRef.current!);
+
+      
     }
   }}
 
@@ -655,9 +662,18 @@ const handleStageClick = useStageClickHandler({
     listening={false}
   />
   </Layer>
+
 )}
 
-     
+{isDragOverCard && (
+  <Layer>
+<GlowOverlay
+    cardBounds={cardBounds}
+    zoom={zoom}
+    isActive={isDragOverCard}
+  />
+  </Layer>
+)}     
       
       </Stage>
 

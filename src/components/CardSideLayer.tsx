@@ -102,6 +102,7 @@ interface CardSideLayerProps {
     setIsolationMode: (b: boolean | ((prev: boolean) => boolean)) => void;
     setBoundsRect: (rect: BoundsRect | null)=>void;
     commitGroupUpdate: (updatedGroupElement: TemplateElement) => void;
+    commitGroupPositionUpdate: (updated: TemplateElement) => void;
     setElementsGrouped: (b: boolean) => void;
   
     
@@ -262,7 +263,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 showTransformer={transformModeActive}
                 containerRef={containerRef}
                 stageRef={stageRef}
-                canvasBounds={canvasBounds}
+                canvasBounds={cardBounds}
                 setGhostLines={handlers.setGhostLines}
                 onSelect={(e) => {
 
@@ -324,7 +325,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
                 size={el.size}
                 selected={el.id === selectedTextId}
                 color={el.color}
-                cardBounds={canvasBounds}
+                cardBounds={cardBounds}
                 templateId={templateId}
                 setGhostLines={handlers.setGhostLines}
                 onUpdate={({ id, text, position }) => {
@@ -413,7 +414,7 @@ export const CardSideLayer: React.FC<CardSideLayerProps> = ({
       transformModeActive={transformModeActive}
       containerRef={containerRef}
       stageRef={stageRef}
-      cardBounds={canvasBounds}
+      cardBounds={cardBounds}
       handlers={handlers}
       setSelectedRef={setSelectedRef}
       setKonvaText={setKonvaText}

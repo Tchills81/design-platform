@@ -16,7 +16,7 @@ export function PanelContainer({PanelRef, tone, children }: PanelContainerProps)
       style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '.5rem .5rem',
+        padding: '.5rem',
         borderTop: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',

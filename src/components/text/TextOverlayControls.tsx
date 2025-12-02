@@ -19,6 +19,7 @@ interface TextOverlayControlsProps {
   isMarqueeActive: boolean;
   elementsGrouped?:boolean;
   groupSelectedElements?: () => void;
+  ungroupSelectedElements?: () => void;
   setElementsGrouped?: (b: boolean ) => void;
   setIsolationMode?: (b: boolean ) => void;
   exitIsolationMode?: (id: string | null) => void;
@@ -40,6 +41,7 @@ export const TextOverlayControls = ({
   textControlsRef,
   isMarqueeActive,
   groupSelectedElements,
+  ungroupSelectedElements,
   setElementsGrouped,
   setIsolationMode,
   elementsGrouped,
@@ -82,12 +84,13 @@ export const TextOverlayControls = ({
           tone={tone as tone || "primary"}
           label={!elementsGrouped ? "Group" : "UnGroup"}              // 🔑 toggle label
           onClick={() => {
-    if (groupSelectedElements && setElementsGrouped) {
+    if ((groupSelectedElements && setElementsGrouped)) {
       if (!elementsGrouped) {
         groupSelectedElements();   // perform grouping
         setElementsGrouped(true);
-      } else {
+      } else if(ungroupSelectedElements && elementsGrouped) {
         setElementsGrouped(false); // perform ungrouping
+        ungroupSelectedElements();
       }
     }
   }}

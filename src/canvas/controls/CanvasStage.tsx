@@ -141,7 +141,8 @@ boundsRect,
 setElementsGrouped,
 setStagePosition,
 stagePosition,
-cardBounds
+cardBounds,
+isDragOverCard
   } = state;
   
   const {
@@ -167,6 +168,7 @@ cardBounds
     setActiveTab,
     commitGroupUpdate,
     groupSelectedElements,
+    commitGroupPositionUpdate,
     
      // ✅ now correctly sourced from actions
   } = actions;
@@ -261,6 +263,7 @@ cardBounds
   boundsRect={boundsRect}
   stagePosition={stagePosition}
   cardBounds={cardBounds}
+  isDragOverCard={isDragOverCard}
 
   handlers={{
     setImageRef: updateImageRef,
@@ -283,6 +286,7 @@ cardBounds
     commitGroupUpdate:commitGroupUpdate,
     setElementsGrouped:setElementsGrouped,
     groupSelectedElements:groupSelectedElements,
+    commitGroupPositionUpdate:commitGroupPositionUpdate,
     setGhostLines,
     setSelectedFont,
     setSelectedColor,

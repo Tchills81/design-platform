@@ -176,7 +176,10 @@ export default function DesignPlatformPage() {
     setEditorHistory, 
     editorHistory,
     editorFuture,
-    setStagePosition
+    setStagePosition,
+    previewUploadRef,
+    setSelectedAsset,
+    selectedAsset
 
     //currentSelectedElement
   } = state;
@@ -259,8 +262,10 @@ export default function DesignPlatformPage() {
    duplicatedElement,
    deleteElementById,
    groupSelectedElements,
-    exitIsolationMode,
-    
+   ungroupSelectedElements,
+   exitIsolationMode,
+   handleImageDrop
+
   } = actions;
 
   
@@ -334,6 +339,8 @@ if (type === "group") {
 
 
 const overlayPos= useUnifiedOverlayPosition(selectedElement, domPos, inputPosition, boundingBox)
+
+const boxPos= activeTab && boundingBox?.stage ? {x:boundingBox?.stage.x+445, y: boundingBox?.stage.y}: boundingBox?.stage;
 
 
 const isMarqueeSelection = !selectedElement && selectedIds.length > 1;
@@ -412,11 +419,14 @@ const isMarqueeSelection = !selectedElement && selectedIds.length > 1;
             }}
           >
            <SidebarPanel
+           setSelectedAsset={setSelectedAsset}
+           selectedAsset={selectedAsset}
            PanelRef={PanelRef}
            tone={template.tone}
            PANEL_WIDTH={PANEL_WIDTH}
            handleTemplateSelect={handleTemplateSelect}
            resetDesign={resetDesign}
+           onImageDrop={handleImageDrop}
            onClose={() => {
                  console.log('closingn...', activeTab)
                  setActiveTab(null);
@@ -860,6 +870,7 @@ cropRegion={cropRegion}
 canvasBounds={canvasBounds}
 mode={mode}
 imagebarRef={imagebarRef}
+previewUploadRef={ previewUploadRef}
 />
 
 
@@ -873,7 +884,7 @@ imagebarRef={imagebarRef}
     <>
     <TextOverlayControls
   elementId={isMarqueeSelection ? null : selectedElement?.id ?? null}
-  position={isMarqueeSelection ? boundingBox?.stage ?? {x:0,y:0} : overlayPos}
+  position={isMarqueeSelection ? boxPos ?? {x:0,y:0} : overlayPos}
   currentLock={isMarqueeSelection ? "none" as LockType : lockProps.currentLock}
   onToggleLock={isMarqueeSelection ? () => {} : lockProps.onToggleLock}
   onChangeLockType={isMarqueeSelection ? () => {} : lockProps.onChangeLockType}
@@ -883,6 +894,7 @@ imagebarRef={imagebarRef}
   isMarqueeActive={isMarqueeSelection}
   elementsGrouped={elementsGrouped}
   groupSelectedElements={groupSelectedElements}
+  ungroupSelectedElements={ungroupSelectedElements}
   setElementsGrouped={setElementsGrouped}
   setIsolationMode={setIsolationMode}
   selectedGroupId={selectedGroupId}

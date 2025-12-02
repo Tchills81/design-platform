@@ -16,6 +16,7 @@ import { tone } from '../types/tone';
 
 import { useSelectedElement } from './elements/useSelectedElement';
 import { useSelectedElementLock } from '../canvas/hooks/useElementLock';
+import RoleSelect from './RoleSelect';
 
 type ImageToolbarProps = {
   selectedElementId: string | null;
@@ -31,6 +32,7 @@ type ImageToolbarProps = {
   setCropMode: (enabled: boolean) => void;
   imageRef?: any;
   imagebarRef: RefObject<HTMLDivElement | null>;
+  previewUploadRef: RefObject<HTMLDivElement | null>
   cropRegion?: { x: number; y: number; width: number; height: number };
   canvasBounds?: { x: number; y: number };
   cardGridGroupRef: RefObject<Group| null>;
@@ -54,6 +56,7 @@ const ImageToolbar: React.FC<ImageToolbarProps> = ({
   setCropMode,
   imageRef,
   imagebarRef,
+  previewUploadRef,
   cropRegion,
   canvasBounds,
   cardGridGroupRef,
@@ -243,6 +246,12 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
       flex items-center gap-1 px-1 py-1 bg-white rounded-xl shadow-xl border border-gray-200 
       whitespace-nowrap overflow-x-auto max-w-[90vw] ${backgroundClass}`}
     >
+    <RoleSelect
+  value={previewRole}
+  onChange={setPreviewRole}
+  className={`${backgroundClass}`}
+/>
+
       <AddImageButton
   tone={tone}
   context="design"
@@ -263,7 +272,7 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
 <ToneButton
   label="Crop"
   icon={<Crop size={24} />}
-  tone="green"
+  tone={tone}
   fontSize="text-sm"
   onClick={handleCropClick}
   disabled={!isElementSelected || isFullyLocked || isReplaceOnly}
@@ -280,13 +289,7 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
 />
 )}
   
-  <ToneButton
-  label="Remove"
-  icon={<TrashIcon size={24} />}
-  tone="danger"
-  onClick={handleRemoveClick}
-  disabled={!isElementSelected || isFullyLocked}
-/>
+
   
       {onToggleCropMode && (
         <ToggleCheckbox
@@ -303,6 +306,14 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
         />
       )}
   
+
+  <ToneButton
+  label="Remove"
+  icon={<TrashIcon size={24} />}
+  tone={tone}
+  onClick={handleRemoveClick}
+  disabled={!isElementSelected || isFullyLocked}
+/>
      
   
       {showColorPicker && !isStyleLocked && (
@@ -354,7 +365,7 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
 
 
 <ToneButton
-        label="Add Reflection"
+        label=""
         icon={<MessageCircleHeartIcon size={18} />}
         tone={tone}
         fontSize="text-sm"
@@ -372,6 +383,7 @@ Hierarchical lock (if you add it) → disable everything and make element unsele
     {previewSrc && (
   <ImagePreviewModal
     src={previewSrc}
+    previewUploadRef={previewUploadRef}
     role={previewRole}
     onRoleChange={setPreviewRole}
     onCancel={() => {

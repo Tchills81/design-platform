@@ -196,8 +196,6 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     
      isIsolationMode,
      pendingStyle,
-
-     setCanvasBounds
     
 
   } = state;
@@ -525,16 +523,9 @@ export function useCanvasActions(state: ReturnType<typeof useCanvasState>) {
     if(activeTab){
       console.log('active tab...xxx ', activeTab);
       center = { x:(stageSize.width-(PANEL_WIDTH+SIDEBAR_WIDTH)) / 2, y: stageSize.height / 2 };
-      setCanvasBounds({x:currentKonvaPosition.x+(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:currentKonvaPosition.y, width:template?.width, height:template?.height})
-    
-    
       
-    }else{
-      setCanvasBounds({x:currentKonvaPosition.x, y:currentKonvaPosition.y, width:template?.width, height:template?.height});
+      
     }
-
-
-
   
     // 🎯 Recalculate canvas position to keep it centered
     const newPosition = {
@@ -1141,6 +1132,42 @@ const handleTextBlur = useCallback(
     konvaText?.getLayer()?.batchDraw();
     console.log("🚪 Exited editing mode");
   }, []);
+
+
+
+  const commitGroupPositionUpdate = useCallback(
+
+
+    (updated: TemplateElement) => {
+      if (!template || !side) return;
+  
+      const cloned: DualTemplate = structuredClone(template);
+      const section = cloned[side];
+      if (!section || !section.elements) return;
+  
+      // Find the group by id
+      const idx = section.elements.findIndex(el => el.id === updated.id);
+      if (idx === -1) return;
+  
+      // Update position (and optionally size/rotation)
+      section.elements[idx] = {
+        ...section.elements[idx],
+        position: updated.position,
+        
+      };
+  
+      // ✅ Commit to template state
+      setTemplate(cloned);
+      commitHistoryEntry();
+  
+      // ✅ Notify listeners AFTER commit
+      onGroupUpdate(section.elements[idx]);
+  
+      console.log("Group position updated:", section.elements[idx]);
+    },
+    [template, side, setTemplate, commitHistoryEntry, onGroupUpdate]
+  );
+  
 
   
   
@@ -1794,7 +1821,7 @@ const handleTextBlur = useCallback(
   }, []);
 
 
-  const resetDesign = useCallback(() => {
+  const resetDesign = useCallback((tab:SidebarTab=null) => {
 
     hasInitializedZoom.current = false;
     setSelectedImageId(null);
@@ -1810,7 +1837,7 @@ const handleTextBlur = useCallback(
     setZoom(1);
     setInitialZoomedOutValue(1);
     setTemplate(null);
-    setActiveTab(null)
+    setActiveTab(tab)
     setIsolationMode(false)
     setMarqueeActive(false)
     setElementsGrouped(false)
@@ -2294,6 +2321,50 @@ const handleTextBlur = useCallback(
 
 
 
+  const ungroupSelectedElements = useCallback(() => {
+    if (!template || !side || !selectedGroupId) return;
+  
+    const cloned: DualTemplate = structuredClone(template);
+    const section = cloned[side];
+    if (!section || !section.elements) return;
+  
+    // Find the group element
+    const groupEl = section.elements.find(el => el.id === selectedGroupId);
+    if (!groupEl || groupEl.type !== "group" || !groupEl.children) return;
+  
+    // Normalize children back to root coordinates
+    const normalizedChildren = groupEl.children.map(child => {
+      const pos = child.position ?? { x: 0, y: 0 };
+      return {
+        ...child,
+        position: {
+          x: pos.x + groupEl.position.x,
+          y: pos.y + groupEl.position.y,
+        },
+      };
+    });
+  
+    // Replace group with its children
+    section.elements = [
+      ...section.elements.filter(el => el.id !== selectedGroupId),
+      ...normalizedChildren,
+    ];
+  
+    // ✅ Commit to template state
+    setTemplate(cloned);
+    commitHistoryEntry();
+  
+    // ✅ Notify listeners AFTER commit
+    //onGroupUpdate(null); // or onUngroupUpdate(groupEl) if you want a callback
+  
+    // ✅ Optionally select the ungrouped children
+    //setSelectedIds(normalizedChildren.map(el => el.id));
+    setSelectedGroupId(null);
+  
+    console.log("Ungrouped", groupEl, "into", normalizedChildren);
+  }, [template, side, selectedGroupId, setTemplate, commitHistoryEntry, onGroupUpdate]);
+  
+
 
   const commitGroupUpdate = useCallback(
     (updatedGroupElement: TemplateElement) => {
@@ -2353,6 +2424,27 @@ const handleTextBlur = useCallback(
     setTransformModeActive(true)
 
   }, [setIsolationMode, selectedTextId, selectedImageId, selectedGroupId, clearAll])
+
+
+
+  const handleImageDrop = useCallback(
+    async (src: string, role: "background" | "element" = 'background') => {
+
+      console.log('handleImageDrop',  getInjectionSideFromIndex(activeIndex));
+
+      if(!template) return;
+
+      const inject = useInjectAsset(template);
+      const enriched = await inject({ src, role });
+  
+      console.log("side", getInjectionSideFromIndex(activeIndex), "enriched", enriched);
+  
+      setTemplate(enriched);
+      commitHistoryEntry();
+    },
+    [template, activeIndex, setTemplate, commitHistoryEntry]
+  );
+  
   
 
   // You can now export all these methods in your return block
@@ -2509,6 +2601,9 @@ const handleTextBlur = useCallback(
     deleteElementById,
     groupSelectedElements,
     commitGroupUpdate,
-    exitIsolationMode
+    exitIsolationMode,
+    ungroupSelectedElements,
+    commitGroupPositionUpdate,
+    handleImageDrop
   };
 }

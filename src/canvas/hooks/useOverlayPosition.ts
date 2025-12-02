@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import Konva from 'konva';
 import { TemplateElement } from '@/src/types/template';
+import { SidebarTab } from '@/src/types/Tab';
 
 type OverlayPositionParams = {
   textNode: Konva.Text;
@@ -38,8 +39,12 @@ export function useUnifiedOverlayPosition(
   selectedElement: TemplateElement | null,
   domPos?: { x: number; y: number } | null,
   inputPosition?: { x: number; y: number } | null,
-  boundingBox?: { stage: { x: number; y: number } } | null
+  boundingBox?: { stage: { x: number; y: number } } | null,
+
+
 ) {
+
+ 
   if (!selectedElement) return { x: 0, y: 0 };
 
   switch (selectedElement.type) {

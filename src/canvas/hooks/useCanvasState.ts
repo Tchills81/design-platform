@@ -59,6 +59,9 @@ export function useCanvasState() {
     setStagePosition,
     stagePosition,
 
+    isDragOverCard,
+    setIsDragOverCard,
+
     
     
 
@@ -325,6 +328,8 @@ setThumbValue,
 setIsPreviewMode,
 
 setVerticalOffset,
+selectedAsset,
+setSelectedAsset,
 
 
 setModes,
@@ -360,13 +365,14 @@ const imagebarRef = useRef<HTMLDivElement>(null);
 const textControlsRef = useRef<HTMLDivElement | null >(null);
 
 const textAreaRef = useRef<HTMLTextAreaElement | null >(null);
+const previewUploadRef = useRef<HTMLDivElement | null >(null);
 
 
 
 
  const SIDEBAR_WIDTH = 60; // or 280 if panel is open
  const TOPBAR_OFFSET = 30; // or 280 if panel is open
- const PANEL_WIDTH = 385;
+ const PANEL_WIDTH = 400;
 
   const canvasWidth = canvasBounds?.width ?? 0;
   const canvasHeight = canvasBounds?.height ?? 0;
@@ -509,7 +515,7 @@ const { selectedElement:currentSelectedElement, role } = useSelectedElement({
 
 
 
-const cardBounds = useCardBounds(template, {width:template?.width ?? 0, height:template?.height ?? 0}, zoom, position, 0);
+const cardBounds = useCardBounds(template, {width:template?.width ?? 0, height:template?.height ?? 0}, zoom, position, activeTab);
 
 
 
@@ -878,7 +884,12 @@ setEditorHistory,
  setStagePosition,
   stagePosition,
   cardBounds,
-  setCanvasBounds
+  setCanvasBounds,
+  previewUploadRef,
+  isDragOverCard,
+  setIsDragOverCard,
+  selectedAsset,
+  setSelectedAsset,
 
   };
   

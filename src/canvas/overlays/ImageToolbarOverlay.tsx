@@ -14,6 +14,7 @@ export interface ImageToolbarOverlayProps {
   tone: string;
   side: 'front' | 'back';
   imageRef: RefObject<Konva.Image | null>;
+  previewUploadRef: RefObject<HTMLDivElement | null>;
   cropRegion: { x: number; y: number; width: number; height: number };
   canvasBounds: { x: number; y: number; width: number; height: number };
   imagebarRef: RefObject<HTMLDivElement | null>;
@@ -36,6 +37,7 @@ export default function ImageToolbarOverlay({
   tone,
   side,
   imageRef,
+  previewUploadRef,
   cropRegion,
   canvasBounds,
   imagebarRef,
@@ -75,6 +77,7 @@ export default function ImageToolbarOverlay({
           onToggleCropMode={onToggleCropMode}
           toggleCommentModal={()=>{setShowCommentModal(true)}}
           imageRef={imageRef}
+          previewUploadRef={previewUploadRef}
           cropRegion={cropRegion}
           canvasBounds={canvasBounds}
         />

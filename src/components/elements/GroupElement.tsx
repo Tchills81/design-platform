@@ -154,13 +154,21 @@ const GroupElement: React.FC<GroupElementProps> = ({
 
   // ✅ Drag end
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    if (locked || lockType === 'position') return;
+    if (locked || lockType === 'position' || isIsolationMode) return;
     const node = e.target;
-    handlers.onGroupUpdate({
+  
+    const updatedGroup: TemplateElement = {
       ...groupEl,
       position: { x: node.x(), y: node.y() },
-    });
+    };
+  
+    // Notify listeners (e.g. UI updates)
+    handlers.onGroupUpdate(updatedGroup);
+  
+    // Commit to template + history
+    handlers.commitGroupPositionUpdate(updatedGroup);
   };
+  
 
   // ✅ Transform end
   const handleTransformEnd = () => {

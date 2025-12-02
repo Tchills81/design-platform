@@ -66,7 +66,7 @@ export function SidebarTabs({
 
 
             if(nextTab){
-                setStageStyle({ backgroundColor: '#1e1e1e', position: 'absolute' });
+                setStageStyle({ backgroundColor: '#1e1e1e', position: 'absolute', left:  PANEL_WIDTH+SIDEBAR_WIDTH });
                 setStagePosition({x:PANEL_WIDTH+SIDEBAR_WIDTH, y:0})
                 recenterCanvas();
                 setActiveTab(nextTab);

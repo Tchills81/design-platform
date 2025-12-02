@@ -9,31 +9,36 @@ import { useTabContext } from '../canvas/hooks/TabContext';
 import { ElementPanelContent } from './ElementPanel';
 import { GenerateImagePanel } from './elements/renderGenerateImage';
 import { TextContent } from './TextContent';
-import { TonePaletteSelector } from './text/TonePaletteSelector';
-import { TextRoleButtons } from './text/TextRoleButtons';
+import { ImagesPanel } from './ImagesPanel';
+import { SidebarAsset } from '@/public/assets/types';
+
+import { AssetPreviewModal } from './images/AssetPreviewModal';
 
 type SidebarPanelProps = {
-    tone: string;
-    PANEL_WIDTH: number;
-    onClose?: () => void;
-    handleTemplateSelect: (tpl?: DualTemplate) => void;
-    resetDesign: () => void;
-    PanelRef: RefObject<HTMLDivElement | null>;
-    
+  tone: string;
+  PANEL_WIDTH: number;
+  onClose?: () => void;
+  handleTemplateSelect: (tpl?: DualTemplate) => void;
+  setSelectedAsset: (asset: SidebarAsset | null) => void;
+  selectedAsset: SidebarAsset | null; // ✅ add selectedAsset
+  resetDesign: (tab: SidebarTab) => void;
+  PanelRef: RefObject<HTMLDivElement | null>;
+  onImageDrop: (src: string) => void; // ✅ add drop handler
+};
 
-  };
-  
+export function SidebarPanel({
+  tone,
+  PANEL_WIDTH,
+  handleTemplateSelect,
+  setSelectedAsset,
+  selectedAsset,
+  resetDesign,
+  onClose,
+  PanelRef,
+  onImageDrop,
+}: SidebarPanelProps) {
+  const [tab] = useTabContext();
 
-  export function SidebarPanel({
-    tone,
-    PANEL_WIDTH,
-    handleTemplateSelect,
-    resetDesign,
-    onClose,
-    PanelRef
-  }: SidebarPanelProps) {
-    const [tab] = useTabContext();
-  
   useEffect(() => {
     console.log('SidebarPanel mounted with tab:', tab);
   }, [tab]);
@@ -50,67 +55,53 @@ type SidebarPanelProps = {
     }
 
     switch (tab) {
-
       case 'templates':
         return (
           <PanelContainer tone="primary" PanelRef={PanelRef}>
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Featured Layouts</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {TEMPLATE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={preset.onSelect}
-                    className="p-3 rounded-md bg-sky-50 hover:bg-sky-100 border border-sky-200 text-left"
-                  >
-                    <strong className="text-sm text-sky-800">{preset.name}</strong>
-                    <p className="text-xs text-sky-600">{preset.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
+            {/* … template content … */}
             <TemplatePanelContent
               onSelect={(template: DualTemplate) => {
-                resetDesign();
+                resetDesign(tab);
                 handleTemplateSelect(template);
               }}
-              setDualFaces={(doc) => {
-                console.log(doc);
-              }}
+              setDualFaces={(doc) => console.log(doc)}
             />
           </PanelContainer>
         );
 
-
-        case 'elements':
-  return (
-    <>
-
-    <GenerateImagePanel onGenerate={()=>{}}/>
-    <div className="px-3 pt-4">
-  <h2 className="text-base font-semibold text-foreground mb-2">Browse Categories</h2>
-</div>
-    <PanelContainer tone={'primary'} PanelRef={PanelRef}>
-      <ElementPanelContent
-        tone={'primary'}
-        
-      />
-    </PanelContainer></>
-  );
+      case 'elements':
+        return (
+          <>
+            <GenerateImagePanel onGenerate={() => {}} />
+            <PanelContainer tone="primary" PanelRef={PanelRef}>
+              <ElementPanelContent tone="primary" />
+            </PanelContainer>
+          </>
+        );
 
       case 'text':
-        
-        return <PanelContainer tone={'primary'} PanelRef={PanelRef}>
-          <TextContent />;
-        </PanelContainer>
+        return (
+          <PanelContainer tone="primary" PanelRef={PanelRef}>
+            <TextContent />
+          </PanelContainer>
+        );
 
       case 'images':
+        return (
+          <PanelContainer tone="primary" PanelRef={PanelRef}>
+            <ImagesPanel
+              setSelectedAsset={setSelectedAsset}
+              onImageDrop={onImageDrop}
+            />
+          </PanelContainer>
+        );
+
       case 'uploads':
       case 'tools':
         return (
           <PanelContainer tone={tone as tone} PanelRef={PanelRef}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)} presets and layout suggestions will go here.
+            {tab.charAt(0).toUpperCase() + tab.slice(1)} presets and layout
+            suggestions will go here.
           </PanelContainer>
         );
 
@@ -136,7 +127,7 @@ type SidebarPanelProps = {
         position: 'relative',
         zIndex: 50,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
       }}
     >
       {onClose && (
@@ -150,7 +141,7 @@ type SidebarPanelProps = {
             border: 'none',
             fontSize: '1.2rem',
             cursor: 'pointer',
-            color: tone === 'dark' ? '#f8fafc' : '#334155'
+            color: tone === 'dark' ? '#f8fafc' : '#334155',
           }}
           aria-label="Close panel"
         >
@@ -163,7 +154,7 @@ type SidebarPanelProps = {
           fontSize: '1rem',
           fontWeight: 600,
           color: '#334155',
-          marginBottom: '1rem'
+          marginBottom: '1rem',
         }}
       >
         {tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Panel'}
@@ -172,6 +163,13 @@ type SidebarPanelProps = {
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
         {renderContent()}
       </div>
+
+      {/* ✅ Modal always mounted, shows only when selectedAsset is set */}
+      <AssetPreviewModal
+        selectedAsset={selectedAsset}
+        setSelectedAsset={setSelectedAsset}
+        onImageDrop={onImageDrop}
+      />
     </div>
   );
 }

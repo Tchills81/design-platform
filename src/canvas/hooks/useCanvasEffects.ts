@@ -106,8 +106,9 @@ export function useCanvasEffects(
     selectedDualTemplate,
 
     textControlsRef,
- 
-   
+    
+    cardBounds,
+
     computePosition,
     setTextControlPosition,
     textControlPosition,
@@ -124,7 +125,8 @@ export function useCanvasEffects(
     currentSelectedElement,
     transformModeActive,
     setStagePosition,
-    setCanvasBounds
+    previewUploadRef,
+    setIsDragOverCard
     
   } = state;
 
@@ -174,7 +176,7 @@ export function useCanvasEffects(
     recenterCanvas,
     setIsTransitioningTemplate,
     _handleTextClick,
-    
+    handleImageDrop,
 
   } = actions;
 
@@ -246,31 +248,23 @@ useEffect(() => {
 
     
 
-    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute'});
-
+    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:(PANEL_WIDTH+SIDEBAR_WIDTH)});
     setStagePosition({x:(PANEL_WIDTH+SIDEBAR_WIDTH), y:0})
 
     setPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
 
     setInitailPosition({x:initialKonvaX-(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY});
-
-    setCanvasBounds({x:initialKonvaX+(PANEL_WIDTH+SIDEBAR_WIDTH)/2, y:initialKonvaY, width:template?.width, height:template?.height})
-    
     
   }else{
 
     setPosition({ x: initialKonvaX, y: initialKonvaY });
-    
-    setCanvasBounds({x:initialKonvaX, y:initialKonvaY, width:template?.width, height:template?.height});
-
     setInitailPosition({ x: (stageSize.width - scaledWidth) / 2, y: (stageSize.height - scaledHeight) / 2});
 
-    setStagePosition({x:0, y:0})
+    console.log()
+    setStageStyle({ backgroundColor:  '#1e1e1e', position:'absolute', top:0, left:0});
  
     
   }
-
-  console.log('setting canvas bounds...', activeTab)
     
 
   
@@ -738,13 +732,14 @@ useEffect(() => {
       const clickedOnFooterCluster = footerClusterRef.current?.contains(e.target as Node);
       const clickedOnTabs = SidebarTabsRef.current?.contains(e.target as Node);
       const clickedOnPanel = PanelRef.current?.contains(e.target as Node);
+      const clickedOnPreviewUploadModal = previewUploadRef.current?.contains(e.target as Node);
       const clickedOntextControls = textControlsRef.current?.contains(e.target as Node);
 
       
 
       
 
-      //console.log('clearing .. global click selected Image Id', selectedImageId);
+      console.log('global click', e.detail==2);
 
 
       if (clickedInsideToolbar ||  
@@ -755,12 +750,16 @@ useEffect(() => {
           clickedOnTabs         ||
           clickedOnPanel   || 
           clickedOntextControls  ||
-          clickedOnImagebar
+          clickedOnImagebar || 
+          clickedOnPreviewUploadModal || 
+          e.detail==2
 
         ) return;
 
 
-    console.log('global click ,transformModeActive, ', 'konvaText', konvaText)
+    console.log('global click clearing ...,transformModeActive, ',   )
+
+   
 
 // Dismiss global: clear store selection and legacy text selection, hide overlay and sync Konva text
 clearAll({
@@ -808,6 +807,74 @@ useEffect(() => {
     
   
 }, [elementInserted, konvaText, selectedTextId]);
+
+
+
+
+useEffect(() => {
+  const stage = stageRef.current;
+  if (!stage) return;
+
+  const container = stage.container();
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    stage.setPointersPositions(e);
+
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const { x, y, width, height } = cardBounds;
+    const scaledWidth = width * zoom;
+    const scaledHeight = height * zoom;
+
+    const insideX = pointer.x >= x && pointer.x <= x + scaledWidth;
+    const insideY = pointer.y >= y && pointer.y <= y + scaledHeight;
+
+    setIsDragOverCard(insideX && insideY);
+  };
+
+  const handleDrop = async (e: DragEvent) => {
+    e.preventDefault();
+    setIsDragOverCard(false);
+
+    const src = e.dataTransfer?.getData("image-src");
+    if (!src) return;
+
+    stage.setPointersPositions(e);
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const { x, y, width, height } = cardBounds;
+    const scaledWidth = width * zoom;
+    const scaledHeight = height * zoom;
+
+    const insideX = pointer.x >= x && pointer.x <= x + scaledWidth;
+    const insideY = pointer.y >= y && pointer.y <= y + scaledHeight;
+
+    let role: "background" | "element" = "element";
+    if (insideX && insideY) {
+      role = "background";
+    }
+
+    await handleImageDrop(src, role);
+  };
+
+  container.addEventListener("dragover", handleDragOver);
+  container.addEventListener("drop", handleDrop);
+
+  return () => {
+    container.removeEventListener("dragover", handleDragOver);
+    container.removeEventListener("drop", handleDrop);
+  };
+}, [handleImageDrop, cardBounds, zoom]);
+
+
+
+
+
+
+
 
 
 
